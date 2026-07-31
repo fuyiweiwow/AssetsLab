@@ -1,0 +1,193 @@
+{
+  "schema": "reference_mannequin_feature_composite_v1",
+  "directions": {
+    "front": {
+      "panel_index": 0,
+      "overlay_size": [
+        64,
+        64
+      ],
+      "component_boxes": {
+        "left_brow": [
+          190,
+          290,
+          255,
+          311
+        ],
+        "left_eye": [
+          203,
+          342,
+          249,
+          411
+        ],
+        "left_ear": [
+          114,
+          367,
+          155,
+          429
+        ],
+        "right_brow": [
+          360,
+          289,
+          422,
+          311
+        ],
+        "right_eye": [
+          366,
+          342,
+          411,
+          411
+        ],
+        "right_ear": [
+          456,
+          367,
+          497,
+          430
+        ]
+      },
+      "component_positions": {
+        "left_brow": [
+          24,
+          14
+        ],
+        "left_eye": [
+          24,
+          17
+        ],
+        "left_ear": [
+          16,
+          19
+        ],
+        "right_brow": [
+          35,
+          14
+        ],
+        "right_eye": [
+          35,
+          17
+        ],
+        "right_ear": [
+          44,
+          19
+        ]
+      },
+      "source": "prototype/preview/assets/female_adventurer_reference_feature_atlas_v1.png"
+    },
+    "right": {
+      "panel_index": 1,
+      "overlay_size": [
+        64,
+        64
+      ],
+      "component_boxes": {
+        "eye": [
+          215,
+          342,
+          258,
+          411
+        ],
+        "brow": [
+          209,
+          289,
+          271,
+          311
+        ],
+        "ear": [
+          361,
+          367,
+          403,
+          429
+        ]
+      },
+      "component_positions": {
+        "brow": [
+          36,
+          14
+        ],
+        "eye": [
+          36,
+          17
+        ],
+        "ear": [
+          16,
+          19
+        ]
+      },
+      "source": "prototype/preview/assets/female_adventurer_reference_feature_atlas_v1.png"
+    },
+    "back": {
+      "panel_index": 2,
+      "overlay_size": [
+        64,
+        64
+      ],
+      "component_boxes": {
+        "left_ear": [
+          124,
+          367,
+          166,
+          429
+        ],
+        "right_ear": [
+          403,
+          367,
+          445,
+          430
+        ]
+      },
+      "component_positions": {
+        "left_ear": [
+          16,
+          21
+        ],
+        "right_ear": [
+          44,
+          21
+        ]
+      },
+      "source": "prototype/preview/assets/female_adventurer_reference_feature_atlas_v1.png"
+    },
+    "left": {
+      "panel_index": 3,
+      "overlay_size": [
+        64,
+        64
+      ],
+      "component_boxes": {
+        "eye": [
+          208,
+          342,
+          251,
+          411
+        ],
+        "brow": [
+          194,
+          290,
+          257,
+          311
+        ],
+        "ear": [
+          105,
+          367,
+          147,
+          430
+        ]
+      },
+      "component_positions": {
+        "brow": [
+          18,
+          14
+        ],
+        "eye": [
+          18,
+          17
+        ],
+        "ear": [
+          44,
+          19
+        ]
+      },
+      "source": "prototype/preview/assets/female_adventurer_reference_feature_atlas_v1.png"
+    }
+  }
+}

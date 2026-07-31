@@ -1,0 +1,26 @@
+{
+  "schema": "rebuild_body_v3_rgs_pose_reference",
+  "source": "prototype/assets/characters/generated/walk_body_rgs_pose_reference_v3.png",
+  "direction": "right",
+  "cell_size": [
+    64,
+    64
+  ],
+  "frames": 8,
+  "target_body_height": 30,
+  "baseline_y": 58,
+  "status": "candidate_requires_visual_review",
+  "motion_contract": {
+    "neutral_frame": 3,
+    "first_step_after_neutral": "viewer_left_leg",
+    "both_arms_participate": true,
+    "opposite_arm_swing": true
+  },
+  "layers": [
+    "torso",
+    "arms",
+    "lower_body",
+    "feet",
+    "body_base"
+  ]
+}
