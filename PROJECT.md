@@ -113,13 +113,18 @@ Stages 1–4 passed with `tools/capture_front_skeleton_stage.ps1`,
 `tools/capture_side_pelvis_bob_stage.ps1`, and
 `tools/capture_side_arm_swing_stage.ps1`,
 `tools/capture_back_skeleton_stage.ps1`, and
-`tools/capture_back_leg_cycle_stage.ps1`.
+`tools/capture_back_leg_cycle_stage.ps1`,
+`tools/capture_back_pelvis_bob_stage.ps1`, and
+`tools/capture_back_arm_swing_stage.ps1`,
+`tools/capture_left_mirror_stage.ps1`, and
+`tools/capture_four_direction_anchor_review.ps1`, and
+`tools/capture_neutral_body_block_stage.ps1`, and
+`tools/capture_calibrated_head_attachment_stage.ps1`.
 
-Current pause point: front and right-facing side cycles are complete through
-arms; the back view is complete through its eight-frame leg loop. Remaining:
-back pelvis/arms, verified left mirror, four-direction anchor review, neutral
-body blocks, calibrated head attachment, male/female variants, and modular
-random face/hair/clothing layers before BomboAdvanture integration.
+Current pause point: the four-direction skeleton cycle has passed its shared
+anchor review, neutral-body-block guide, and calibrated head attachment.
+Remaining: male/female variants and modular random face/hair/clothing layers
+before BomboAdvanture integration.
 
 ### Resource Cleanup 2026-07-31
 

@@ -110,11 +110,53 @@ It writes eight captures plus `test_output/skeleton_pipeline/side_arm_swing.gif`
 The arms are opposite each other and counterphased to the legs; all accepted
 side pelvis, foot, and depth-order keys remain unchanged.
 
+The back-view pelvis stage retains the accepted back-leg foot coordinates and
+adds only a vertical 6px peak-to-peak pelvis bob:
+
+```powershell
+.\tools\capture_back_pelvis_bob_stage.ps1
+```
+
+The final back-view stage adds only the counterphased left/right arm swing:
+
+```powershell
+.\tools\capture_back_arm_swing_stage.ps1
+```
+
+Both scripts write eight captures and a GIF under
+`test_output/skeleton_pipeline/`. The back arms stay below their shoulders and
+on their own side of the center axis; the accepted lower-body coordinates stay
+unchanged.
+
+The left-facing profile is the exact joint mirror of the accepted right-facing
+cycle, and the four-direction review confirms shared head/neck anchors,
+pelvis phase, and foot baseline across all eight frames:
+
+```powershell
+.\tools\capture_left_mirror_stage.ps1
+.\tools\capture_four_direction_anchor_review.ps1
+```
+
+The next active gate draws only neutral geometric body blocks over that
+accepted four-direction motion. It is a 2D render guide for later art (or
+3D-guided redraw), not a production sprite:
+
+```powershell
+.\tools\capture_neutral_body_block_stage.ps1
+```
+
+The following calibration locks the shared head center and neck point while
+the lower body moves. It exports the same eight-frame four-direction review
+with a cyan registration overlay:
+
+```powershell
+.\tools\capture_calibrated_head_attachment_stage.ps1
+```
+
 ## Skeleton Pipeline Status
 
-Paused after the back-view eight-frame leg loop. Remaining: back pelvis/arms,
-verified left mirror, four-direction anchor review, body blocks, calibrated
-head attachment, and modular male/female face-hair-clothing layers.
+Paused after calibrated head attachment. Remaining: male/female variants and
+modular face-hair-clothing layers.
 
 Controls:
 
