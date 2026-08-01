@@ -40,6 +40,7 @@
 - [x] 在 Godot headless 中测试 PNG 文件读取、纹理创建和尺寸；
 - [x] 在 Godot headless 中动态创建 AnimatedSprite2D 并测试 8 帧播放容器；
 - [x] 在 Godot headless 场景中测试四个 AnimatedSprite2D、最近邻过滤和实际播放状态；
+- [x] 生成四方向放大预览图，人工检查像素清晰度和方向排列；
 - [ ] 在 Godot 编辑器导入缓存就绪后测试可视化场景播放。
 
 ### B. 3D 演员完善
@@ -173,5 +174,11 @@ blender.exe --background --python tools/blender/render_accurig_chibi_walk_test.p
 Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageTexture`，验证四张 sprite sheet 和所有逐帧纹理的尺寸，并动态创建 `AnimatedSprite2D`，确认 right 动画包含 8 帧且可以启动播放。测试脚本为 `prototype/tests/pixel_runtime_import_test.gd`，输出为 `PIXEL_RUNTIME_GODOT_FILE_PASS` 和 `PIXEL_RUNTIME_GODOT_ANIMATEDSPRITE_PASS`。
 
 另外，`prototype/tests/pixel_runtime_scene_test.tscn` 会实际创建四个 `AnimatedSprite2D`，分别播放四个方向，并强制检查 `TEXTURE_FILTER_NEAREST`。Godot headless 场景测试输出为 `PIXEL_RUNTIME_SCENE_PASS actors=4 directions=4 frames=8 filter=nearest`。
+
+可视化预览脚本为 `prototype/tests/pixel_runtime_visual_capture.gd`，输出：
+
+`prototype/test_output/pixel_runtime_scene_capture.png`
+
+该预览将 64×64 帧以 4 倍整数比例放大，检查结果为：四方向均保持硬边像素效果，没有双线性模糊或方向排列错误。它是人工检查图，不作为运行时资源提交。
 
 当前仍未把“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放标记为完成；项目 headless 导入时还会提示 Blender 路径未配置，因此实际 Godot 播放测试单独保留。

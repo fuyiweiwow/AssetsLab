@@ -387,5 +387,6 @@
   "godot_runtime_file_load_verified": true,
   "godot_animatedsprite_verified": true,
   "godot_scene_verified": true,
+  "godot_visual_capture_verified": true,
   "source_package": "E:\\WorkProject\\AssetsLab\\prototype\\test_output\\accurig_freestyle_walk_amp130_hard_pixels_64"
 }
