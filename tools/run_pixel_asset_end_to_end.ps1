@@ -25,4 +25,9 @@ if($LASTEXITCODE -ne 0) {
     throw "Prototype integration pipeline failed"
 }
 
-Write-Output "PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1"
+& (Join-Path $PSScriptRoot "run_face_variant_test.ps1") -GodotPath $GodotPath
+if($LASTEXITCODE -ne 0) {
+    throw "Face feature variant pipeline failed"
+}
+
+Write-Output "PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1 appearance=1"

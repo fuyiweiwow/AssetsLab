@@ -22,6 +22,7 @@ var latest_generated_body := false
 var vertical_body_candidate := false
 var appearance_seed: int = 20260730
 var appearance_variant: int = 0
+const APPEARANCE_VARIANT_COUNT := 8
 var body_anchor_offsets: Dictionary = {}
 var torso_frame_textures: Array[Texture2D] = []
 var arms_frame_textures: Array[Texture2D] = []
@@ -60,6 +61,9 @@ func _ready() -> void:
 	vertical_body_candidate = "--vertical-body-candidate" in user_args
 	appearance_seed = _read_appearance_seed()
 	appearance_variant = appearance_variant_for_seed(appearance_seed, variant == "female")
+	var appearance_override := _read_appearance_variant_override()
+	if appearance_override >= 0:
+		appearance_variant = appearance_override
 	_load_frame_textures()
 	_load_rgs_walk_reference_frames()
 	_load_milestone_body_frames()
@@ -181,6 +185,46 @@ func _read_appearance_seed() -> int:
 		if argument.begins_with("--appearance-seed="):
 			return argument.trim_prefix("--appearance-seed=").to_int()
 	return appearance_seed
+
+
+func _read_appearance_variant_override() -> int:
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--appearance-variant="):
+			var value := argument.trim_prefix("--appearance-variant=").to_int()
+			if value >= 0 and value < APPEARANCE_VARIANT_COUNT:
+				return value
+	return -1
+
+
+func set_appearance_variant(next_variant: int) -> bool:
+	"""Switch the generated face/ear overlay without rebuilding body frames."""
+	if base_features or rebuild_head:
+		return false
+	if next_variant < 0 or next_variant >= APPEARANCE_VARIANT_COUNT:
+		return false
+	appearance_variant = next_variant
+	_load_appearance_frame_textures()
+	_apply_frame(posmod(int(walk_phase), 8))
+	return ear_frame_textures.size() == 32 and face_frame_textures.size() == 32
+
+
+func _load_appearance_frame_textures() -> void:
+	ear_frame_textures.clear()
+	face_frame_textures.clear()
+	for row in range(4):
+		for column in range(8):
+			var ear_path := "res://assets/characters/faces/ear_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
+			var face_path := "res://assets/characters/faces/face_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
+			var ear_texture := load(ear_path) as Texture2D
+			var face_texture := load(face_path) as Texture2D
+			if ear_texture != null:
+				ear_frame_textures.append(ear_texture)
+			else:
+				push_error("Missing appearance ear frame: " + ear_path)
+			if face_texture != null:
+				face_frame_textures.append(face_texture)
+			else:
+				push_error("Missing appearance face frame: " + face_path)
 
 
 func _load_body_anchor_offsets() -> void:
