@@ -183,4 +183,4 @@ Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageText
 
 当前仍未把“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放标记为完成；项目 headless 导入时还会提示 Blender 路径未配置，因此实际 Godot 播放测试单独保留。
 
-Godot 测试已整理为 `tools/run_pixel_runtime_godot_test.ps1`。它会依次运行文件读取、AnimatedSprite2D 场景和可视化预览测试，并支持 `-GodotPath` 指定目标版本的 Console 可执行文件。当前机器只有 Godot 4.7，尚未安装项目目标版本 Godot 4.6.2；因此 4.7 结果可作为当前兼容性参考，4.6.2 仍需在安装后复测。
+Godot 测试已整理为 `tools/run_pixel_runtime_godot_test.ps1`。它会依次运行文件读取、AnimatedSprite2D 场景、可复用演员组件、可视化预览测试，并支持 `-GodotPath` 指定目标版本的 Console 可执行文件。当前机器只有 Godot 4.7，尚未安装项目目标版本 Godot 4.6.2；因此 4.7 结果可作为当前兼容性参考，4.6.2 仍需在安装后复测。

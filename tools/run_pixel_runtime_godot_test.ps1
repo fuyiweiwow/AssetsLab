@@ -12,6 +12,7 @@ Write-Output "PIXEL_RUNTIME_GODOT_TEST_BEGIN executable=$godot"
 $tests = @(
     @("--script", "res://tests/pixel_runtime_import_test.gd"),
     @("--scene", "res://tests/pixel_runtime_scene_test.tscn"),
+    @("--scene", "res://tests/pixel_runtime_actor_loader_test.tscn"),
     @("--scene", "res://tests/pixel_runtime_visual_capture.tscn")
 )
 
@@ -19,7 +20,8 @@ foreach($test in $tests) {
     $arguments = @(
         "--headless",
         "--rendering-method", "gl_compatibility",
-        "--path", $prototypeRoot
+        "--path", $prototypeRoot,
+        "--quit-after", "5"
     ) + $test
     & $godot @arguments
     if($LASTEXITCODE -ne 0) {
