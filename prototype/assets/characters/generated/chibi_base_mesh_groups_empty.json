@@ -1,0 +1,25 @@
+{
+  "schema": "assetslab_chibi_mesh_groups_v1",
+  "source_blend": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\characters\\generated\\chibi_base_mesh_annotation_only.blend",
+  "mesh": "ChibiBaseMesh_ANNOTATE_ONLY",
+  "groups": {
+    "Bind_Head": {
+      "vertex_count": 0,
+      "vertices": []
+    },
+    "Bind_Neck": {
+      "vertex_count": 0,
+      "vertices": []
+    },
+    "Bind_Torso": {
+      "vertex_count": 0,
+      "vertices": []
+    }
+  },
+  "missing_groups": [
+    "Bind_Head",
+    "Bind_Neck",
+    "Bind_Torso"
+  ],
+  "status": "incomplete"
+}

@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Chibi Binding Annotator</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#202124;color:#eee;margin:20px}
+h1{font-size:22px}.hint{max-width:900px;line-height:1.6;color:#d7d7d7}
+.views{display:flex;gap:20px;flex-wrap:wrap}.panel{background:#2b2c30;padding:12px;border-radius:8px}
+.stage{position:relative;width:512px;height:512px;background:#ddd;overflow:hidden}
+.stage img{width:512px;height:512px;display:block}.stage canvas{position:absolute;left:0;top:0}
+button{font-size:16px;padding:8px 14px;margin:14px 8px 0 0;cursor:pointer}
+label{display:block;margin:8px 0}.value{color:#8fd3ff;font-weight:700}
+</style>
+<h1>chibi-base-mesh 绑定标注工具</h1>
+<div class="hint">
+请拖动每个视图中的三条水平线：头部/下巴底边、颈部底边、躯干底边。head_bottom 要放在脸或下巴的最低点，不是后脑勺。红线和黄线之间就是颈部；如果下巴和身体本来贴得很近，颈部可以只有约 5 到 10 像素，不要为了拉开距离把肩膀算进颈部。只需要大致标出真实模型的分界，不需要精确到像素。完成后点击“下载标注 JSON”，把下载的文件放回项目的 generated 目录。
+</div>
+<div class="views">
+  <div class="panel"><b>Front / 正面</b><div class="stage"><img src="../prototype/assets/characters/generated/chibi_binding_annotation_tool/front.png"><canvas id="front" width="512" height="512"></canvas></div></div>
+  <div class="panel"><b>Side / 侧面</b><div class="stage"><img src="../prototype/assets/characters/generated/chibi_binding_annotation_tool/side.png"><canvas id="side" width="512" height="512"></canvas></div></div>
+</div>
+<div id="readout"></div>
+<button id="download">下载标注 JSON</button><button id="reset">重置</button>
+<script>
+const names=['head_bottom（下巴底边）','neck_bottom（颈部底边）','torso_bottom（躯干底边）'];
+const colors=['#ff4d4d','#ffd24d','#4dd2ff'];
+const state={front:[230,270,390],side:[230,270,390]};
+function draw(id){const c=document.getElementById(id),x=c.getContext('2d');x.clearRect(0,0,512,512);state[id].forEach((y,i)=>{x.strokeStyle=colors[i];x.lineWidth=3;x.beginPath();x.moveTo(0,y);x.lineTo(512,y);x.stroke();x.fillStyle=colors[i];x.fillText(names[i],8,y-6)});}
+function setup(id){const c=document.getElementById(id);let drag=-1;c.addEventListener('pointerdown',e=>{const y=e.offsetY;drag=state[id].map(v=>Math.abs(v-y)).indexOf(Math.min(...state[id].map(v=>Math.abs(v-y))));c.setPointerCapture(e.pointerId)});c.addEventListener('pointermove',e=>{if(drag>=0){state[id][drag]=Math.max(0,Math.min(511,e.offsetY));draw(id);read()}});c.addEventListener('pointerup',()=>drag=-1);draw(id)}
+function read(){document.getElementById('readout').innerHTML=names.map((n,i)=>`<label>${n}: 正面 <span class="value">${state.front[i]} px</span> / 侧面 <span class="value">${state.side[i]} px</span></label>`).join('')}
+document.getElementById('download').onclick=()=>{const data={schema:'assetslab_chibi_binding_lines_v1',views:state,notes:'User-drawn horizontal region boundaries from front and side views.'};const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='chibi_base_mesh_binding_lines.json';a.click()};
+document.getElementById('reset').onclick=()=>{state.front=[230,270,390];state.side=[230,270,390];draw('front');draw('side');read()};setup('front');setup('side');read();
+</script>

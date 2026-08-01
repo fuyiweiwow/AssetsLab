@@ -304,3 +304,31 @@ Use the interactive component calibration page at
 `http://<Tailscale-IP>:8765/calibrate.html`. It can move the face and ear
 parts independently for all four directions and save the calibration JSON to
 `prototype/preview/calibration/latest.json`.
+
+## Rejected 3D neutral actor test tool
+
+The following tool builds a neutral, featureless body from zero on the project
+GuideRig. It is a rejected prototype and is not the downloaded
+`chibi-base-meshblender` model. It is retained only to test the generic
+four-direction, eight-frame render-to-pixel pipeline:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\build_neutral_chibi_actor.ps1
+```
+
+The tool writes the `.blend` and pose manifest under
+`assets/characters/generated/neutral_chibi_actor_v1/`, 256x256 review renders
+under `test_output/neutral_chibi_actor_v1_3d/`, and the 64x64 review sheet under
+`assets/characters/generated/neutral_chibi_actor_v1_pixels/`. Use `-Strict` to
+make the shared foot-baseline check fail until the current one-pixel
+registration warning is corrected. See the repository-level
+`NEUTRAL_CHIBI_ACTOR_TESTING.md` for the acceptance gates and output contract.
+
+The actual downloaded-model tool is:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\build_chibi_base_mesh_actor.ps1
+```
+
+Its evaluation, outputs, and current limitations are recorded in
+`CHIBI_BASE_MESH_EVALUATION.md`.

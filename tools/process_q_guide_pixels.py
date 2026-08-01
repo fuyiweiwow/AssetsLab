@@ -34,6 +34,12 @@ def cli_args() -> argparse.Namespace:
 def main() -> int:
     args = cli_args()
     out_root = args.output_dir
+    source_parent = args.blend.resolve().parent
+    if out_root.resolve() == source_parent:
+        raise SystemExit(
+            "Q1_PIXEL_BASE_FAIL: output-dir must not be the parent directory "
+            "of the source blend/pose files; use a separate pixel output directory"
+        )
     if out_root.exists():
         shutil.rmtree(out_root)
     out_root.mkdir(parents=True, exist_ok=True)

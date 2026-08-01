@@ -22,7 +22,7 @@ headless tests remain sufficient.
 
 ## Development Status
 
-Last updated: 2026-07-31.
+Last updated: 2026-08-01.
 
 ### Current Production Candidate
 
@@ -141,6 +141,51 @@ The next active gate is G1: transfer the accepted eight-frame skeleton poses
 to the Blender guide rig and export flat silhouette, part-ID, depth/order, and
 beauty reference passes. No final pixel art, hair, or clothing is created in
 that gate.
+
+The model-plus-existing-animation workflow for operators without modelling
+experience is documented in `MODEL_TO_PIXEL_WORKFLOW.md`. Its first gate is an
+asset, rig, and license audit. The current
+`third_party/chibi-base-meshblender.zip` contains only an unrigged static mesh,
+so it cannot be treated as a ready-made animated actor. The earlier neutral
+GuideRig body was built from zero and is explicitly rejected as a production
+actor. The actual-model evaluation and build procedure is documented in
+`CHIBI_BASE_MESH_EVALUATION.md`.
+
+The current actor goal is to make the downloaded chibi mesh deform and render
+consistently across four directions and eight walk frames. Eyes, brows, blush,
+ears, hair, and clothing remain deferred until this actual-model body passes
+review. Do not add random face layers to the rejected GuideRig mannequin.
+
+The original static chibi mesh has a technical actor v1 under
+`prototype/assets/characters/generated/original_chibi_actor_test_v5/` with
+eight transparent front renders and a saved actor blend. The head is scaled by
+1.18 around the neck seam and the fitted body by 0.86. This proves the input,
+action, binding, render, and pixelization tools, but it is not runtime art.
+Fixed-G0 experiments `v6`–`v11` showed that the single connected source mesh
+does not align cleanly with the KIIRA bone regions: rigid binding causes
+stretched limbs or a distorted head. It is not the production actor.
+
+The actual downloaded-model candidate is under
+`prototype/assets/characters/generated/chibi_base_mesh_actor_v2/`. It produces
+four directions x eight frames with the downloaded `Cube` mesh, a temporary
+KIIRA motion source, a rigid head split, and a deterministic 64x64 review sheet. The one-click
+build and validator are `tools/build_chibi_base_mesh_actor.ps1` and
+`tools/validate_chibi_base_mesh_actor.py`. It passes the technical render and
+pixel checks and removes the previous head deformation, but remains review-only
+because the neck seam, body binding, and registration are not yet accepted.
+
+The current annotated follow-up is
+`prototype/assets/characters/generated/chibi_base_mesh_actor_manual_lines_v1/`.
+It was generated from the operator's front/side region lines in
+`E:\comic\chibi_base_mesh_binding_lines.json`; its manifest records the
+6-pixel minimum neck-gap normalization. It is the preferred candidate for the
+next manual binding refinement, but is also review-only.
+
+The previous from-scratch GuideRig fixture remains under
+`prototype/assets/characters/generated/neutral_chibi_actor_v1/` and is marked
+`REJECTED_PROTOTYPE.md`.
+
+The detailed build record is in `ACTOR_V1_BUILD_LOG.md`.
 
 ### Resource Cleanup 2026-07-31
 
