@@ -122,3 +122,19 @@
 - 硬边 64 像素版本：`prototype/test_output/accurig_freestyle_hard_pixels_64/`。
 
 三组结果均通过资源验收。Freestyle 比纯后处理轮廓更稳定地保留了手臂外缘，但如果手在侧视投影中被躯干遮挡，Freestyle 也无法生成被遮挡部分的分隔线。因此最终方案仍需在 3D 姿态上让手臂稍微错开，或把手臂单独渲染为可控图层。当前实现已加入 `tools/blender/render_accurig_chibi_walk_test.py --freestyle`，作为后续批量渲染选项。
+
+## B-1 走路幅度对照测试
+
+在相同的 Freestyle、反向小腿和 64 像素导出条件下，生成了两组幅度测试：
+
+- `prototype/test_output/accurig_freestyle_walk_amp150_hard_pixels_64/`；
+- `prototype/test_output/accurig_freestyle_walk_amp200_hard_pixels_64/`。
+
+两组均通过 4 方向 × 8 帧资源验收。结果判断：
+
+- `amplitude=1.5`：比默认 1.0 更容易观察大腿、膝盖和手臂摆动，暂定为当前走路测试推荐值；
+- `amplitude=2.0`：可以作为极限诊断值，但会放大腿根开裂、腿部穿插和脚掌问题，不作为正式走路默认值。
+
+## 后续跑步动作规划
+
+跑步不应简单地把走路 `amplitude` 无限放大。需要单独建立 `run` 动作配置，至少包含：更高步频、更大的大腿摆幅、更高的膝盖抬升、更明显的脚掌离地、身体前倾和更强的反向手臂摆动。建议先完成正式走路绑定和 64 像素导入，再增加 8 帧跑步诊断，之后根据画面稳定性决定是否扩展到 12 帧或 16 帧。
