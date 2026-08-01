@@ -100,3 +100,6 @@ PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1
 2. 对新的候选执行 Blender 静态审计；不通过正面门槛的候选不进入绑定。
 3. 通过后再做骨骼标注、绑定和单部件运动测试。
 4. 绑定稳定后复用现有 `chibi_accurig_walk_test_v1` 的渲染、像素化和 Godot 验证管线。
+## 清理说明（2026-08-02）
+
+KIIRA 候选及其试拍脚本已移除，不再作为项目资源来源。保留本文件中的审计结论用于追溯；后续候选必须先通过 `front-character-anchor.png` 的正面轮廓验收，再进入绑定和渲染测试。
