@@ -41,7 +41,7 @@
 - [x] 在 Godot headless 中动态创建 AnimatedSprite2D 并测试 8 帧播放容器；
 - [x] 在 Godot headless 场景中测试四个 AnimatedSprite2D、最近邻过滤和实际播放状态；
 - [x] 生成四方向放大预览图，人工检查像素清晰度和方向排列；
-- [ ] 在 Godot 编辑器导入缓存就绪后测试可视化场景播放。
+- [x] 在 Godot 编辑器导入缓存就绪后测试可视化场景播放。
 
 ### B. 3D 演员完善
 
@@ -181,6 +181,8 @@ Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageText
 
 该预览将 64×64 帧以 4 倍整数比例放大，检查结果为：四方向均保持硬边像素效果，没有双线性模糊或方向排列错误。它是人工检查图，不作为运行时资源提交。
 
-当前仍未把“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放标记为完成；项目 headless 导入时还会提示 Blender 路径未配置，因此实际 Godot 播放测试单独保留。
+“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放已完成独立验证；项目 headless 导入时仍会提示 Blender 路径未配置，但这不影响像素 PNG 导入测试，因此 Blender 导入提示单独保留。
 
 Godot 测试已整理为 `tools/run_pixel_runtime_godot_test.ps1`。它会依次运行文件读取、AnimatedSprite2D 场景、可复用演员组件、可视化预览测试，并支持 `-GodotPath` 指定目标版本的 Console 可执行文件。当前机器只有 Godot 4.7，尚未安装项目目标版本 Godot 4.6.2；因此 4.7 结果可作为当前兼容性参考，4.6.2 仍需在安装后复测。
+
+补充验证：`prototype/pixel_runtime_preview.tscn` 通过 Godot 的 `load(res://...png)` 读取导入后的 PNG 缓存，四个方向各 8 帧、最近邻过滤和 AnimatedSprite2D 播放均通过。自动化输出为 `PIXEL_RUNTIME_IMPORTED_SCENE_PASS actors=4 directions=4 frames=8 filter=nearest`。首次清理 `.godot` 缓存后，需要让 Godot 编辑器完成一次完整扫描；测试工具已加入自动等待逻辑。

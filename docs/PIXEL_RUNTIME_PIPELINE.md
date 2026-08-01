@@ -27,3 +27,17 @@ powershell -ExecutionPolicy Bypass -File .\tools\run_pixel_runtime_pipeline_test
 Godot 4.7 的 headless dummy 渲染器不能读取窗口纹理，因此像素演员模式会从当前 `AnimatedSprite2D` 帧生成截图；这仍会验证移动、方向切换、帧读取和输出文件。编辑器或普通窗口运行时，原有截图函数仍读取实际窗口纹理。
 
 当前结果：Godot 4.7 下旧管线回归通过，新演员四方向移动和 32 帧输出通过。Godot 4.6.2 安装后需用同一命令复测。
+
+## 编辑器导入预览
+
+打开 `prototype/pixel_runtime_preview.tscn` 后运行场景，可以看到四个方向同时播放。这个场景通过 `load(res://.../pixel.png)` 走 Godot 的 PNG 导入缓存，并强制使用最近邻过滤。
+
+自动验证已加入：
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\tools\run_pixel_runtime_godot_test.ps1
+```
+
+新增输出为 `PIXEL_RUNTIME_IMPORTED_SCENE_PASS actors=4 directions=4 frames=8 filter=nearest`。
+
+测试工具会检查 `.godot/imported/` 是否已经存在运行时 PNG 的 `.ctex` 缓存；如果没有，会先启动一次 Godot 编辑器扫描，等待导入完成后再执行测试。首次清理项目缓存后的扫描可能需要几十秒。
