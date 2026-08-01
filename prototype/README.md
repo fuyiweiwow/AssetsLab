@@ -158,6 +158,28 @@ with a cyan registration overlay:
 Paused after calibrated head attachment. Remaining: male/female variants and
 modular face-hair-clothing layers.
 
+## 3D Guide G0
+
+The offline Blender guide starts with a single static neutral mannequin and
+four orthographic cameras. It is a pose/depth/registration source for later
+pixel authoring only; the Godot runtime still uses transparent 2D layers.
+The contract is stored at
+`assets/characters/generated/skeleton_walk_pipeline_v1/3d_guide_v1/camera_contract.json`.
+It locks a 256 x 256 guide render to the 64 x 64 runtime frame with a shared
+head center `(32,16)`, neck `(32,25)`, and foot baseline `y=60`.
+
+Blender 4.5.0 is installed portably at `E:\env\Blender\blender.exe`. Rebuild
+the source `.blend`, four transparent reference views, and contact sheet with:
+
+```powershell
+.\tools\capture_3d_guide_g0.ps1
+```
+
+The generated review images are ignored under `test_output/3d_guide_g0/`; the
+reproducible `.blend`, contract, builder, and validator are tracked. G1 will
+add the accepted eight-frame walk and export separate silhouette, part-ID, and
+depth reference passes before any final pixels are drawn.
+
 Controls:
 
 - `WASD` or arrow keys: move.

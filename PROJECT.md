@@ -126,6 +126,22 @@ anchor review, neutral-body-block guide, and calibrated head attachment.
 Remaining: male/female variants and modular random face/hair/clothing layers
 before BomboAdvanture integration.
 
+### 3D-Guided Pixel Art Pipeline
+
+The production route from this point is documented in
+`3D_TO_2D_PIXEL_ART_PLAN.md`: Blender is an offline pose, depth, and
+registration reference; the shipped result remains manually authored 2D pixel
+layers. G0 passed on 2026-07-31 with the reproducible source scene at
+`prototype/assets/characters/generated/skeleton_walk_pipeline_v1/3d_guide_v1/mannequin_g0.blend`.
+Its four orthographic cameras and the 256-to-64 anchor contract are recorded
+in the adjacent `camera_contract.json`. Rebuild and validate the static
+four-direction contact sheet with `tools/capture_3d_guide_g0.ps1`.
+
+The next active gate is G1: transfer the accepted eight-frame skeleton poses
+to the Blender guide rig and export flat silhouette, part-ID, depth/order, and
+beauty reference passes. No final pixel art, hair, or clothing is created in
+that gate.
+
 ### Resource Cleanup 2026-07-31
 
 The branch `history0731` contains the rejected AI body/head experiments, the
