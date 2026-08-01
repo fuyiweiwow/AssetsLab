@@ -56,8 +56,36 @@ def main() -> int:
                 return fail(f"size={image_path}:{image.size}")
             if image.mode != "RGBA":
                 return fail(f"mode={image_path}:{image.mode}")
-            if image.getchannel("A").getbbox() is None:
+            actual_bbox = image.getchannel("A").getbbox()
+            if actual_bbox is None:
                 return fail(f"empty_alpha={image_path}")
+            if list(actual_bbox) != frame.get("alpha_bbox"):
+                return fail(
+                    f"manifest_bbox={image_path}:{frame.get('alpha_bbox')}"
+                    f" actual={actual_bbox}"
+                )
+
+    canvas_center = (options.expected_size - 1) / 2.0
+    centers: dict[str, list[float]] = {direction: [] for direction in directions}
+    bottoms: dict[str, list[int]] = {direction: [] for direction in directions}
+    heights: dict[str, list[int]] = {direction: [] for direction in directions}
+    for frame in frames:
+        direction = frame["direction"]
+        left, top, right, bottom = frame["alpha_bbox"]
+        centers[direction].append((left + right - 1) / 2.0)
+        bottoms[direction].append(bottom)
+        heights[direction].append(bottom - top)
+
+    for direction in directions:
+        center_delta = max(abs(value - canvas_center) for value in centers[direction])
+        bottom_delta = max(bottoms[direction]) - min(bottoms[direction])
+        height_delta = max(heights[direction]) - min(heights[direction])
+        if center_delta > 2.0:
+            return fail(f"off_center={direction}:{center_delta:.2f}px")
+        if bottom_delta > 2:
+            return fail(f"foot_baseline_drift={direction}:{bottom_delta}px")
+        if height_delta > 3:
+            return fail(f"height_drift={direction}:{height_delta}px")
 
     for direction in directions:
         sheet = root / manifest["sheets"][direction]
@@ -70,7 +98,8 @@ def main() -> int:
     print(
         "PIXEL_ASSET_TEST_PASS "
         f"directions={len(directions)} frames={expected_count} "
-        f"size={options.expected_size} root={root}"
+        f"size={options.expected_size} root={root} "
+        "framing=centered baseline=stable"
     )
     return 0
 
