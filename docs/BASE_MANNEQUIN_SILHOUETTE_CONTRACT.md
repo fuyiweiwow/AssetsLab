@@ -1,4 +1,6 @@
-# Base Mannequin 轮廓合同
+# Base Mannequin 轮廓合同（历史记录）
+
+> 注意：本文件记录了此前误用的 `base-mannequin-4way-female-sheet.png` 参考，不再是当前验收标准。当前唯一概念基准是 `front-character-anchor.png`，详见 `docs/CHARACTER_ANCHOR_CONTRACT.md`。
 
 ## 目标参考
 
