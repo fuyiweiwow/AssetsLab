@@ -194,3 +194,7 @@ Godot 测试已整理为 `tools/run_pixel_runtime_godot_test.ps1`。它会依次
 `PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1`
 
 这表示流程已打通，不表示当前角色细节已经达到最终美术质量。后续模型、动作或像素风格调整，均先通过此闭环，再进入细节修正。
+
+## A-10 Base Mannequin 轮廓基线
+
+轮廓目标已固定为 `base-mannequin-4way-female-sheet.png`，动作参考固定为 `walk-base-4way-female-4frame-sheet.png`。当前 `chibi_base_mesh_accurig_diagnostic` 仅标记为 `pipeline_baseline_only`：技术管线通过，但头身比例、躯干宽度和四肢可读性没有达到女性 Q 版素体参考。后续应先修正 3D 素体轮廓，再重新生成像素资源；不在当前诊断包上继续堆叠五官和配色细节。详见 `docs/BASE_MANNEQUIN_SILHOUETTE_CONTRACT.md`。
