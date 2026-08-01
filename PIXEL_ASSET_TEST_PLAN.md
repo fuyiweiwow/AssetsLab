@@ -110,3 +110,15 @@
 - 边缘透明度阈值为 128，输出只保留透明和完全不透明两级，避免半透明抗锯齿造成模糊。
 
 原始样式中单帧存在 46 个透明度等级；硬边版本已降为 2 个透明度等级（0/255），并通过 4 方向 × 8 帧的资源验证。轮廓能够把身体、腿部和脚掌从透明背景中分离出来。颜色目前只作为灰模诊断基线，尚未锁定为最终角色配色。
+
+## A-6 Blender Freestyle 轮廓对照测试
+
+当前侧视手部轮廓问题已使用 Blender 内置 Freestyle 做对照。Freestyle 在 Blender 渲染阶段根据可见网格边缘生成轮廓，测试参数为深蓝灰线条、绝对线宽 2 像素，并保留当前反向小腿动作。
+
+测试输出：
+
+- 原生 256 渲染：`prototype/test_output/accurig_freestyle_walk_test/`；
+- 64 像素版本：`prototype/test_output/accurig_freestyle_pixels_64/`；
+- 硬边 64 像素版本：`prototype/test_output/accurig_freestyle_hard_pixels_64/`。
+
+三组结果均通过资源验收。Freestyle 比纯后处理轮廓更稳定地保留了手臂外缘，但如果手在侧视投影中被躯干遮挡，Freestyle 也无法生成被遮挡部分的分隔线。因此最终方案仍需在 3D 姿态上让手臂稍微错开，或把手臂单独渲染为可控图层。当前实现已加入 `tools/blender/render_accurig_chibi_walk_test.py --freestyle`，作为后续批量渲染选项。

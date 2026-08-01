@@ -22,6 +22,7 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--amplitude", type=float, default=1.0)
     parser.add_argument("--reverse-calf", action="store_true")
+    parser.add_argument("--freestyle", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -88,8 +89,26 @@ def make_camera(scene: bpy.types.Scene, target: Vector, low: Vector, high: Vecto
     return camera
 
 
+def configure_freestyle(scene: bpy.types.Scene) -> None:
+    """Enable Blender's native visible-edge outline for comparison renders."""
+    scene.render.use_freestyle = True
+    view_layer = scene.view_layers[0]
+    settings = view_layer.freestyle_settings
+    line_set = settings.linesets[0]
+    line_style = line_set.linestyle or bpy.data.linestyles.new("PixelOutline")
+    line_set.linestyle = line_style
+    line_style.color = (0.06, 0.05, 0.10)
+    line_style.thickness = 2.0
+    for property_name in ("select_silhouette", "select_border", "select_crease"):
+        if hasattr(line_set, property_name):
+            setattr(line_set, property_name, True)
+
+
 def main() -> int:
     options = cli_args()
+    project_root = Path(__file__).resolve().parents[2]
+    output_dir = options.output if options.output.is_absolute() else project_root / options.output
+    output_dir = output_dir.resolve()
     bpy.ops.wm.read_factory_settings(use_empty=True)
     bpy.ops.import_scene.fbx(filepath=str(options.fbx), use_anim=True)
     meshes = [obj for obj in bpy.data.objects if obj.type == "MESH"]
@@ -112,7 +131,9 @@ def main() -> int:
     scene.display.shading.show_shadows = False
     scene.display.shading.show_cavity = True
     scene.display.shading.cavity_type = "WORLD"
-    options.output.mkdir(parents=True, exist_ok=True)
+    if options.freestyle:
+        configure_freestyle(scene)
+    output_dir.mkdir(parents=True, exist_ok=True)
 
     camera_specs = {
         "front": (0.0, -12.0, target.z),
@@ -134,10 +155,10 @@ def main() -> int:
                 options.amplitude,
                 options.reverse_calf,
             )
-            scene.render.filepath = str(options.output / f"{direction}_{frame:02d}.png")
+            scene.render.filepath = str(output_dir / f"{direction}_{frame:02d}.png")
             bpy.ops.render.render(write_still=True)
 
-    print(f"ACCURIG_CHIBI_WALK_TEST_PASS output={options.output}")
+    print(f"ACCURIG_CHIBI_WALK_TEST_PASS output={output_dir}")
     return 0
 
 
