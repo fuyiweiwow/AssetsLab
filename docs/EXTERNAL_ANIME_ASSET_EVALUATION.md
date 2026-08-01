@@ -16,6 +16,16 @@
 
 ## 候选资源
 
+### A0. Anime Chibi Base Mesh (Fully Rigged) — Koban Wanko
+
+- 页面：[Gumroad / Anime Chibi Base Mesh](https://kobanwanko.gumroad.com/l/ChibiBaseMesh)
+- 采用“自愿付费”模式，页面说明即使免费获取也允许商业使用；
+- 提供 Blender、FBX 和 VRM 版本；
+- 面向 Blender 4.0–4.1，包含 ARKit52 和额外面部 Blendshapes；
+- 适合作为第一轮免费的完整动漫风格基准。
+
+它仍然是一个完整的参考角色，而不是直接适配我们演员的零件包。下载后应先检查头部、眼睛和耳朵是否与目标画风足够接近，再决定提取五官还是只参考其材质和轮廓。
+
 ### A. Anime Chibi Base Mesh — Minimoku
 
 - 页面：[Superhive / Anime Chibi Base Mesh](https://superhivemarket.com/products/anime-chibi-base-mesh)
@@ -59,10 +69,11 @@
 
 优先顺序：
 
-1. 若允许购买：先采用 Minimoku 作为风格基准；
-2. 若只做低成本验证：采用 Pluto 做第一轮完整渲染对照；
-3. 暂不采用“独立眼睛 + 独立耳朵”的混搭方式作为最终方案；
-4. 下载资源后，只在本地保存源文件，项目仓库只提交评估记录、转换脚本和最终渲染结果，不提交受限制的原始资源包。
+1. 先使用 Koban Wanko 做免费的完整风格验证；
+2. 若其画风不合适，再采用 Minimoku 作为更完整的商业风格基准；
+3. 若只做低成本渲染管线对照，再考虑 Pluto；
+4. 暂不采用“独立眼睛 + 独立耳朵”的混搭方式作为最终方案；
+5. 下载资源后，只在本地保存源文件，项目仓库只提交评估记录、转换脚本和最终渲染结果，不提交受限制的原始资源包。
 
 ## 接入验收标准
 
