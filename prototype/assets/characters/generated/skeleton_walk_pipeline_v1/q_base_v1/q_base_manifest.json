@@ -1,0 +1,196 @@
+{
+  "schema": "assetslab_2d_pixel_base_v1",
+  "stage": "Q1_four_direction_eight_frame_pixel_base",
+  "canvas_px": [
+    64,
+    64
+  ],
+  "downscale": 4,
+  "render_canvas_px": [
+    256,
+    256
+  ],
+  "anchors": {
+    "head_center": [
+      32,
+      18
+    ],
+    "neck": [
+      32,
+      31
+    ],
+    "foot_baseline_y": 60
+  },
+  "directions": [
+    "front",
+    "right",
+    "back",
+    "left"
+  ],
+  "frame_count": 8,
+  "sheet": "q_base_sheet.png",
+  "source_pose_3d": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\characters\\generated\\skeleton_walk_pipeline_v1\\3d_guide_v1\\q1_pose_3d.json",
+  "source_blend": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\characters\\generated\\skeleton_walk_pipeline_v1\\3d_guide_v1\\mannequin_q1.blend",
+  "frames": [
+    {
+      "direction": "front",
+      "frame": 0,
+      "path": "front\\frame_00\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 1,
+      "path": "front\\frame_01\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 2,
+      "path": "front\\frame_02\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 3,
+      "path": "front\\frame_03\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 4,
+      "path": "front\\frame_04\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 5,
+      "path": "front\\frame_05\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 6,
+      "path": "front\\frame_06\\pixel.png"
+    },
+    {
+      "direction": "front",
+      "frame": 7,
+      "path": "front\\frame_07\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 0,
+      "path": "right\\frame_00\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 1,
+      "path": "right\\frame_01\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 2,
+      "path": "right\\frame_02\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 3,
+      "path": "right\\frame_03\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 4,
+      "path": "right\\frame_04\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 5,
+      "path": "right\\frame_05\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 6,
+      "path": "right\\frame_06\\pixel.png"
+    },
+    {
+      "direction": "right",
+      "frame": 7,
+      "path": "right\\frame_07\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 0,
+      "path": "back\\frame_00\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 1,
+      "path": "back\\frame_01\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 2,
+      "path": "back\\frame_02\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 3,
+      "path": "back\\frame_03\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 4,
+      "path": "back\\frame_04\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 5,
+      "path": "back\\frame_05\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 6,
+      "path": "back\\frame_06\\pixel.png"
+    },
+    {
+      "direction": "back",
+      "frame": 7,
+      "path": "back\\frame_07\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 0,
+      "path": "left\\frame_00\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 1,
+      "path": "left\\frame_01\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 2,
+      "path": "left\\frame_02\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 3,
+      "path": "left\\frame_03\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 4,
+      "path": "left\\frame_04\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 5,
+      "path": "left\\frame_05\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 6,
+      "path": "left\\frame_06\\pixel.png"
+    },
+    {
+      "direction": "left",
+      "frame": 7,
+      "path": "left\\frame_07\\pixel.png"
+    }
+  ]
+}

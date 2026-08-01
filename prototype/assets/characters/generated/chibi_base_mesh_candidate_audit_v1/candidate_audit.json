@@ -1,0 +1,104 @@
+{
+  "schema": "assetslab_chibi_candidate_audit_v1",
+  "source": "E:\\WorkProject\\AssetsLab\\third_party\\chibi-base-meshblender.zip",
+  "objects": [
+    {
+      "name": "Cube",
+      "type": "MESH",
+      "location": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "rotation_euler": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "vertices": 534,
+      "polygons": 506,
+      "materials": [],
+      "vertex_groups": 0,
+      "modifiers": [
+        "MIRROR",
+        "SUBSURF"
+      ],
+      "dimensions": [
+        1.5438,
+        1.5527,
+        3.0976
+      ]
+    },
+    {
+      "name": "Camera",
+      "type": "CAMERA",
+      "location": [
+        9.9052,
+        -8.2506,
+        5.7946
+      ],
+      "rotation_euler": [
+        1.24,
+        -0.0106,
+        0.8655
+      ],
+      "scale": [
+        1.0,
+        1.0,
+        1.0
+      ],
+      "vertices": null,
+      "polygons": null,
+      "materials": [],
+      "vertex_groups": null,
+      "modifiers": [],
+      "dimensions": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "primary_mesh": {
+    "name": "Cube",
+    "bounds_min": [
+      -0.3859,
+      -0.7763,
+      0.0
+    ],
+    "bounds_max": [
+      0.3859,
+      0.7763,
+      3.0976
+    ],
+    "dimensions": [
+      0.7719,
+      1.5527,
+      3.0976
+    ],
+    "connected_components": [
+      {
+        "vertices": 534,
+        "min": [
+          -0.3859,
+          -0.7763,
+          0.0
+        ],
+        "max": [
+          0.3859,
+          0.7763,
+          3.0976
+        ]
+      }
+    ]
+  },
+  "armature_count": 0,
+  "action_count": 0,
+  "production_ready": false,
+  "decision": "static_style_candidate_requires_project_specific_rig_or_pose_transfer"
+}
