@@ -77,7 +77,7 @@
 
 ## Koban Wanko 实测结果
 
-下载文件：`E:/WorkProject/AssetsLab/prototype/assets/Koban Chibi Base Mesh.rar`  
+下载文件：`E:/WorkProject/AssetsLab/prototype/assets/Koban Chibi Base Mesh.rar`
 解压目录：`E:/WorkProject/AssetsLab/prototype/assets/external/koban_chibi_base_mesh/`
 
 压缩包内包含：
