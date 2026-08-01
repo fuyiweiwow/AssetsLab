@@ -69,6 +69,23 @@
 
 当前不再继续修补已淘汰的 `chibi-base-meshblender.zip` 外观，也不把 `Character Base.blend` 当作最终外观。下一阶段应寻找或制作一个带服装/披风/靴子、正面剪影接近 `front-character-anchor.png` 的新中性 3D 演员。
 
+### 路线分层修正
+
+这不影响当前已经调好的技术实验演员 `chibi_accurig_walk_test_v1`。它继续承担以下验证工作：
+
+- 走路/跑步动作幅度与方向；
+- 3D 渲染到 2D 像素化；
+- 4 方向资源打包；
+- Godot 运行时加载、方向切换和最近邻采样。
+
+该演员不再承担 `front-character-anchor.png` 的最终美术验收。新的外观演员通过正面轮廓门槛后，再替换到同一套技术管线中。这样可以继续推进流程实验，同时避免把旧模型误标为最终角色。
+
+当前技术基线已重新验证通过：
+
+```text
+PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1
+```
+
 候选模型必须依次通过以下门槛：
 
 1. 正面静态轮廓接近目标图；
