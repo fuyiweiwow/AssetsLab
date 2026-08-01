@@ -36,8 +36,10 @@
 - [x] 检查画布居中、上下裁切和脚底基线；
 - [x] 比较 128、64、32 像素规格；
 - [x] 建立临时调色板、轮廓线和阴影规则（诊断版）；
-- [ ] 输出正式 sprite sheet、GIF 和运行时 PNG；
-- [ ] 在 Godot 中测试导入、过滤模式和动画播放。
+- [x] 输出运行时 sprite sheet、GIF 和逐帧 PNG（测试包）；
+- [x] 在 Godot headless 中测试 PNG 文件读取、纹理创建和尺寸；
+- [x] 在 Godot headless 中动态创建 AnimatedSprite2D 并测试 8 帧播放容器；
+- [ ] 在 Godot 编辑器导入缓存就绪后测试实际场景播放。
 
 ### B. 3D 演员完善
 
@@ -158,3 +160,15 @@ blender.exe --background --python tools/blender/render_accurig_chibi_walk_test.p
 ## 后续跑步动作规划
 
 跑步不应简单地把走路 `amplitude` 无限放大。需要单独建立 `run` 动作配置，至少包含：更高步频、更大的大腿摆幅、更高的膝盖抬升、更明显的脚掌离地、身体前倾和更强的反向手臂摆动。建议先完成正式走路绑定和 64 像素导入，再增加 8 帧跑步诊断，之后根据画面稳定性决定是否扩展到 12 帧或 16 帧。
+
+## A-7 运行时测试包与 Godot 文件读取结果
+
+已使用当前 `amplitude=1.3` 的 Freestyle 硬边像素结果生成运行时测试包：
+
+`prototype/assets/characters/runtime/chibi_accurig_walk_test_v1/`
+
+包内包含四方向逐帧 PNG、四方向 sprite sheet、GIF 预览和 `runtime_manifest.json`。manifest 记录了 64×64 画布、8 帧、最近邻过滤、透明背景和动作幅度 1.3。
+
+Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageTexture`，验证四张 sprite sheet 和所有逐帧纹理的尺寸，并动态创建 `AnimatedSprite2D`，确认 right 动画包含 8 帧且可以启动播放。测试脚本为 `prototype/tests/pixel_runtime_import_test.gd`，输出为 `PIXEL_RUNTIME_GODOT_FILE_PASS` 和 `PIXEL_RUNTIME_GODOT_ANIMATEDSPRITE_PASS`。
+
+当前仍未把“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放标记为完成；项目 headless 导入时还会提示 Blender 路径未配置，因此实际 Godot 播放测试单独保留。
