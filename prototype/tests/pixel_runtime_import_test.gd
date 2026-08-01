@@ -26,7 +26,7 @@ func _initialize() -> void:
 		fail("unexpected frame count")
 		return
 
-	var runtime_frames := SpriteFrames.new()
+	var runtime_frames: SpriteFrames = SpriteFrames.new()
 	for direction in DIRECTIONS:
 		runtime_frames.add_animation(direction)
 		runtime_frames.set_animation_speed(direction, 8.0)
@@ -60,6 +60,8 @@ func _initialize() -> void:
 		fail("AnimatedSprite2D did not start the right-facing walk")
 		return
 
+	animated.free()
+	runtime_frames = null
 	print("PIXEL_RUNTIME_GODOT_FILE_PASS directions=%d frames=%d size=%d" % [DIRECTIONS.size(), DIRECTIONS.size() * FRAME_COUNT, SIZE])
 	print("PIXEL_RUNTIME_GODOT_ANIMATEDSPRITE_PASS animation=right frames=%d" % FRAME_COUNT)
 	quit(0)
