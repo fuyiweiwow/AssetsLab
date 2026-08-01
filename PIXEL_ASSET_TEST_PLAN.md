@@ -186,3 +186,11 @@ Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageText
 Godot 测试已整理为 `tools/run_pixel_runtime_godot_test.ps1`。它会依次运行文件读取、AnimatedSprite2D 场景、可复用演员组件、可视化预览测试，并支持 `-GodotPath` 指定目标版本的 Console 可执行文件。当前机器只有 Godot 4.7，尚未安装项目目标版本 Godot 4.6.2；因此 4.7 结果可作为当前兼容性参考，4.6.2 仍需在安装后复测。
 
 补充验证：`prototype/pixel_runtime_preview.tscn` 通过 Godot 的 `load(res://...png)` 读取导入后的 PNG 缓存，四个方向各 8 帧、最近邻过滤和 AnimatedSprite2D 播放均通过。自动化输出为 `PIXEL_RUNTIME_IMPORTED_SCENE_PASS actors=4 directions=4 frames=8 filter=nearest`。首次清理 `.godot` 缓存后，需要让 Godot 编辑器完成一次完整扫描；测试工具已加入自动等待逻辑。
+
+## A-9 像素资源完整闭环验收
+
+已增加统一入口 `tools/run_pixel_asset_end_to_end.ps1`。它依次校验运行时资源包、运行 Godot 资源/场景测试、运行旧原型回归，并将新的 `PixelRuntimeActor` 接入原有移动和截图管线。当前技术基线 `chibi_accurig_walk_test_v1` 的完整结果为：
+
+`PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1`
+
+这表示流程已打通，不表示当前角色细节已经达到最终美术质量。后续模型、动作或像素风格调整，均先通过此闭环，再进入细节修正。
