@@ -23,13 +23,14 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-dir", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
+    parser.add_argument("--alpha-threshold", type=int, default=128)
     return parser.parse_args()
 
 
-def style_frame(source: Image.Image) -> Image.Image:
+def style_frame(source: Image.Image, alpha_threshold: int) -> Image.Image:
     source = source.convert("RGBA")
     alpha = source.getchannel("A")
-    solid_alpha = alpha.point(lambda value: 255 if value > 0 else 0)
+    solid_alpha = alpha.point(lambda value: 255 if value >= alpha_threshold else 0)
     expanded = solid_alpha.filter(ImageFilter.MaxFilter(3))
     outline_alpha = ImageChops.subtract(expanded, solid_alpha)
 
@@ -43,7 +44,7 @@ def style_frame(source: Image.Image) -> Image.Image:
     for y in range(source.height):
         for x in range(source.width):
             red, green, blue, original_alpha = pixels[x, y]
-            if original_alpha == 0:
+            if solid_alpha.getpixel((x, y)) == 0:
                 continue
             luminance = (red * 299 + green * 587 + blue * 114) // 1000
             if luminance < 85:
@@ -54,7 +55,7 @@ def style_frame(source: Image.Image) -> Image.Image:
                 color = PALETTE["light"]
             else:
                 color = PALETTE["highlight"]
-            styled_pixels[x, y] = (*color[:3], original_alpha)
+            styled_pixels[x, y] = color
     output.alpha_composite(styled)
     return output
 
@@ -79,7 +80,7 @@ def main() -> int:
         gif_frames: list[Image.Image] = []
         for frame in range(manifest["frame_count"]):
             relative = Path(direction) / f"frame_{frame:02d}" / "pixel.png"
-            image = style_frame(Image.open(source_root / relative))
+            image = style_frame(Image.open(source_root / relative), options.alpha_threshold)
             target = output_root / relative
             target.parent.mkdir(parents=True, exist_ok=True)
             image.save(target)
@@ -113,6 +114,8 @@ def main() -> int:
             "palette": PALETTE,
             "levels": "shadow/base/light/highlight",
             "outline": "1px alpha silhouette dilation",
+            "alpha_threshold": options.alpha_threshold,
+            "edge_mode": "binary_opaque",
         },
         "sheets": sheets,
         "frames": styled_frames,
