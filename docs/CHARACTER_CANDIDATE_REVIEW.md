@@ -14,10 +14,10 @@
 
 ### 静态审计结果
 
-- 有 1 个骨架，绑定顶点组存在于多个身体部件中。
+- 有 7 个网格对象和 1 个骨架，绑定顶点组存在于多个身体部件中。
 - 没有内置 Action，因此不能直接证明它能提供可用的行走动画。
 - 模型按头、躯干、四肢、手、脚、脸等部件拆分，具备继续做运动测试的技术条件。
-- 头部网格为 373 个顶点、726 个面；审计工具将其识别为主要网格。
+- 头部网格为 373 个顶点、726 个面；完整审计器会把所有网格一起渲染，而不是只查看头部。
 - 审计没有修改源文件，也没有把它接入当前运行时或像素资源管线。
 
 审计清单：
@@ -27,6 +27,25 @@
 正面静态预览：
 
 `prototype/test_output/kiira_character_base_anchor_audit/candidate_static_y_negative.png`
+
+完整角色四向预览：
+
+`prototype/test_output/kiira_character_base_complete_audit/candidate_static_front.png`
+
+本轮使用的通用候选审计工具：
+
+`tools/blender/audit_character_candidate.py`
+
+例如：
+
+```powershell
+& E:\env\Blender\blender.exe --background --python tools\blender\audit_character_candidate.py -- `
+  --source path\to\candidate.blend `
+  --output prototype\test_output\candidate_audit
+```
+
+工具目前支持 `.blend`、`.fbx`、`.glb`、`.gltf` 和 `.obj`，会输出完整角色的
+`front/right/back/left` 静态图和 `candidate_audit.json`。它只做读取和渲染，不会保存或修改候选源文件。
 
 ### 外观判定
 
@@ -64,4 +83,3 @@
 2. 对新的候选执行 Blender 静态审计；不通过正面门槛的候选不进入绑定。
 3. 通过后再做骨骼标注、绑定和单部件运动测试。
 4. 绑定稳定后复用现有 `chibi_accurig_walk_test_v1` 的渲染、像素化和 Godot 验证管线。
-
