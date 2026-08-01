@@ -39,7 +39,8 @@
 - [x] 输出运行时 sprite sheet、GIF 和逐帧 PNG（测试包）；
 - [x] 在 Godot headless 中测试 PNG 文件读取、纹理创建和尺寸；
 - [x] 在 Godot headless 中动态创建 AnimatedSprite2D 并测试 8 帧播放容器；
-- [ ] 在 Godot 编辑器导入缓存就绪后测试实际场景播放。
+- [x] 在 Godot headless 场景中测试四个 AnimatedSprite2D、最近邻过滤和实际播放状态；
+- [ ] 在 Godot 编辑器导入缓存就绪后测试可视化场景播放。
 
 ### B. 3D 演员完善
 
@@ -170,5 +171,7 @@ blender.exe --background --python tools/blender/render_accurig_chibi_walk_test.p
 包内包含四方向逐帧 PNG、四方向 sprite sheet、GIF 预览和 `runtime_manifest.json`。manifest 记录了 64×64 画布、8 帧、最近邻过滤、透明背景和动作幅度 1.3。
 
 Godot 4.7 headless 测试已通过：直接读取 32 张 PNG、创建 `ImageTexture`，验证四张 sprite sheet 和所有逐帧纹理的尺寸，并动态创建 `AnimatedSprite2D`，确认 right 动画包含 8 帧且可以启动播放。测试脚本为 `prototype/tests/pixel_runtime_import_test.gd`，输出为 `PIXEL_RUNTIME_GODOT_FILE_PASS` 和 `PIXEL_RUNTIME_GODOT_ANIMATEDSPRITE_PASS`。
+
+另外，`prototype/tests/pixel_runtime_scene_test.tscn` 会实际创建四个 `AnimatedSprite2D`，分别播放四个方向，并强制检查 `TEXTURE_FILTER_NEAREST`。Godot headless 场景测试输出为 `PIXEL_RUNTIME_SCENE_PASS actors=4 directions=4 frames=8 filter=nearest`。
 
 当前仍未把“编辑器导入缓存”和 `AnimatedSprite2D` 场景播放标记为完成；项目 headless 导入时还会提示 Blender 路径未配置，因此实际 Godot 播放测试单独保留。

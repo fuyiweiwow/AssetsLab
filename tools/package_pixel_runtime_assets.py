@@ -62,6 +62,7 @@ def main() -> int:
         "godot_import_verified": False,
         "godot_runtime_file_load_verified": False,
         "godot_animatedsprite_verified": False,
+        "godot_scene_verified": False,
         "source_package": str(source),
     }
     (output / "runtime_manifest.json").write_text(
