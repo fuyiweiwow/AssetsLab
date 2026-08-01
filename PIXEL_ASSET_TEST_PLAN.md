@@ -144,7 +144,16 @@
 - `prototype/test_output/accurig_freestyle_walk_amp120_hard_pixels_64/`；
 - `prototype/test_output/accurig_freestyle_walk_amp130_hard_pixels_64/`。
 
-两组均通过 4 方向 × 8 帧验证。视觉判断：`1.2` 保留了普通 Walk 的节奏，同时比 1.0 更容易观察大腿运动；`1.3` 已更接近有力快走。当前把 `amplitude=1.2` 设为普通 Walk 的推荐测试值，`1.3` 作为夸张走路对照，`1.5` 以上留给慢跑/跑步候选测试。
+两组均通过 4 方向 × 8 帧验证。视觉判断：`1.2` 保留了普通 Walk 的节奏，同时比 1.0 更容易观察大腿运动；`1.3` 更有力但仍可作为当前角色的 Walk。根据当前观感，暂时把 `amplitude=1.3` 设为项目 Walk 基线，`1.2` 作为保守对照，`1.5` 以上留给慢跑/跑步候选测试。
+
+动作幅度通过渲染工具参数传入，不写死在动画资源中：
+
+```powershell
+blender.exe --background --python tools/blender/render_accurig_chibi_walk_test.py -- `
+  --fbx actor.fbx --output test_output/walk_amp130 --amplitude 1.3
+```
+
+之后可以把 `amplitude` 放入 Walk/Run 的动作配置 manifest，由批量导出工具读取。
 
 ## 后续跑步动作规划
 

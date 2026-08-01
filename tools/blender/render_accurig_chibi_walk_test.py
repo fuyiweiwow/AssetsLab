@@ -20,7 +20,12 @@ def cli_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--fbx", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
-    parser.add_argument("--amplitude", type=float, default=1.0)
+    parser.add_argument(
+        "--amplitude",
+        type=float,
+        default=1.0,
+        help="motion amplitude multiplier; current project Walk baseline is 1.3",
+    )
     parser.add_argument("--reverse-calf", action="store_true")
     parser.add_argument("--freestyle", action="store_true")
     return parser.parse_args(argv)
