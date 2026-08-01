@@ -1,7 +1,7 @@
 # 外部动漫风格资源评估
 
 日期：2026-08-02  
-状态：候选筛选完成，尚未下载或购买
+状态：Koban Wanko 已下载并完成第一轮静态审计
 
 ## 结论
 
@@ -74,6 +74,31 @@
 3. 若只做低成本渲染管线对照，再考虑 Pluto；
 4. 暂不采用“独立眼睛 + 独立耳朵”的混搭方式作为最终方案；
 5. 下载资源后，只在本地保存源文件，项目仓库只提交评估记录、转换脚本和最终渲染结果，不提交受限制的原始资源包。
+
+## Koban Wanko 实测结果
+
+下载文件：`E:/WorkProject/AssetsLab/prototype/assets/Koban Chibi Base Mesh.rar`  
+解压目录：`E:/WorkProject/AssetsLab/prototype/assets/external/koban_chibi_base_mesh/`
+
+压缩包内包含：
+
+- `Koban Chibi Base Mesh 1.0.blend`：完整编辑/绑定工作文件；
+- `Koban Chibi Base Mesh VRM export.blend`：干净的 VRM 导出工作文件；
+- `Koban Chibi Base Mesh VRM export.vrm`；
+- 两个绑定/导出辅助插件压缩包；
+- `READ ME.txt`。
+
+审计输出：`E:/WorkProject/AssetsLab/prototype/test_output/koban_chibi_base_mesh_audit_v1/`
+
+实测结果：
+
+- 编辑版包含 164 个网格对象，其中大量对象是绑定控制器/控制形状，另有 1 个骨骼；
+- VRM 导出工作文件包含 1 个角色网格和 1 个骨骼，角色网格约 5,662 顶点、10,980 多边形、6 个材质槽；
+- 角色包含眨眼、视线、嘴型和 `eye size` 等面部 Shape Keys；
+- 四方向静态渲染成功，证明 Blender 4.5 可以读取该资源；
+- 视觉判断：它更接近人形 Anime Chibi，眼睛和耳朵比我们的当前演员小而规整。这个判断来自实际渲染对照，因此它不适合直接替换当前演员的头部，但可以作为五官形状、材质和面部动画的参考来源。
+
+当前决定：保留该资源作为外部风格参考，不直接并入正式演员。下一步应从它的眼睛/耳朵设计建立“参考特征测试”，再在真实演员上按目标像素尺寸重建，而不是把完整 Koban 头部硬贴到当前演员上。
 
 ## 接入验收标准
 
