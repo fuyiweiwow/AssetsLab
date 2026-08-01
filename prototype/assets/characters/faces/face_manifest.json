@@ -17,6 +17,16 @@
   ],
   "frame_count_per_direction": 8,
   "variant_count": 8,
+  "front_overlay_limits": {
+    "face": [
+      20,
+      8
+    ],
+    "ear": [
+      32,
+      12
+    ]
+  },
   "selection": "stable appearance_seed selects one face variant",
   "gender_rules": {
     "male": {

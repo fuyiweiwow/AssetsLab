@@ -12,6 +12,8 @@ ROOT = Path(__file__).resolve().parents[1]
 VARIANT_COUNT = 8
 CELL_SIZE = 64
 PREVIEW_SIZE = 192
+FACE_MAX_SIZE = (20, 8)
+EAR_MAX_SIZE = (32, 12)
 
 
 def parse_args() -> argparse.Namespace:
@@ -42,6 +44,16 @@ def main() -> int:
         canvas = head.copy()
         ear = load_rgba(face_root / f"ear_{variant_id:02d}" / "frames" / "walk_row0_frame0.png")
         face = load_rgba(face_root / f"face_{variant_id:02d}" / "frames" / "walk_row0_frame0.png")
+        face_bbox = face.getchannel("A").getbbox()
+        ear_bbox = ear.getchannel("A").getbbox()
+        if face_bbox is None or ear_bbox is None:
+            raise SystemExit(f"FACE_VARIANT_PREVIEW_FAIL: empty overlay variant {variant_id}")
+        face_size = (face_bbox[2] - face_bbox[0], face_bbox[3] - face_bbox[1])
+        ear_size = (ear_bbox[2] - ear_bbox[0], ear_bbox[3] - ear_bbox[1])
+        if face_size[0] > FACE_MAX_SIZE[0] or face_size[1] > FACE_MAX_SIZE[1]:
+            raise SystemExit(f"FACE_VARIANT_PREVIEW_FAIL: face variant {variant_id} exceeds {FACE_MAX_SIZE}: {face_size}")
+        if ear_size[0] > EAR_MAX_SIZE[0] or ear_size[1] > EAR_MAX_SIZE[1]:
+            raise SystemExit(f"FACE_VARIANT_PREVIEW_FAIL: ear variant {variant_id} exceeds {EAR_MAX_SIZE}: {ear_size}")
         canvas.alpha_composite(ear)
         canvas.alpha_composite(face)
         frame_path = output / f"variant_{variant_id:02d}_front.png"
@@ -62,4 +74,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
