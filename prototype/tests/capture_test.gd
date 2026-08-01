@@ -7,6 +7,7 @@ const CAPTURE_DIR := "res://test_output/capture_frames"
 
 var prototype_instance: Node2D
 var player: CharacterBody2D
+var capture_dir := CAPTURE_DIR
 var frame_number := 0
 var failed := false
 
@@ -16,6 +17,9 @@ func _init() -> void:
 
 
 func _run() -> void:
+	var pixel_runtime_mode := "--pixel-runtime-actor" in OS.get_cmdline_user_args()
+	if pixel_runtime_mode:
+		capture_dir = "res://test_output/pixel_runtime_capture_frames"
 	_clear_capture_directory()
 	var packed_scene := load("res://main.tscn") as PackedScene
 	if packed_scene == null:
@@ -32,6 +36,9 @@ func _run() -> void:
 		_fail("Player node is missing")
 		return
 	player.global_position = START_POSITION
+	if pixel_runtime_mode:
+		await _run_pixel_runtime_capture()
+		return
 	var right_only := "--right-only" in OS.get_cmdline_user_args()
 	var vertical_only := "--vertical-only" in OS.get_cmdline_user_args()
 	print("CHARACTER_VARIANT=%s" % player.variant)
@@ -51,7 +58,7 @@ func _run() -> void:
 			return
 		print("CAPTURE_TEST_PASS")
 		print("CAPTURE_FRAME_COUNT=%d" % frame_number)
-		print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(CAPTURE_DIR))
+		print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(capture_dir))
 		quit(0)
 
 	# A right-only capture is used for single-direction asset validation so that
@@ -65,7 +72,7 @@ func _run() -> void:
 			return
 		print("CAPTURE_TEST_PASS")
 		print("CAPTURE_FRAME_COUNT=%d" % frame_number)
-		print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(CAPTURE_DIR))
+		print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(capture_dir))
 		quit(0)
 
 	# Four short segments make one repeatable W/A/S/D walk loop.
@@ -79,7 +86,39 @@ func _run() -> void:
 		return
 	print("CAPTURE_TEST_PASS")
 	print("CAPTURE_FRAME_COUNT=%d" % frame_number)
-	print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(CAPTURE_DIR))
+	print("CAPTURE_DIR=%s" % ProjectSettings.globalize_path(capture_dir))
+	quit(0)
+
+
+func _run_pixel_runtime_capture() -> void:
+	var runtime_player = prototype_instance.get_node_or_null("PixelRuntimePlayer")
+	if runtime_player == null:
+		_fail("PixelRuntimePlayer node is missing")
+		return
+	var directions := [
+		{"vector": Vector2.RIGHT, "label": "D"},
+		{"vector": Vector2.DOWN, "label": "S"},
+		{"vector": Vector2.LEFT, "label": "A"},
+		{"vector": Vector2.UP, "label": "W"},
+	]
+	for direction_data in directions:
+		var start_position: Vector2 = runtime_player.global_position
+		runtime_player.set_preview_direction(direction_data["vector"])
+		for _frame in range(8):
+			await process_frame
+			_capture_frame()
+		if failed:
+			return
+		var travelled: Vector2 = runtime_player.global_position - start_position
+		if travelled.dot(direction_data["vector"]) < 8.0:
+			_fail("runtime actor did not move in expected direction: %s" % direction_data["label"])
+			return
+		print("PIXEL_RUNTIME_DIRECTION_%s_PASS delta=%s" % [direction_data["label"], travelled])
+	runtime_player.set_preview_direction(Vector2.ZERO)
+	if failed:
+		return
+	print("PIXEL_RUNTIME_CAPTURE_PASS directions=4 frames=%d" % frame_number)
+	print("PIXEL_RUNTIME_CAPTURE_DIR=%s" % ProjectSettings.globalize_path(capture_dir))
 	quit(0)
 
 
@@ -114,11 +153,19 @@ func _release_all_keys() -> void:
 
 
 func _capture_frame() -> void:
-	var image := root.get_texture().get_image()
+	var image: Image
+	if "--pixel-runtime-actor" in OS.get_cmdline_user_args():
+		image = _build_pixel_runtime_capture()
+	else:
+		var viewport_texture := root.get_texture()
+		if viewport_texture == null:
+			_fail("viewport texture is unavailable; run this capture outside --headless")
+			return
+		image = viewport_texture.get_image()
 	if image == null or image.is_empty():
 		_fail("viewport returned an empty image")
 		return
-	var output_path := ProjectSettings.globalize_path("%s/frame_%04d.png" % [CAPTURE_DIR, frame_number])
+	var output_path := ProjectSettings.globalize_path("%s/frame_%04d.png" % [capture_dir, frame_number])
 	var result := image.save_png(output_path)
 	if result != OK:
 		_fail("could not save capture frame: %s" % output_path)
@@ -126,8 +173,30 @@ func _capture_frame() -> void:
 	frame_number += 1
 
 
+func _build_pixel_runtime_capture() -> Image:
+	var image := Image.create(960, 600, false, Image.FORMAT_RGBA8)
+	image.fill(Color("151a2c"))
+	var runtime_player = prototype_instance.get_node_or_null("PixelRuntimePlayer")
+	if runtime_player == null or runtime_player.runtime_actor == null:
+		return image
+	var actor: PixelRuntimeActor = runtime_player.runtime_actor
+	var animated_sprite := actor.animated_sprite
+	if animated_sprite == null or animated_sprite.sprite_frames == null:
+		return image
+	var frame_texture := animated_sprite.sprite_frames.get_frame_texture(animated_sprite.animation, animated_sprite.frame)
+	if frame_texture == null:
+		return image
+	var sprite_image := frame_texture.get_image()
+	var destination := Vector2i(
+		int(round(runtime_player.global_position.x - sprite_image.get_width() * 0.5)),
+		int(round(runtime_player.global_position.y - 26.0 - sprite_image.get_height() * 0.5))
+	)
+	image.blend_rect(sprite_image, Rect2i(Vector2i.ZERO, sprite_image.get_size()), destination)
+	return image
+
+
 func _clear_capture_directory() -> void:
-	var directory_path := ProjectSettings.globalize_path(CAPTURE_DIR)
+	var directory_path := ProjectSettings.globalize_path(capture_dir)
 	DirAccess.make_dir_recursive_absolute(directory_path)
 	var directory := DirAccess.open(directory_path)
 	if directory == null:
