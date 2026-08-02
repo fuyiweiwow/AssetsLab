@@ -1,0 +1,49 @@
+{
+  "schema": "assetslab_chibi_eye_calibration_v2",
+  "source_views": {
+    "front": "clean_actor_front",
+    "side": "clean_actor_side"
+  },
+  "views": {
+    "front": [
+      {
+        "key": "screen_left_eye_center",
+        "label": "画面左侧眼睛中心",
+        "color": "#55c7ff",
+        "x": 209,
+        "y": 189.328125
+      },
+      {
+        "key": "screen_right_eye_center",
+        "label": "画面右侧眼睛中心",
+        "color": "#ff79c6",
+        "x": 296,
+        "y": 189.328125
+      }
+    ],
+    "side": [
+      {
+        "key": "eye_center",
+        "label": "侧面眼球中心",
+        "color": "#55c7ff",
+        "x": 306,
+        "y": 185.328125
+      },
+      {
+        "key": "iris_forward",
+        "label": "虹彩朝向点",
+        "color": "#ffcf55",
+        "x": 326,
+        "y": 185.328125
+      },
+      {
+        "key": "face_front_surface",
+        "label": "头部前表面点",
+        "color": "#ff5d5d",
+        "x": 347,
+        "y": 185.328125
+      }
+    ]
+  },
+  "notes": "User-marked desired eye centers, side-view iris forward direction, and head front surface at eye height. Points are in 512x512 pixels."
+}
