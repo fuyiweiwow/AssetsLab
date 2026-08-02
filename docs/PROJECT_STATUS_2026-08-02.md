@@ -78,3 +78,5 @@ PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1 appearance=1
 该工具支持 `soft_anime_v1` 和 `compact_v1` 两组眼睛/耳朵比例，所有特征挂到 `CC_Base_Head`。两组四方向静态测试均已通过；它们仍是审查输出，不会覆盖当前正式像素运行时包。
 
 随后完成了 Koban 下载模型的独立演员测试：`Koban Chibi Base Mesh VRM export.blend` 成功完成四方向走路渲染和 64×64 像素化。Koban 的脸部风格和侧面结构明显优于当前素体，现升级为新的风格演员候选；下一步优先评估在 Koban 上补充目标服装、发型和道具。
+
+根据后续需求，方向已进一步明确为“只提取 Koban 的眼睛、眉毛和耳朵，作为原演员的基础五官风格”，具体拆分与随机化规则记录在 `docs/KOBAN_FEATURE_EXTRACTION_PLAN_2026-08-02.md`。Koban 整体身体不替换原演员。
