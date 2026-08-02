@@ -70,6 +70,23 @@ OBJ 分离后有 3 个松散部件：
 
 工具保存的是归一化坐标，不依赖图片分辨率；正面图用于左右位置，侧面图用于确认耳朵是否位于头部侧后方以及朝向。
 
+## 锚点校准接入 v1
+
+根据用户提供的 `chibi_ear_anchor_calibration_v1.json`，新增了：
+
+`tools/blender/attach_calibrated_cartoon_ear.py`
+
+该脚本将正面图的左右耳根位置、侧面图的右耳深度和正面耳根上下范围转换为演员世界坐标。由于本次方向点接近垂直，v1 不把它解释成大角度旋转，而是保持耳朵基本竖直并向两侧镜像，避免再次把耳廓翻到脸前。
+
+测试输出：
+
+- Blend：`prototype/assets/characters/generated/eye_package_imagegen_v4_brows_up_downloaded_ears_calibrated_v1.blend`
+- 正面：`prototype/test_output/downloaded_cartoon_ear_calibrated_v1/front.png`
+- 右侧：`prototype/test_output/downloaded_cartoon_ear_calibrated_v1/right.png`
+- 右侧近景：`prototype/test_output/downloaded_cartoon_ear_calibrated_v1/right_face_closeup.png`
+
+状态：`calibrated_attachment_review_pending`。当前版本已解决“耳廓落在面部”的主要定位错误，下一步只需观察耳朵大小、嵌入深度和耳窝朝向。
+
 ## 保留的失败实验
 
 旋转扫查和早期接入 Blend 保留在本地用于追溯，但不作为当前推荐版本。正式使用以 `v6` 为基准，避免把错误的整体旋转方向带入后续流程。
