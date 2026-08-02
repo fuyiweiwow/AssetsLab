@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>AssetsLab 耳朵锚点标注工具</title>
+  <style>
+    :root{color-scheme:dark;--bg:#141722;--panel:#22283a;--line:#4a5575;--text:#f4f5f8;--muted:#b9c0d3;--accent:#86d7ff}
+    *{box-sizing:border-box}body{margin:0;padding:16px;background:linear-gradient(145deg,#131621,#242b40);color:var(--text);font:15px/1.5 system-ui,sans-serif}main{max-width:1280px;margin:auto}h1{margin:0 0 6px;font-size:28px}h2{font-size:18px;margin:0 0 8px}.hint{color:var(--muted);margin:4px 0 12px}.toolbar,.panel{background:rgba(34,40,58,.95);border:1px solid var(--line);border-radius:14px;padding:12px;margin:12px 0}.row{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:7px 0}label{color:var(--muted)}button,input,textarea{font:inherit;color:var(--text);background:#303852;border:1px solid #5c6a8e;border-radius:8px;padding:8px 10px}button{cursor:pointer}button.active{border-color:var(--accent);color:var(--accent);box-shadow:0 0 0 1px var(--accent)}input[type=file]{max-width:260px}textarea{width:100%;min-height:100px;font:12px/1.35 ui-monospace,Consolas,monospace}.views{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.stage{background:#0c0e16;border:1px solid var(--line);border-radius:10px;padding:8px}.stage canvas{width:100%;display:block;touch-action:none;cursor:crosshair}.legend{display:flex;flex-wrap:wrap;gap:10px;color:var(--muted);font-size:13px}.legend span{white-space:nowrap}.swatch{display:inline-block;width:12px;height:12px;border-radius:50%;vertical-align:-1px;margin-right:4px}.status{color:#c8f4ce;min-height:1.5em}.small{font-size:13px;color:var(--muted)}@media(max-width:800px){.views{grid-template-columns:1fr}h1{font-size:23px}}
+  </style>
+</head>
+<body>
+<main>
+  <h1>耳朵锚点标注工具</h1>
+  <p class="hint">不需要 Blender。先分别加载演员的正面图和右侧面图，再拖动彩色锚点。建议先标耳根中心，再标耳根上下边界和耳朵朝向。</p>
+
+  <section class="toolbar">
+    <div class="row"><label>正面图：</label><input id="frontFile" type="file" accept="image/*"><label>侧面图：</label><input id="sideFile" type="file" accept="image/*"></div>
+    <div class="row"><label>当前耳朵：</label><button data-side="L">左耳</button><button data-side="R" class="active">右耳</button><span class="small">侧面图通常只需标右耳</span></div>
+    <div class="row"><label>当前锚点：</label><button data-anchor="root" class="active">耳根中心</button><button data-anchor="top">耳根上端</button><button data-anchor="bottom">耳根下端</button><button data-anchor="direction">朝向终点</button></div>
+    <div class="legend"><span><i class="swatch" style="background:#ff5a5f"></i>耳根中心</span><span><i class="swatch" style="background:#63e6a5"></i>上端</span><span><i class="swatch" style="background:#ffd166"></i>下端</span><span><i class="swatch" style="background:#70cfff"></i>朝向箭头</span></div>
+    <div class="row"><button id="reset">重置锚点</button><button id="import">导入 JSON</button><input id="jsonFile" type="file" accept="application/json" hidden><button id="download">下载标注 JSON</button><button id="copy">复制 JSON</button></div>
+    <div class="status" id="status">等待加载图片。</div>
+  </section>
+
+  <section class="views">
+    <div class="panel"><h2>正面图</h2><div class="stage"><canvas id="front" width="760" height="620"></canvas></div></div>
+    <div class="panel"><h2>右侧面图</h2><div class="stage"><canvas id="side" width="760" height="620"></canvas></div></div>
+  </section>
+
+  <section class="panel"><label for="notes">备注（可选）</label><textarea id="notes" placeholder="例如：耳根应略微向后，耳朵不要贴到脸颊前面。"></textarea><p class="small">下载后请把 JSON 文件直接发给我。不要修改字段名。</p></section>
+</main>
+<script>
+const anchorNames={root:'耳根中心',top:'耳根上端',bottom:'耳根下端',direction:'朝向终点'};
+const colors={root:'#ff5a5f',top:'#63e6a5',bottom:'#ffd166',direction:'#70cfff'};
+const defaults=()=>({
+  front:{L:{root:{x:.24,y:.46},top:{x:.24,y:.40},bottom:{x:.24,y:.52},direction:{x:.12,y:.46}},R:{root:{x:.76,y:.46},top:{x:.76,y:.40},bottom:{x:.76,y:.52},direction:{x:.88,y:.46}}},
+  side:{L:{root:{x:.52,y:.46},top:{x:.52,y:.40},bottom:{x:.52,y:.52},direction:{x:.68,y:.46}},R:{root:{x:.52,y:.46},top:{x:.52,y:.40},bottom:{x:.52,y:.52},direction:{x:.68,y:.46}}}
+});
+const state={schema:'assetslab_chibi_ear_anchor_calibration_v1',views:defaults(),images:{front:null,side:null},imageNames:{front:'',side:''},view:'front',side:'R',anchor:'root',drag:null};
+function canvasLayout(canvas,img){if(!img)return null;const pad=18,areaW=canvas.width-pad*2,areaH=canvas.height-pad*2,scale=Math.min(areaW/img.naturalWidth,areaH/img.naturalHeight);const w=img.naturalWidth*scale,h=img.naturalHeight*scale;return{x:(canvas.width-w)/2,y:(canvas.height-h)/2,w,h};}
+function px(layout,p){return{x:layout.x+p.x*layout.w,y:layout.y+p.y*layout.h};}
+function norm(layout,x,y){return{x:Math.max(0,Math.min(1,(x-layout.x)/layout.w)),y:Math.max(0,Math.min(1,(y-layout.y)/layout.h))};}
+function arrow(ctx,a,b,color){const ang=Math.atan2(b.y-a.y,b.x-a.x),len=12;ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=4;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.beginPath();ctx.moveTo(b.x,b.y);ctx.lineTo(b.x-len*Math.cos(ang-.45),b.y-len*Math.sin(ang-.45));ctx.lineTo(b.x-len*Math.cos(ang+.45),b.y-len*Math.sin(ang+.45));ctx.closePath();ctx.fill();}
+function draw(view){const canvas=document.getElementById(view),ctx=canvas.getContext('2d'),img=state.images[view];ctx.clearRect(0,0,canvas.width,canvas.height);ctx.fillStyle='#0c0e16';ctx.fillRect(0,0,canvas.width,canvas.height);if(!img){ctx.fillStyle='#8992a9';ctx.font='20px system-ui';ctx.textAlign='center';ctx.fillText('请先加载此视图图片',canvas.width/2,canvas.height/2);return}const layout=canvasLayout(canvas,img);ctx.drawImage(img,layout.x,layout.y,layout.w,layout.h);ctx.strokeStyle='#66718d';ctx.setLineDash([6,6]);ctx.strokeRect(layout.x,layout.y,layout.w,layout.h);ctx.setLineDash([]);for(const s of ['L','R']){const group=state.views[view][s],root=px(layout,group.root),dir=px(layout,group.direction);arrow(ctx,root,dir,colors.direction);for(const key of Object.keys(anchorNames)){const p=px(layout,group[key]);ctx.beginPath();ctx.fillStyle=colors[key];ctx.arc(p.x,p.y,key===state.anchor&&s===state.side?10:7,0,Math.PI*2);ctx.fill();ctx.strokeStyle='#10131d';ctx.lineWidth=2;ctx.stroke();}ctx.fillStyle='#fff';ctx.font='bold 14px system-ui';ctx.fillText((s==='L'?'左耳':'右耳')+' · '+anchorNames[state.anchor],root.x+12,root.y-12);}}
+function redraw(){draw('front');draw('side');const s=state.view+' / '+(state.side==='L'?'左耳':'右耳')+' / '+anchorNames[state.anchor];document.getElementById('status').textContent=(state.images.front?'正面图已加载':'请加载正面图')+'；'+(state.images.side?'侧面图已加载':'请加载侧面图')+'。当前：'+s;}
+function bindCanvas(view){const canvas=document.getElementById(view);canvas.addEventListener('pointerdown',e=>{const img=state.images[view];if(!img)return;const layout=canvasLayout(canvas,img),r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height,group=state.views[view][state.side];let nearest=null,best=36;for(const key of Object.keys(anchorNames)){const p=px(layout,group[key]),d=Math.hypot(p.x-x,p.y-y);if(d<best){best=d;nearest=key}}if(nearest){state.view=view;state.anchor=nearest;state.drag={view,key:nearest,pointer:e.pointerId};canvas.setPointerCapture(e.pointerId);redraw();}});canvas.addEventListener('pointermove',e=>{if(!state.drag||state.drag.view!==view)return;const img=state.images[view],layout=canvasLayout(canvas,img),r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;state.views[view][state.side][state.drag.key]=norm(layout,x,y);redraw();});canvas.addEventListener('pointerup',()=>state.drag=null);canvas.addEventListener('pointercancel',()=>state.drag=null);}
+function loadFile(input,view){input.addEventListener('change',()=>{const file=input.files[0];if(!file)return;const img=new Image();img.onload=()=>{state.images[view]=img;state.imageNames[view]=file.name;redraw();};img.src=URL.createObjectURL(file);});}
+function payload(){return{schema:state.schema,created_at:new Date().toISOString(),source_images:state.imageNames,views:state.views,notes:document.getElementById('notes').value};}
+document.querySelectorAll('[data-side]').forEach(b=>b.onclick=()=>{state.side=b.dataset.side;document.querySelectorAll('[data-side]').forEach(x=>x.classList.toggle('active',x===b));redraw();});
+document.querySelectorAll('[data-anchor]').forEach(b=>b.onclick=()=>{state.anchor=b.dataset.anchor;document.querySelectorAll('[data-anchor]').forEach(x=>x.classList.toggle('active',x===b));redraw();});
+loadFile(document.getElementById('frontFile'),'front');
+loadFile(document.getElementById('sideFile'),'side');
+document.getElementById('reset').onclick=()=>{state.views=defaults();redraw();};
+document.getElementById('download').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload(),null,2)],{type:'application/json'}));a.download='chibi_ear_anchor_calibration.json';a.click();};
+document.getElementById('copy').onclick=async()=>{await navigator.clipboard.writeText(JSON.stringify(payload(),null,2));document.getElementById('status').textContent='JSON 已复制到剪贴板。';};
+document.getElementById('import').onclick=()=>document.getElementById('jsonFile').click();
+document.getElementById('jsonFile').addEventListener('change',()=>{const file=document.getElementById('jsonFile').files[0];if(!file)return;const reader=new FileReader();reader.onload=()=>{try{const p=JSON.parse(reader.result);if(p.schema!==state.schema)throw Error('schema 不匹配');state.views=p.views||defaults();document.getElementById('notes').value=p.notes||'';redraw();}catch(e){document.getElementById('status').textContent='导入失败：'+e.message;}};reader.readAsText(file);});
+bindCanvas('front');bindCanvas('side');redraw();
+</script>
+</body>
+</html>
