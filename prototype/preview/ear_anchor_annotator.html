@@ -12,14 +12,14 @@
 <body>
 <main>
   <h1>耳朵锚点标注工具</h1>
-  <p class="hint">不需要 Blender。先分别加载演员的正面图和右侧面图，再拖动彩色锚点。建议先标耳根中心，再标耳根上下边界和耳朵朝向。</p>
+  <p class="hint">不需要 Blender。先分别加载演员的正面图和右侧面图，再拖动彩色锚点。“耳根连接点”不是耳朵几何形状的中心，而是耳朵与头部接触的连接位置；上端和下端用于确定连接面的高度，朝向终点用于表示耳朵向外、向上或向后的方向。</p>
 
   <section class="toolbar">
     <div class="row"><label>正面图：</label><input id="frontFile" type="file" accept="image/*"><label>侧面图：</label><input id="sideFile" type="file" accept="image/*"></div>
     <div class="row"><label>内置参考：</label><button id="useBuiltin">加载当前演员正面和右侧面</button><span class="small">也可以继续使用上面的文件选择器</span></div>
     <div class="row"><label>当前耳朵：</label><button data-side="L">左耳</button><button data-side="R" class="active">右耳</button><span class="small">侧面图通常只需标右耳</span></div>
-    <div class="row"><label>当前锚点：</label><button data-anchor="root" class="active">耳根中心</button><button data-anchor="top">耳根上端</button><button data-anchor="bottom">耳根下端</button><button data-anchor="direction">朝向终点</button></div>
-    <div class="legend"><span><i class="swatch" style="background:#ff5a5f"></i>耳根中心</span><span><i class="swatch" style="background:#63e6a5"></i>上端</span><span><i class="swatch" style="background:#ffd166"></i>下端</span><span><i class="swatch" style="background:#70cfff"></i>朝向箭头</span></div>
+    <div class="row"><label>当前锚点：</label><button data-anchor="root" class="active">耳根连接点</button><button data-anchor="top">耳根上端</button><button data-anchor="bottom">耳根下端</button><button data-anchor="direction">朝向终点</button></div>
+    <div class="legend"><span><i class="swatch" style="background:#ff5a5f"></i>耳根连接点</span><span><i class="swatch" style="background:#63e6a5"></i>上端</span><span><i class="swatch" style="background:#ffd166"></i>下端</span><span><i class="swatch" style="background:#70cfff"></i>朝向箭头</span></div>
     <div class="row"><button id="reset">重置锚点</button><button id="import">导入 JSON</button><input id="jsonFile" type="file" accept="application/json" hidden><button id="download">下载标注 JSON</button><button id="copy">复制 JSON</button></div>
     <div class="status" id="status">等待加载图片。</div>
   </section>
@@ -32,7 +32,7 @@
   <section class="panel"><label for="notes">备注（可选）</label><textarea id="notes" placeholder="例如：耳根应略微向后，耳朵不要贴到脸颊前面。"></textarea><p class="small">下载后请把 JSON 文件直接发给我。不要修改字段名。</p></section>
 </main>
 <script>
-const anchorNames={root:'耳根中心',top:'耳根上端',bottom:'耳根下端',direction:'朝向终点'};
+const anchorNames={root:'耳根连接点',top:'耳根上端',bottom:'耳根下端',direction:'朝向终点'};
 const colors={root:'#ff5a5f',top:'#63e6a5',bottom:'#ffd166',direction:'#70cfff'};
 const defaults=()=>({
   front:{L:{root:{x:.24,y:.46},top:{x:.24,y:.40},bottom:{x:.24,y:.52},direction:{x:.12,y:.46}},R:{root:{x:.76,y:.46},top:{x:.76,y:.40},bottom:{x:.76,y:.52},direction:{x:.88,y:.46}}},
