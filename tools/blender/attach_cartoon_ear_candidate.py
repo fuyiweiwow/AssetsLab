@@ -83,13 +83,13 @@ def parent_to_head(obj: bpy.types.Object, armature: bpy.types.Object) -> None:
     obj.matrix_world = world
 
 
-def duplicate_ear(source: bpy.types.Object, side: str, x: float, y: float, z: float, scale: float, rotation_y: float, rotation_z: float, mirror_x: bool, armature: bpy.types.Object, material: bpy.types.Material) -> bpy.types.Object:
+def duplicate_ear(source: bpy.types.Object, side: str, x: float, y: float, z: float, scale: float, rotation_y: float, rotation_z: float, mirror_x: bool, armature: bpy.types.Object, material: bpy.types.Material, rotation_x: float = 0.0) -> bpy.types.Object:
     obj = source.copy()
     obj.data = source.data.copy()
     bpy.context.scene.collection.objects.link(obj)
     obj.name = f"CartoonEar_{side}_Downloaded"
     obj.location = (x, y, z)
-    obj.rotation_euler = (0.0, math.radians(rotation_y), math.radians(rotation_z))
+    obj.rotation_euler = (math.radians(rotation_x), math.radians(rotation_y), math.radians(rotation_z))
     obj.scale = (-scale if mirror_x else scale, scale, scale)
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)

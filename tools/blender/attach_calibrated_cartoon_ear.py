@@ -36,6 +36,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--save-blend", required=True, type=Path)
     parser.add_argument("--part", default="CartoonEarPart_01")
+    parser.add_argument("--rotation-x", type=float, default=90.0, help="Rotation in the right-side view plane")
+    parser.add_argument("--outward-offset", type=float, default=0.0, help="Additional outward offset from the annotated root")
     return parser.parse_args(argv)
 
 
@@ -82,8 +84,8 @@ def main() -> int:
     scale = max(0.05, ((height_l + height_r) * 0.5) / source_height)
     half_width = source_width * scale * 0.5
     skin = make_skin_material()
-    left = duplicate_ear(source, "L", root_l.x - half_width, root_l.y, root_l.z, scale, 0.0, 0.0, True, armature, skin)
-    right = duplicate_ear(source, "R", root_r.x + half_width, root_r.y, root_r.z, scale, 0.0, 0.0, False, armature, skin)
+    left = duplicate_ear(source, "L", root_l.x - half_width - options.outward_offset, root_l.y, root_l.z, scale, 0.0, 0.0, True, armature, skin, options.rotation_x)
+    right = duplicate_ear(source, "R", root_r.x + half_width + options.outward_offset, root_r.y, root_r.z, scale, 0.0, 0.0, False, armature, skin, options.rotation_x)
     bpy.data.objects.remove(source, do_unlink=True)
 
     configure_render(bpy.context.scene)
@@ -116,6 +118,8 @@ def main() -> int:
             "ortho_scale": ortho_scale,
             "scale": scale,
             "half_width_offset": half_width,
+            "rotation_x_degrees": options.rotation_x,
+            "outward_offset": options.outward_offset,
         },
         "renders": {name: str(output / f"{name}.png") for name in specs},
         "status": "calibrated_attachment_review_pending",
