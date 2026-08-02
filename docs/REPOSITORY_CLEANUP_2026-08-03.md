@@ -1,6 +1,6 @@
 # 仓库资源精简记录
 
-日期：2026-08-03  
+日期：2026-08-03
 分支：`pixel_asset_test`
 
 ## 保留资源
@@ -18,3 +18,5 @@
 删除 `prototype/assets/characters/generated/` 中除上述保留项以外的旧眼睛、Miku 眼窝、程序眼睛、身体重建、骨骼行走、失败耳朵接入和旧像素测试资源，共 436 个已跟踪文件，约 717 MB；同时删除未跟踪的失败 Blend 和 Godot `.import` 缓存。
 
 耳朵源只保留压缩包，删除重复解压目录。删除操作仅针对项目工作树中的旧资源，未改写 Git 历史。
+
+另外删除 `prototype/assets/characters/` 下旧的 female、male、faces、rebuild、runtime、turnaround 和旧 chibi 变体目录，仅保留 `chibi/`、`base_features_v1/` 与当前核心资源目录 `generated/`。
