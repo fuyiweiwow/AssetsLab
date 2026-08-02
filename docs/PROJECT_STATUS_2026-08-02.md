@@ -65,3 +65,14 @@ PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1 appearance=1
 2. 将特征挂到演员的 `CC_Base_Head`，做正面、侧面、背面静态验收；
 3. 通过后接入四方向 × 8 帧渲染和像素化管线；
 4. 最后再扩展随机五官参数和跑步速度参数。
+
+## 2026-08-02 新增进度
+
+已在真实演员上建立 2.5D 五官静态测试工具：
+
+- `tools/run_accurig_2p5d_feature_test.ps1`
+- `tools/blender/render_accurig_2p5d_feature_test.py`
+- `tools/validate_accurig_2p5d_feature_test.py`
+- `docs/2P5D_FACE_FEATURE_TEST_2026-08-02.md`
+
+该工具支持 `soft_anime_v1` 和 `compact_v1` 两组眼睛/耳朵比例，所有特征挂到 `CC_Base_Head`。两组四方向静态测试均已通过；它们仍是审查输出，不会覆盖当前正式像素运行时包。
