@@ -64,7 +64,7 @@ OBJ 分离后有 3 个松散部件：
 使用方法：
 
 1. 打开 `http://127.0.0.1:8766/ear_anchor_annotator.html`，或直接双击该 HTML 文件。
-2. 加载演员正面图和右侧面图。
+2. 可以直接点击“加载当前演员正面和右侧面”，也可以手动加载 `prototype/preview/assets/ear_anchor_reference/front.png` 和 `right.png`。
 3. 拖动耳根中心、耳根上端、耳根下端和朝向终点四类锚点。
 4. 点击“下载标注 JSON”，将 `chibi_ear_anchor_calibration.json` 发回项目。
 

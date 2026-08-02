@@ -16,6 +16,7 @@
 
   <section class="toolbar">
     <div class="row"><label>正面图：</label><input id="frontFile" type="file" accept="image/*"><label>侧面图：</label><input id="sideFile" type="file" accept="image/*"></div>
+    <div class="row"><label>内置参考：</label><button id="useBuiltin">加载当前演员正面和右侧面</button><span class="small">也可以继续使用上面的文件选择器</span></div>
     <div class="row"><label>当前耳朵：</label><button data-side="L">左耳</button><button data-side="R" class="active">右耳</button><span class="small">侧面图通常只需标右耳</span></div>
     <div class="row"><label>当前锚点：</label><button data-anchor="root" class="active">耳根中心</button><button data-anchor="top">耳根上端</button><button data-anchor="bottom">耳根下端</button><button data-anchor="direction">朝向终点</button></div>
     <div class="legend"><span><i class="swatch" style="background:#ff5a5f"></i>耳根中心</span><span><i class="swatch" style="background:#63e6a5"></i>上端</span><span><i class="swatch" style="background:#ffd166"></i>下端</span><span><i class="swatch" style="background:#70cfff"></i>朝向箭头</span></div>
@@ -46,11 +47,13 @@ function draw(view){const canvas=document.getElementById(view),ctx=canvas.getCon
 function redraw(){draw('front');draw('side');const s=state.view+' / '+(state.side==='L'?'左耳':'右耳')+' / '+anchorNames[state.anchor];document.getElementById('status').textContent=(state.images.front?'正面图已加载':'请加载正面图')+'；'+(state.images.side?'侧面图已加载':'请加载侧面图')+'。当前：'+s;}
 function bindCanvas(view){const canvas=document.getElementById(view);canvas.addEventListener('pointerdown',e=>{const img=state.images[view];if(!img)return;const layout=canvasLayout(canvas,img),r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height,group=state.views[view][state.side];let nearest=null,best=36;for(const key of Object.keys(anchorNames)){const p=px(layout,group[key]),d=Math.hypot(p.x-x,p.y-y);if(d<best){best=d;nearest=key}}if(nearest){state.view=view;state.anchor=nearest;state.drag={view,key:nearest,pointer:e.pointerId};canvas.setPointerCapture(e.pointerId);redraw();}});canvas.addEventListener('pointermove',e=>{if(!state.drag||state.drag.view!==view)return;const img=state.images[view],layout=canvasLayout(canvas,img),r=canvas.getBoundingClientRect(),x=(e.clientX-r.left)*canvas.width/r.width,y=(e.clientY-r.top)*canvas.height/r.height;state.views[view][state.side][state.drag.key]=norm(layout,x,y);redraw();});canvas.addEventListener('pointerup',()=>state.drag=null);canvas.addEventListener('pointercancel',()=>state.drag=null);}
 function loadFile(input,view){input.addEventListener('change',()=>{const file=input.files[0];if(!file)return;const img=new Image();img.onload=()=>{state.images[view]=img;state.imageNames[view]=file.name;redraw();};img.src=URL.createObjectURL(file);});}
+function loadUrl(url,view){const img=new Image();img.onload=()=>{state.images[view]=img;state.imageNames[view]=url.split('/').pop();redraw();};img.onerror=()=>{document.getElementById('status').textContent='内置参考图加载失败，请使用文件选择器。';};img.src=url;}
 function payload(){return{schema:state.schema,created_at:new Date().toISOString(),source_images:state.imageNames,views:state.views,notes:document.getElementById('notes').value};}
 document.querySelectorAll('[data-side]').forEach(b=>b.onclick=()=>{state.side=b.dataset.side;document.querySelectorAll('[data-side]').forEach(x=>x.classList.toggle('active',x===b));redraw();});
 document.querySelectorAll('[data-anchor]').forEach(b=>b.onclick=()=>{state.anchor=b.dataset.anchor;document.querySelectorAll('[data-anchor]').forEach(x=>x.classList.toggle('active',x===b));redraw();});
 loadFile(document.getElementById('frontFile'),'front');
 loadFile(document.getElementById('sideFile'),'side');
+document.getElementById('useBuiltin').onclick=()=>{loadUrl('assets/ear_anchor_reference/front.png','front');loadUrl('assets/ear_anchor_reference/right.png','side');};
 document.getElementById('reset').onclick=()=>{state.views=defaults();redraw();};
 document.getElementById('download').onclick=()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(payload(),null,2)],{type:'application/json'}));a.download='chibi_ear_anchor_calibration.json';a.click();};
 document.getElementById('copy').onclick=async()=>{await navigator.clipboard.writeText(JSON.stringify(payload(),null,2));document.getElementById('status').textContent='JSON 已复制到剪贴板。';};
