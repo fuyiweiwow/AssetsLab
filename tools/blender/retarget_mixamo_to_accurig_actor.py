@@ -1,9 +1,12 @@
 """Retarget a Mixamo-style FBX action to the prepared AccuRIG actor.
 
-The source skeleton is imported temporarily. Copy Rotation constraints are
-baked frame-by-frame onto the target actor, so the final blend contains only
-the actor, its existing head features, and a regular action on ``Armature``.
-The standard ``mixamorig:`` prefix is optional.
+The source skeleton is imported temporarily. The animation is sampled as a
+rotation delta relative to the first frame and baked onto the actor's rest
+pose. This is more reliable than copying absolute Mixamo pose rotations:
+Mixamo and AccuRIG use different rest-bone axes, while the frame-to-frame
+delta is the part that should be preserved for this actor. The final blend
+contains only the actor, its existing head features, and a regular action on
+``Armature``. The standard ``mixamorig:`` prefix is optional.
 """
 from __future__ import annotations
 
@@ -94,27 +97,29 @@ def main() -> int:
     if len(mapping) < 10:
         raise RuntimeError(f"only {len(mapping)} Mixamo bones mapped; expected at least 10")
 
-    target.animation_data_clear()
-    for target_name, source_name in mapping.items():
-        target_bone = target.pose.bones[target_name]
-        target_bone.rotation_mode = "QUATERNION"
-        constraint = target_bone.constraints.new("COPY_ROTATION")
-        constraint.name = "MixamoRetargetRotation"
-        constraint.target = source
-        constraint.subtarget = source_name
-        constraint.target_space = "POSE"
-        constraint.owner_space = "POSE"
-        constraint.mix_mode = "REPLACE"
-    hip_constraint = target.pose.bones["CC_Base_Hip"].constraints.new("COPY_LOCATION")
-    hip_constraint.name = "MixamoRetargetHipLocation"
-    hip_constraint.target = source
-    hip_constraint.subtarget = source_bones.get("Hips", "")
-    hip_constraint.target_space = "POSE"
-    hip_constraint.owner_space = "POSE"
-
     start, end = (int(source_action.frame_range[0]), int(source_action.frame_range[1]))
     scene = bpy.context.scene
     scene.frame_start, scene.frame_end = start, end
+
+    # Keep the actor's existing rest pose and use source frame deltas. Absolute
+    # Mixamo rotations are not directly compatible with the AccuRIG rest axes.
+    target.animation_data_clear()
+    for target_name in mapping:
+        target.pose.bones[target_name].rotation_mode = "QUATERNION"
+    bpy.context.view_layer.update()
+    scene.frame_set(start)
+    bpy.context.view_layer.update()
+    target_base_rotation = {
+        target_name: target.pose.bones[target_name].rotation_quaternion.copy()
+        for target_name in mapping
+    }
+    source_base_rotation = {
+        target_name: source.pose.bones[source_name].rotation_quaternion.copy()
+        for target_name, source_name in mapping.items()
+    }
+    target_hip = target.pose.bones["CC_Base_Hip"]
+    target_base_location = target_hip.location.copy()
+
     target_action = bpy.data.actions.new(f"Mixamo_{source_action.name}_on_{target.name}")
     target_action.use_fake_user = True
     target.animation_data_create()
@@ -124,13 +129,15 @@ def main() -> int:
         bpy.context.view_layer.update()
         for target_name in mapping:
             bone = target.pose.bones[target_name]
+            source_bone = source.pose.bones[mapping[target_name]]
+            delta = source_base_rotation[target_name].inverted() @ source_bone.rotation_quaternion
+            bone.rotation_quaternion = target_base_rotation[target_name] @ delta
             bone.keyframe_insert("rotation_quaternion", frame=frame, group=target_name)
-        target.pose.bones["CC_Base_Hip"].keyframe_insert("location", frame=frame, group="CC_Base_Hip")
-
-    for bone in target.pose.bones:
-        for constraint in list(bone.constraints):
-            if constraint.name.startswith("MixamoRetarget"):
-                bone.constraints.remove(constraint)
+        # The downloaded clips are intended as in-place game cycles. Keep the
+        # actor root stationary; locomotion speed will be controlled by the
+        # runtime/pixel-asset tool rather than baked into the sprite cycle.
+        target_hip.location = target_base_location
+        target_hip.keyframe_insert("location", frame=frame, group="CC_Base_Hip")
 
     imported_objects = [obj for obj in bpy.data.objects if obj.name not in before_objects]
     for obj in imported_objects:
@@ -145,7 +152,7 @@ def main() -> int:
         "target_action": target_action.name,
         "frame_range": [start, end],
         "mapped_bones": mapping,
-        "retarget_mode": "pose_space_copy_rotation_baked",
+        "retarget_mode": "rest_relative_rotation_delta_baked_in_place",
         "features": "existing eye, brow and ear head attachments preserved",
     }
     output_path.with_suffix(".json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")

@@ -68,3 +68,49 @@ python tools\process_accurig_walk_pixels.py `
   --output-dir prototype\test_output\chibi_eyes_ears_catwalk_pixels_v1 `
   --size 64 --frame-count 8 --fps 8
 ```
+
+## 2026-08-03 Mixamo Walk/Run 实测记录
+
+### 下载文件
+
+- `E:\Env\Assets\Mixamo_Standard_Walk.fbx`：FBX Binary、Without Skin、30 FPS、Keyframe Reduction=none、In Place。
+- `E:\Env\Assets\Mixamo_Run.fbx`：同样设置。
+- Walk 审计结果：65 根源骨骼，动作帧 `1-71`，520 条曲线。
+- Run 审计结果：65 根源骨骼，动作帧 `1-43`，520 条曲线。
+
+### 重定向结果
+
+使用 `tools/blender/retarget_mixamo_to_accurig_actor.py`，两个动作均成功映射 22 根 `mixamorig:* -> CC_Base_*` 骨骼。
+
+初版使用绝对 Copy Rotation 时，目标演员在渲染中保持接近 T-Pose。原因是 Mixamo 与 AccuRIG 的骨骼休息姿态轴不同，直接复制绝对四元数并不能得到正确的目标姿态。
+
+当前版本改为：
+
+1. 读取 Mixamo 首帧与当前帧的旋转差值。
+2. 将旋转差值叠加到演员自身的休息姿态。
+3. 逐帧写入演员动作，并保持根骨骼原地不平移，速度交给后续运行时/像素资源工具控制。
+
+### 当前测试输出
+
+- Walk 绑定：`prototype/test_output/chibi_eyes_ears_mixamo_walk_bound_v2.blend`
+- Walk 四向渲染：`prototype/test_output/chibi_eyes_ears_mixamo_walk_fourway_v2/`
+- Walk 像素表：`prototype/test_output/chibi_eyes_ears_mixamo_walk_pixels_v2/`
+- Run 绑定：`prototype/test_output/chibi_eyes_ears_mixamo_run_bound_v2.blend`
+- Run 四向渲染：`prototype/test_output/chibi_eyes_ears_mixamo_run_fourway_v2/`
+- Run 像素表：`prototype/test_output/chibi_eyes_ears_mixamo_run_pixels_v2/`
+
+两组动作均已看到腿部、膝盖、手臂和躯干的逐帧变化；眼睛、眉毛、耳朵继续跟随 `CC_Base_Head`，没有重新标定。
+
+### 可复现命令
+
+```powershell
+& E:\Env\Blender\blender.exe --background --python tools\blender\retarget_mixamo_to_accurig_actor.py -- `
+  --actor prototype\assets\characters\generated\chibi_eyes_ears_pixel_walk_source_v1.blend `
+  --mixamo-fbx E:\Env\Assets\Mixamo_Standard_Walk.fbx `
+  --output prototype\test_output\chibi_eyes_ears_mixamo_walk_bound_v2.blend
+
+& E:\Env\Blender\blender.exe --background --python tools\blender\retarget_mixamo_to_accurig_actor.py -- `
+  --actor prototype\assets\characters\generated\chibi_eyes_ears_pixel_walk_source_v1.blend `
+  --mixamo-fbx E:\Env\Assets\Mixamo_Run.fbx `
+  --output prototype\test_output\chibi_eyes_ears_mixamo_run_bound_v2.blend
+```
