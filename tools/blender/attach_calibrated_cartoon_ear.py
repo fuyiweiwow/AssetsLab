@@ -9,7 +9,7 @@ import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 TOOLS_DIR = Path(__file__).resolve().parent
 if str(TOOLS_DIR) not in sys.path:
@@ -36,8 +36,12 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--save-blend", required=True, type=Path)
     parser.add_argument("--part", default="CartoonEarPart_01")
-    parser.add_argument("--rotation-x", type=float, default=90.0, help="Rotation in the right-side view plane")
-    parser.add_argument("--outward-offset", type=float, default=0.0, help="Additional outward offset from the annotated root")
+    parser.add_argument("--rotation-x", type=float, default=90.0, help="Base rotation that makes the source ear upright")
+    parser.add_argument("--size-multiplier", type=float, default=1.0, help="Uniform multiplier applied to the calibration-derived ear size")
+    parser.add_argument("--root-inset", type=float, default=0.0, help="Positive distance to push the narrow root into the head")
+    parser.add_argument("--back-tilt-degrees", type=float, default=0.0, help="Positive amount to tuck each pinna toward the back of the head")
+    parser.add_argument("--top-back-tilt-degrees", type=float, default=0.0, help="Positive amount to move the upper pinna back and the lower stalk forward")
+    parser.add_argument("--outward-offset", type=float, default=0.0, help="Legacy: positive value pulls the root outward")
     return parser.parse_args(argv)
 
 
@@ -49,6 +53,35 @@ def image_point_to_world(point: dict, center: Vector, ortho_scale: float, side: 
     if side == "front":
         return Vector((world_x, center.y, world_z))
     return Vector((center.x, world_x, world_z))
+
+
+def narrow_root_center(source: bpy.types.Object) -> Vector:
+    """Return the centroid of the source ear's narrow attachment end.
+
+    The downloaded part has its attachment at the local +X extreme.  Using
+    that actual geometry (instead of the bounding-box centre) makes the
+    calibration annotation refer to the contact point on the ear.
+    """
+    vertices = [vertex.co.copy() for vertex in source.data.vertices]
+    max_x = max(point.x for point in vertices)
+    min_x = min(point.x for point in vertices)
+    band = (max_x - min_x) * 0.05
+    root_vertices = [point for point in vertices if point.x >= max_x - band]
+    return sum(root_vertices, Vector()) / len(root_vertices)
+
+
+def transformed_root(local_root: Vector, scale: float, mirror_x: bool, rotation_x: float) -> Vector:
+    point = local_root.copy()
+    point.x *= -1.0 if mirror_x else 1.0
+    point *= scale
+    return Matrix.Rotation(math.radians(rotation_x), 3, "X") @ point
+
+
+def rotate_about_world_point(obj: bpy.types.Object, point: Vector, degrees: float) -> None:
+    if not degrees:
+        return
+    rotation = Matrix.Rotation(math.radians(degrees), 4, "Z")
+    obj.matrix_world = Matrix.Translation(point) @ rotation @ Matrix.Translation(-point) @ obj.matrix_world
 
 
 def main() -> int:
@@ -79,13 +112,34 @@ def main() -> int:
 
     source = append_source_part(options.source_blend, options.part)
     center_mesh(source)
-    source_width = source.dimensions.x
+    root_local = narrow_root_center(source)
     source_height = source.dimensions.z
-    scale = max(0.05, ((height_l + height_r) * 0.5) / source_height)
-    half_width = source_width * scale * 0.5
+    scale = max(0.05, ((height_l + height_r) * 0.5) / source_height * options.size_multiplier)
     skin = make_skin_material()
-    left = duplicate_ear(source, "L", root_l.x - half_width - options.outward_offset, root_l.y, root_l.z, scale, 0.0, 0.0, True, armature, skin, options.rotation_x)
-    right = duplicate_ear(source, "R", root_r.x + half_width + options.outward_offset, root_r.y, root_r.z, scale, 0.0, 0.0, False, armature, skin, options.rotation_x)
+    # The source ear's narrow attachment end points along its local +X axis.
+    # Keep that end toward the head: right ears are mirrored and left ears use
+    # the original orientation. The previous polarity attached the pinna to
+    # the face and left the root pointing outward.
+    # The legacy outward option is retained for old command lines.  Positive
+    # root_inset moves both roots toward the head centre.
+    effective_inset = options.root_inset - options.outward_offset
+    left_contact = root_l + Vector((effective_inset, 0.0, 0.0))
+    right_contact = root_r - Vector((effective_inset, 0.0, 0.0))
+    left_location = left_contact - transformed_root(root_local, scale, False, options.rotation_x)
+    right_location = right_contact - transformed_root(root_local, scale, True, options.rotation_x)
+    left = duplicate_ear(source, "L", *left_location, scale, 0.0, 0.0, False, armature, skin, options.rotation_x)
+    right = duplicate_ear(source, "R", *right_location, scale, 0.0, 0.0, True, armature, skin, options.rotation_x)
+    # Pivot at the actual contact point so back-tilt cannot pull the connector
+    # away from the face.  In this actor's coordinate frame, these signs move
+    # both outer pinnae toward the back of the head rather than the face.
+    rotate_about_world_point(left, left_contact, -options.back_tilt_degrees)
+    rotate_about_world_point(right, right_contact, options.back_tilt_degrees)
+    # A negative X rotation moves the upper portion toward +Y (back) while
+    # bringing the lower attachment/stalk toward -Y (front).
+    for ear, contact in ((left, left_contact), (right, right_contact)):
+        if options.top_back_tilt_degrees:
+            rotation = Matrix.Rotation(math.radians(-options.top_back_tilt_degrees), 4, "X")
+            ear.matrix_world = Matrix.Translation(contact) @ rotation @ Matrix.Translation(-contact) @ ear.matrix_world
     bpy.data.objects.remove(source, do_unlink=True)
 
     configure_render(bpy.context.scene)
@@ -93,7 +147,7 @@ def main() -> int:
     specs = {
         "front": ((0.0, -12.0, center.z), ortho_scale),
         "right": ((12.0, 0.0, center.z), ortho_scale),
-        "front_face_closeup": ((0.0, -12.0, (root_l.z + root_r.z) * 0.5), max(1.35, (high.z - low.z) * 0.38)),
+        "front_face_closeup": ((0.0, -12.0, (root_l.z + root_r.z) * 0.5), max(1.85, (high.z - low.z) * 0.52)),
         "right_face_closeup": ((12.0, 0.0, depth_r.z), max(1.35, (high.z - low.z) * 0.38)),
     }
     for name, (location, camera_scale) in specs.items():
@@ -117,8 +171,12 @@ def main() -> int:
             "right_side_depth": depth_r.y,
             "ortho_scale": ortho_scale,
             "scale": scale,
-            "half_width_offset": half_width,
+            "size_multiplier": options.size_multiplier,
+            "root_local": list(root_local),
             "rotation_x_degrees": options.rotation_x,
+            "root_inset": options.root_inset,
+            "back_tilt_degrees": options.back_tilt_degrees,
+            "top_back_tilt_degrees": options.top_back_tilt_degrees,
             "outward_offset": options.outward_offset,
         },
         "renders": {name: str(output / f"{name}.png") for name in specs},

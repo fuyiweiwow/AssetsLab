@@ -103,6 +103,22 @@ OBJ 分离后有 3 个松散部件：
 
 校准脚本默认旋转已更新为 `rotation_x=90`；连接位置仍来自用户锚点，不再使用手工猜测的耳朵位置。
 
-## 保留的失败实验
+## 已采用的 Q 版耳朵 v15
 
-旋转扫查和早期接入 Blend 保留在本地用于追溯，但不作为当前推荐版本。正式使用以 `v6` 为基准，避免把错误的整体旋转方向带入后续流程。
+2026-08-03 经正面与右侧面多轮复核后，采用下载件 `CartoonEarPart_01` 的 Q 版缩小方案。先以窄耳根的真实几何中心对齐标注锚点，再以耳根为枢轴调整姿态，避免旋转后出现连接端脱离头部的问题。
+
+- 最终资产：`prototype/assets/characters/generated/eye_package_imagegen_v4_brows_up_downloaded_ears_chibi_v15.blend`
+- 审核预览：`prototype/test_output/ear_attachment_chibi_scale_v15/front.png` 与 `right.png`
+- 尺寸：以标注推导尺寸的 `0.82` 倍
+- 根部内嵌：`0.04`
+- 左右后倾：`52°`
+- 上端后移 / 下段梗前移：`12°`
+
+两只耳朵均已验证以 Bone Parent 挂到 `Armature/CC_Base_Head`，可随头部动作移动：
+
+```text
+EAR_HEAD_BINDING_PASS CartoonEar_L_Downloaded Armature BONE CC_Base_Head
+EAR_HEAD_BINDING_PASS CartoonEar_R_Downloaded Armature BONE CC_Base_Head
+```
+
+此前未采用的耳朵试验输出已清理；后续像素化移动测试以本版资产为唯一耳朵基线。
