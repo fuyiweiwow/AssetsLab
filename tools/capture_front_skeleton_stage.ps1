@@ -10,7 +10,6 @@ $godotPath = Resolve-GodotExecutable -RequestedPath $GodotPath -AssetsLabRoot $a
 
 $arguments = @(
     "--headless",
-    "--display-driver", "windows",
     "--rendering-driver", "opengl3",
     "--rendering-method", "gl_compatibility",
     "--audio-driver", "Dummy",

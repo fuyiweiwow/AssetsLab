@@ -18,4 +18,4 @@ powershell -ExecutionPolicy Bypass -File .\tools\run_pixel_asset_end_to_end.ps1
 PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1
 ```
 
-当前测试资源是 `chibi_accurig_walk_test_v1`，属于技术基线，不代表最终角色外观已经定稿。后续更换模型或动作时，先运行这个闭环；只有闭环通过后，再进入头部、四肢、五官和配色细节修正。
+当前测试资源是 `chibi_eyes_ears_walk_v1`，使用已验证的 3D 眼睛与耳朵组合，属于技术基线，不代表最终角色外观已经定稿。后续更换模型或动作时，先运行这个闭环；只有闭环通过后，再进入头部、四肢、五官和配色细节修正。

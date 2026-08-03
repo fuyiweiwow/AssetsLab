@@ -43,7 +43,10 @@ func set_preview_direction(next_direction: Vector2) -> void:
 
 func direction_for_vector(input_vector: Vector2) -> String:
 	if absf(input_vector.x) > absf(input_vector.y):
-		return "right" if input_vector.x > 0.0 else "left"
+		# The Blender side cameras are named from the camera's position. The
+		# camera on +X sees the actor's left-facing image, so the runtime asset
+		# folders are intentionally opposite to screen-space horizontal input.
+		return "left" if input_vector.x > 0.0 else "right"
 	return "front" if input_vector.y > 0.0 else "back"
 
 

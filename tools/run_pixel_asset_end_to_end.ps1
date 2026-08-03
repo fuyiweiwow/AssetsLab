@@ -5,7 +5,7 @@ param(
 
 $ErrorActionPreference = "Stop"
 $assetsLabRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
-$runtimeAssetRoot = Join-Path $assetsLabRoot "prototype\assets\characters\runtime\chibi_accurig_walk_test_v1"
+$runtimeAssetRoot = Join-Path $assetsLabRoot "prototype\assets\characters\runtime\chibi_eyes_ears_walk_v1"
 . (Join-Path $PSScriptRoot "resolve_python.ps1")
 $python = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot $assetsLabRoot
 

@@ -21,6 +21,13 @@ func _ready() -> void:
 	if actor.animated_sprite.texture_filter != CanvasItem.TEXTURE_FILTER_NEAREST:
 		fail("actor texture filter is not nearest")
 		return
+	var direction_probe := PixelRuntimePlayer.new()
+	if direction_probe.direction_for_vector(Vector2.RIGHT) != "left" or direction_probe.direction_for_vector(Vector2.LEFT) != "right":
+		fail("horizontal movement is mapped to the wrong facing asset")
+		return
+	if direction_probe.direction_for_vector(Vector2.DOWN) != "front" or direction_probe.direction_for_vector(Vector2.UP) != "back":
+		fail("vertical movement is mapped to the wrong facing asset")
+		return
 	actor.set_playback_speed(10.0)
 	if actor.animated_sprite.sprite_frames.get_animation_speed("front") != 10.0:
 		fail("playback speed was not applied")

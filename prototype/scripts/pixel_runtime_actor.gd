@@ -1,7 +1,7 @@
 class_name PixelRuntimeActor
 extends Node2D
 
-@export var asset_root: String = "res://assets/characters/runtime/chibi_accurig_walk_test_v1"
+@export var asset_root: String = "res://assets/characters/runtime/chibi_eyes_ears_walk_v1"
 @export var direction: String = "front"
 @export var playback_fps: float = 8.0
 

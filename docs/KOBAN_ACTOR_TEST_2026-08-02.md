@@ -32,7 +32,7 @@ powershell.exe -ExecutionPolicy Bypass -File .\tools\run_koban_walk_test.ps1
 - 直接把 Koban 作为新的 3D 演员；或
 - 只参考/提取 Koban 的脸部风格，再为项目演员制作服装和身体。
 
-本测试不会覆盖当前 `chibi_accurig_walk_test_v1` 正式运行时包。
+本测试不会覆盖当前 `chibi_eyes_ears_walk_v1` 正式运行时包。
 
 ## 本次结果
 

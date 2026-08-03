@@ -2,6 +2,7 @@ param(
     [switch]$Female,
     [switch]$Compact,
     [switch]$BaseFeatures,
+    [switch]$PixelRuntimeActor,
     [switch]$RebuildHead,
     [switch]$LatestGeneratedBody,
     [switch]$VerticalCandidate,
@@ -34,8 +35,14 @@ $godotPath = Resolve-GodotExecutable -RequestedPath $GodotPath -AssetsLabRoot $a
 . (Join-Path $PSScriptRoot "resolve_python.ps1")
 $pythonPath = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot $assetsLabRoot
 $pythonModules = Join-Path $assetsLabRoot ".tools\python"
-$frameDirectory = Join-Path $prototypeRoot "test_output\capture_frames"
-$gifName = if ($BomboBodyRight) {
+$frameDirectory = if ($PixelRuntimeActor) {
+    Join-Path $prototypeRoot "test_output\pixel_runtime_capture_frames"
+} else {
+    Join-Path $prototypeRoot "test_output\capture_frames"
+}
+$gifName = if ($PixelRuntimeActor) {
+    "movement_3d_eyes_ears_pixel_walk_v1.gif"
+} elseif ($BomboBodyRight) {
     "movement_bombo_body_candidate.gif"
 } elseif ($RgsBodyRight) {
     "movement_rgs_body_candidate.gif"
@@ -64,11 +71,13 @@ $logPath = Join-Path $prototypeRoot "test_output\capture.log"
 $previousGeneratorPythonPath = $env:PYTHONPATH
 $env:PYTHONPATH = $pythonModules
 try {
-    $baseValidationOutput = & $pythonPath (Join-Path $assetsLabRoot "tools\validate_base_features.py") 2>&1
-    $baseValidationExitCode = $LASTEXITCODE
-    $baseValidationOutput | ForEach-Object { Write-Output $_ }
-    if ($baseValidationExitCode -ne 0) {
-        throw "Base feature validation failed with exit code $baseValidationExitCode"
+    if ($BaseFeatures) {
+        $baseValidationOutput = & $pythonPath (Join-Path $assetsLabRoot "tools\validate_base_features.py") 2>&1
+        $baseValidationExitCode = $LASTEXITCODE
+        $baseValidationOutput | ForEach-Object { Write-Output $_ }
+        if ($baseValidationExitCode -ne 0) {
+            throw "Base feature validation failed with exit code $baseValidationExitCode"
+        }
     }
 }
 finally {
@@ -77,7 +86,6 @@ finally {
 
 $godotArguments = @(
     "--headless",
-    "--display-driver", "windows",
     "--rendering-driver", "opengl3",
     "--rendering-method", "gl_compatibility",
     "--audio-driver", "Dummy",
@@ -95,7 +103,11 @@ if ($Female) {
 if ($Compact) {
     $godotArguments += "--compact"
 }
-$godotArguments += "--base-features"
+if ($PixelRuntimeActor) {
+    $godotArguments += "--pixel-runtime-actor"
+} else {
+    $godotArguments += "--base-features"
+}
 if ($RebuildHead) {
     $godotArguments += "--rebuild-head"
 }
@@ -130,8 +142,9 @@ if (Test-Path -LiteralPath $logPath) {
 if ($godotProcess.ExitCode -ne 0) {
     throw "Godot capture test failed with exit code $($godotProcess.ExitCode)"
 }
-if (-not (Select-String -LiteralPath $logPath -Pattern "CAPTURE_TEST_PASS" -Quiet)) {
-    throw "Godot capture test did not report CAPTURE_TEST_PASS"
+$capturePassMarker = if ($PixelRuntimeActor) { "PIXEL_RUNTIME_CAPTURE_PASS" } else { "CAPTURE_TEST_PASS" }
+if (-not (Select-String -LiteralPath $logPath -Pattern $capturePassMarker -Quiet)) {
+    throw "Godot capture test did not report $capturePassMarker"
 }
 
 $previousPythonPath = $env:PYTHONPATH

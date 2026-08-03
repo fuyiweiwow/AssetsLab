@@ -1,6 +1,6 @@
 extends Node2D
 
-const ROOT := "res://assets/characters/runtime/chibi_accurig_walk_test_v1"
+const ROOT := "res://assets/characters/runtime/chibi_eyes_ears_walk_v1"
 const DIRECTIONS := ["front", "right", "back", "left"]
 const SIZE := 64
 const FRAME_COUNT := 8

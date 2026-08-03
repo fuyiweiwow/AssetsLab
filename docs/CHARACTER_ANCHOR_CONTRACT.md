@@ -20,7 +20,7 @@
 
 之前对照板中列出的 `chibi_base_mesh_actor_v2`、`head_scale=0.85` 和身体加宽试拍，全部是已淘汰的 3D 技术样本。它们只能作为失败记录，不能作为候选演员、轮廓参考或运行时资源来源。
 
-当前 `chibi_accurig_walk_test_v1` 仍然只用于验证“渲染 → 像素化 → Godot”流程，不代表它符合本概念锚点。
+当前 `chibi_eyes_ears_walk_v1` 用于验证“渲染 → 像素化 → Godot”流程，不代表它符合本概念锚点。
 
 ## 下一步
 

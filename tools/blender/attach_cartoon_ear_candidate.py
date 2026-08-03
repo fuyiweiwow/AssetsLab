@@ -91,6 +91,10 @@ def duplicate_ear(source: bpy.types.Object, side: str, x: float, y: float, z: fl
     obj.location = (x, y, z)
     obj.rotation_euler = (math.radians(rotation_x), math.radians(rotation_y), math.radians(rotation_z))
     obj.scale = (-scale if mirror_x else scale, scale, scale)
+    # transform_apply operates on every selected object.  The input actor can
+    # contain selected, head-bone-parented eye meshes with non-uniform author
+    # transforms, so isolate the duplicated ear before baking its scale.
+    bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     bpy.ops.object.transform_apply(location=False, rotation=False, scale=True)

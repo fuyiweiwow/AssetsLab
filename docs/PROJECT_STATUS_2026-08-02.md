@@ -11,7 +11,7 @@
 ## 当前基线
 
 - 工作分支：`pixel_asset_test`
-- 当前演员测试包：`prototype/assets/characters/runtime/chibi_accurig_walk_test_v1/`
+- 当前演员测试包：`prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
 - 运行时端到端测试：`tools/run_pixel_asset_end_to_end.ps1`
 - 3D 脸部特征诊断：`tools/run_accurig_3d_face_test.ps1`
 - 外部风格资源审计记录：`docs/EXTERNAL_ANIME_ASSET_EVALUATION.md`
@@ -35,7 +35,7 @@
 - `prototype/assets/characters/chibi_compact/`
 - `prototype/assets/characters/base_features_v1/`
 - `prototype/assets/characters/base_features_v1/`
-- `prototype/assets/characters/runtime/chibi_accurig_walk_test_v1/`
+- `prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
 - `prototype/assets/characters/rebuild_*` 和 `generated/skeleton_walk_pipeline_v1/`
 
 其中 `rebuild_*`、`skeleton_walk_pipeline_v1`、RGS 参考帧等只属于历史/兼容测试资源，不代表最终角色外观。等新的 3D 演员特征管线接替默认预览后，再单独删除这一批，并同步移除对应兼容开关和测试。

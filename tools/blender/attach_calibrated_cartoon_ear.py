@@ -38,6 +38,7 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--part", default="CartoonEarPart_01")
     parser.add_argument("--rotation-x", type=float, default=90.0, help="Base rotation that makes the source ear upright")
     parser.add_argument("--size-multiplier", type=float, default=1.0, help="Uniform multiplier applied to the calibration-derived ear size")
+    parser.add_argument("--eye-height-scale", type=float, default=1.0, help="Vertical scale for the verified eye meshes, around each eye centre")
     parser.add_argument("--root-inset", type=float, default=0.0, help="Positive distance to push the narrow root into the head")
     parser.add_argument("--back-tilt-degrees", type=float, default=0.0, help="Positive amount to tuck each pinna toward the back of the head")
     parser.add_argument("--top-back-tilt-degrees", type=float, default=0.0, help="Positive amount to move the upper pinna back and the lower stalk forward")
@@ -84,6 +85,45 @@ def rotate_about_world_point(obj: bpy.types.Object, point: Vector, degrees: floa
     obj.matrix_world = Matrix.Translation(point) @ rotation @ Matrix.Translation(-point) @ obj.matrix_world
 
 
+def restore_eye_textures() -> None:
+    """Repair and pack the verified imagegen eye textures when present.
+
+    Older eye-package Blends stored a relative path that becomes invalid once
+    a prepared actor is saved under ``assets/characters/generated``.  Packing
+    the restored images keeps the final actor portable and prevents Blender's
+    missing-texture magenta fallback in the pixel-render pipeline.
+    """
+    texture_root = TOOLS_DIR.parents[1] / "prototype" / "assets" / "generated" / "eye_package_v5" / "imagegen_eye_v5_auto_crops"
+    for material_name, texture_name in (
+        ("EyePackageV1_MikuLeft", "imagegen_eye_L.png"),
+        ("EyePackageV1_MikuRight", "imagegen_eye_R.png"),
+    ):
+        material = bpy.data.materials.get(material_name)
+        texture_path = texture_root / texture_name
+        if material is None or not material.use_nodes or not texture_path.is_file():
+            continue
+        image_nodes = [node for node in material.node_tree.nodes if node.type == "TEX_IMAGE"]
+        for node in image_nodes:
+            image = bpy.data.images.load(str(texture_path), check_existing=False)
+            node.image = image
+            image.pack()
+
+
+def scale_eye_height(scale: float) -> None:
+    """Increase eye readability for the big-head pixel actor without shifting it."""
+    if abs(scale - 1.0) < 1e-6:
+        return
+    for obj in bpy.data.objects:
+        if not obj.name.startswith("EyePackageV1_") or obj.type != "MESH":
+            continue
+        coordinates = [vertex.co.z for vertex in obj.data.vertices]
+        if not coordinates:
+            continue
+        center_z = (min(coordinates) + max(coordinates)) * 0.5
+        for vertex in obj.data.vertices:
+            vertex.co.z = center_z + (vertex.co.z - center_z) * scale
+
+
 def main() -> int:
     options = cli_args()
     bpy.ops.wm.open_mainfile(filepath=str(options.input_blend.resolve()))
@@ -96,6 +136,8 @@ def main() -> int:
     calibration = json.loads(options.calibration.resolve().read_text(encoding="utf-8"))
     if calibration.get("schema") != "assetslab_chibi_ear_anchor_calibration_v1":
         raise RuntimeError("unsupported ear calibration schema")
+    restore_eye_textures()
+    scale_eye_height(options.eye_height_scale)
 
     low, high = bounds(actor)
     center = (low + high) * 0.5
@@ -177,6 +219,7 @@ def main() -> int:
             "root_inset": options.root_inset,
             "back_tilt_degrees": options.back_tilt_degrees,
             "top_back_tilt_degrees": options.top_back_tilt_degrees,
+            "eye_height_scale": options.eye_height_scale,
             "outward_offset": options.outward_offset,
         },
         "renders": {name: str(output / f"{name}.png") for name in specs},

@@ -10,20 +10,16 @@ $godot = Resolve-GodotExecutable -RequestedPath $GodotPath -AssetsLabRoot $asset
 
 Write-Output "PIXEL_RUNTIME_GODOT_TEST_BEGIN executable=$godot"
 
-$importedRoot = Join-Path $prototypeRoot ".godot\imported"
-$pixelImport = Get-ChildItem $importedRoot -Filter "pixel.png-*.ctex" -File -ErrorAction SilentlyContinue | Select-Object -First 1
-if($null -eq $pixelImport) {
-    Write-Output "PIXEL_RUNTIME_IMPORT_CACHE_BEGIN"
-    & $godot --headless --editor --path $prototypeRoot --quit-after 30
-    if($LASTEXITCODE -ne 0) {
-        throw "Godot editor import scan failed"
-    }
-    $pixelImport = Get-ChildItem $importedRoot -Filter "pixel.png-*.ctex" -File -ErrorAction SilentlyContinue | Select-Object -First 1
-    if($null -eq $pixelImport) {
-        throw "Godot import scan finished without importing pixel runtime PNGs"
-    }
-    Write-Output "PIXEL_RUNTIME_IMPORT_CACHE_PASS"
+Write-Output "PIXEL_RUNTIME_IMPORT_BEGIN"
+# Runtime sprite folders are intentionally replaced by the asset pipeline.  A
+# generic .ctex existence check can therefore accept stale imports from an old
+# folder while the new PNGs remain unavailable to ResourceLoader.  Force a
+# project import pass before every validation run.
+& $godot --headless --editor --path $prototypeRoot --import --quit-after 180
+if($LASTEXITCODE -ne 0) {
+    throw "Godot editor import scan failed"
 }
+Write-Output "PIXEL_RUNTIME_IMPORT_PASS"
 
 $tests = @(
     @("--script", "res://tests/pixel_runtime_import_test.gd"),
