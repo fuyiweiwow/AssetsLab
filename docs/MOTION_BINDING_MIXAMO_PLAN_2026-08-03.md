@@ -114,3 +114,28 @@ python tools\process_accurig_walk_pixels.py `
   --mixamo-fbx E:\Env\Assets\Mixamo_Run.fbx `
   --output prototype\test_output\chibi_eyes_ears_mixamo_run_bound_v2.blend
 ```
+## 2026-08-04 当前状态补充
+
+Mixamo 的 Walk 和 Run 均已下载并能够映射到现有 `Armature / CC_Base_*` 演员骨架。当前不需要重新在 Mixamo 标定：只要继续使用同一套演员骨架，眼睛、眉毛和耳朵会继续跟随 `CC_Base_Head`。
+
+动作导入的当前入口：
+
+```powershell
+& E:\Env\Blender\blender.exe --background --python tools\blender\retarget_mixamo_to_accurig_actor.py -- `
+  --actor prototype\assets\characters\generated\chibi_eyes_ears_pixel_walk_source_v3_reweighted_hipfix.blend `
+  --mixamo-fbx E:\Env\Assets\Mixamo_Standard_Walk.fbx `
+  --global-axis-deg 90 `
+  --output prototype\test_output\chibi_eyes_ears_mixamo_walk_bound_v6_globalaxis.blend
+```
+
+当前结论：演员权重问题已修复，动作曲线也已写入目标骨架；Mixamo 与演员的轴向差异仍会影响正面观看时的摆臂观感，因此下一步应以 GIF 逐帧检查摆臂平面、膝盖方向和腿根连续性，再决定是否增加动作幅度参数。
+
+## 2026-08-04 重定向修正版
+
+前一版将 Mixamo 第 1 帧当成无动作基准，导致演员的 T Pose 被保留，且掩盖了 Mixamo 原本的下垂手臂姿势。当前脚本已改为保留源动作的绝对姿势偏移，并将额外全局轴修正默认设为 `0°`，因为 Blender FBX 导入已经完成 Y-up 到场景坐标的转换。
+
+验证结果：Walk 和 Run 的目标骨架均有 22 根映射骨骼和完整动作曲线；最终 GIF 位于 `prototype/test_output/chibi_eyes_ears_mixamo_walk_pixels_v11_final/` 与 `prototype/test_output/chibi_eyes_ears_mixamo_run_pixels_v11_final/`。后续检查重点是视觉上的膝盖弯曲方向和腿根连续性，不再重复 Mixamo 五官或骨骼标定。
+
+### 上肢中立姿势
+
+v11 中手臂仍偏向身体前方。当前已增加 `arm_neutral_deg=60` 的左右镜像上臂修正：Walk/Run 的起始手臂位于身体两侧，动作曲线只负责前后摆动。最新测试为 `prototype/test_output/chibi_eyes_ears_mixamo_walk_pixels_v13_armneutral/` 和 `prototype/test_output/chibi_eyes_ears_mixamo_run_pixels_v13_armneutral/`。

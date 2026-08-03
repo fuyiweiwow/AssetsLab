@@ -1,21 +1,21 @@
 """Retarget a Mixamo-style FBX action to the prepared AccuRIG actor.
 
-The source skeleton is imported temporarily. The animation is sampled as a
-rotation delta relative to the first frame and baked onto the actor's rest
-pose. This is more reliable than copying absolute Mixamo pose rotations:
-Mixamo and AccuRIG use different rest-bone axes, while the frame-to-frame
-delta is the part that should be preserved for this actor. The final blend
-contains only the actor, its existing head features, and a regular action on
-``Armature``. The standard ``mixamorig:`` prefix is optional.
+The source skeleton is imported temporarily. Mixamo pose rotations are
+converted into the actor's rest pose and baked onto ``Armature``. Preserving
+the source pose offset is important here because the downloaded clip starts
+with the arms lowered while the prepared actor is in a T pose. The standard
+``mixamorig:`` prefix is optional.
 """
 from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
 import bpy
+from mathutils import Matrix, Quaternion
 
 
 MIXAMO_TO_CC_BASE = {
@@ -43,6 +43,17 @@ MIXAMO_TO_CC_BASE = {
     "RightToeBase": "CC_Base_R_ToeBase",
 }
 
+ARM_CHAIN = {
+    "CC_Base_L_Clavicle",
+    "CC_Base_L_Upperarm",
+    "CC_Base_L_Forearm",
+    "CC_Base_L_Hand",
+    "CC_Base_R_Clavicle",
+    "CC_Base_R_Upperarm",
+    "CC_Base_R_Forearm",
+    "CC_Base_R_Hand",
+}
+
 
 def cli_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -52,6 +63,30 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--target-armature", default="Armature")
     parser.add_argument("--fps", type=float, default=30.0)
+    parser.add_argument(
+        "--global-axis-deg",
+        type=float,
+        default=0.0,
+        help="extra rotation around X after Blender's FBX Y-up import conversion",
+    )
+    parser.add_argument(
+        "--source-pose-mode",
+        choices=("delta", "absolute"),
+        default="absolute",
+        help="use first-frame-relative motion or preserve Mixamo pose offset",
+    )
+    parser.add_argument(
+        "--arm-neutral-deg",
+        type=float,
+        default=60.0,
+        help="local Z correction that places the actor's arms beside the body",
+    )
+    parser.add_argument(
+        "--arm-global-axis-deg",
+        type=float,
+        default=90.0,
+        help="extra X-axis basis rotation used only for Mixamo arm swing",
+    )
     return parser.parse_args(argv)
 
 
@@ -101,8 +136,10 @@ def main() -> int:
     scene = bpy.context.scene
     scene.frame_start, scene.frame_end = start, end
 
-    # Keep the actor's existing rest pose and use source frame deltas. Absolute
-    # Mixamo rotations are not directly compatible with the AccuRIG rest axes.
+    # Keep the actor's existing rest pose while preserving the source action's
+    # initial pose offset. The actor is T-pose based, but Mixamo's clip begins
+    # with lowered arms; dropping the source offset recreates the old T-pose
+    # failure.
     target.animation_data_clear()
     for target_name in mapping:
         target.pose.bones[target_name].rotation_mode = "QUATERNION"
@@ -117,6 +154,30 @@ def main() -> int:
         target_name: source.pose.bones[source_name].rotation_quaternion.copy()
         for target_name, source_name in mapping.items()
     }
+    # Mixamo and AccuRIG bone-local axes/rolls are different. Convert each
+    # source-local delta through the two bones' rest matrices before applying
+    # it to the target pose; otherwise arm swing commonly becomes vertical and
+    # leg swing becomes a nearly invisible twist.
+    # Blender's FBX importer has already converted the downloaded Mixamo
+    # armature into the scene basis. Keep the extra axis correction at zero by
+    # default; it remains a CLI option for files imported with another basis.
+    source_to_target_world = Matrix.Rotation(
+        math.radians(options.global_axis_deg), 4, "X"
+    ).to_3x3()
+    axis_maps = {}
+    arm_axis_maps = {}
+    arm_source_to_target_world = Matrix.Rotation(
+        math.radians(options.arm_global_axis_deg), 4, "X"
+    ).to_3x3()
+    for target_name, source_name in mapping.items():
+        target_rest = target.data.bones[target_name].matrix_local.to_3x3()
+        source_rest = source.data.bones[source_name].matrix_local.to_3x3()
+        axis_maps[target_name] = (
+            target_rest.inverted() @ source_to_target_world @ source_rest
+        ).to_quaternion()
+        arm_axis_maps[target_name] = (
+            target_rest.inverted() @ arm_source_to_target_world @ source_rest
+        ).to_quaternion()
     target_hip = target.pose.bones["CC_Base_Hip"]
     target_base_location = target_hip.location.copy()
 
@@ -130,8 +191,31 @@ def main() -> int:
         for target_name in mapping:
             bone = target.pose.bones[target_name]
             source_bone = source.pose.bones[mapping[target_name]]
-            delta = source_base_rotation[target_name].inverted() @ source_bone.rotation_quaternion
-            bone.rotation_quaternion = target_base_rotation[target_name] @ delta
+            axis_map = (
+                arm_axis_maps[target_name]
+                if target_name in ARM_CHAIN
+                else axis_maps[target_name]
+            )
+            if target_name in ARM_CHAIN:
+                delta = source_base_rotation[target_name].inverted() @ source_bone.rotation_quaternion
+                mapped_pose = axis_map @ delta @ axis_map.inverted()
+                neutral = Quaternion((1.0, 0.0, 0.0, 0.0))
+                if target_name.endswith("_Upperarm"):
+                    side_sign = -1.0 if target_name.startswith("CC_Base_L_") else 1.0
+                    half_angle = math.radians(options.arm_neutral_deg * side_sign) * 0.5
+                    neutral = Quaternion((math.cos(half_angle), 0.0, 0.0, math.sin(half_angle)))
+                # Keep the source swing axes in the actor basis, then apply
+                # the fixed down-at-the-side neutral pose. Applying neutral
+                # first rotates the Y-axis swing into an unwanted lateral
+                # movement.
+                bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose @ neutral
+            elif options.source_pose_mode == "absolute":
+                mapped_pose = axis_map @ source_bone.rotation_quaternion @ axis_map.inverted()
+                bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose
+            else:
+                delta = source_base_rotation[target_name].inverted() @ source_bone.rotation_quaternion
+                mapped_delta = axis_map @ delta @ axis_map.inverted()
+                bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_delta
             bone.keyframe_insert("rotation_quaternion", frame=frame, group=target_name)
         # The downloaded clips are intended as in-place game cycles. Keep the
         # actor root stationary; locomotion speed will be controlled by the
@@ -152,7 +236,11 @@ def main() -> int:
         "target_action": target_action.name,
         "frame_range": [start, end],
         "mapped_bones": mapping,
-        "retarget_mode": "rest_relative_rotation_delta_baked_in_place",
+        "retarget_mode": f"{options.source_pose_mode}_rotation_baked_in_place",
+        "global_axis_deg": options.global_axis_deg,
+        "source_pose_mode": options.source_pose_mode,
+        "arm_neutral_deg": options.arm_neutral_deg,
+        "arm_global_axis_deg": options.arm_global_axis_deg,
         "features": "existing eye, brow and ear head attachments preserved",
     }
     output_path.with_suffix(".json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
