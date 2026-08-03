@@ -12,6 +12,7 @@
 - 动作源：`prototype/assets/characters/generated/catwalk-loop-378982.fbx`
 - 绑定脚本：`tools/blender/bind_motion_to_accurig_actor.py`
 - 四向渲染脚本：`tools/blender/render_bound_fourway_test.py`
+- Mixamo 重定向脚本：`tools/blender/retarget_mixamo_to_accurig_actor.py`
 - 绑定结果：`prototype/test_output/chibi_eyes_ears_catwalk_bound_v1.blend`
 - 渲染结果：`prototype/test_output/chibi_eyes_ears_catwalk_fourway_v1/`
 - 像素结果：`prototype/test_output/chibi_eyes_ears_catwalk_pixels_v1/`
@@ -26,6 +27,10 @@
 - 正面与侧面观察到五官随头部同步，没有出现五官脱离。
 - 当前动作是绑定闭环验证用的 Catwalk 动作，不代表最终 Mixamo 普通行走动作已经接入。
 
+## 大腿不动问题修正
+
+初版动作复制器只复制了 FBX 的 `rotation_quaternion` 曲线，但目标演员骨骼仍处于 Blender 默认的 XYZ Euler 旋转模式，造成“曲线已复制、骨骼看似没有动画”的静默失败。绑定器现已根据动作曲线自动切换目标骨骼旋转模式为 `QUATERNION`。修正后左右大腿在采样帧中均有变化，渲染结果已重新输出为 `chibi_eyes_ears_catwalk_*_v2_quaternion`。
+
 ## 替换为 Mixamo 动作时
 
 1. 优先上传已有绑定的演员 FBX，不要重新自动绑骨。
@@ -33,6 +38,17 @@
 3. 将 Mixamo 骨骼映射到演员的 `CC_Base_*` 骨骼，再运行同一套四向渲染和像素化测试。
 4. 重点检查膝盖方向、脚掌接地、根骨位移和头部五官跟随。
 5. 只有映射失败并决定重新自动绑骨时，才创建新的骨架版本，不覆盖当前演员基线。
+
+Mixamo FBX 下载后可使用：
+
+```powershell
+& E:\Env\Blender\blender.exe --background --python tools\blender\retarget_mixamo_to_accurig_actor.py -- `
+  --actor prototype\assets\characters\generated\chibi_eyes_ears_pixel_walk_source_v1.blend `
+  --mixamo-fbx E:\Env\Assets\Mixamo_Walk.fbx `
+  --output prototype\test_output\chibi_eyes_ears_mixamo_walk_bound_v1.blend
+```
+
+该工具识别标准 `mixamorig:` 骨骼名，通过姿态空间 Copy Rotation 逐帧烘焙到 `CC_Base_*` 骨架；如果 Mixamo 文件没有标准骨骼名或映射数量不足，会直接失败并报告，不会生成半成品。
 
 ## 可复现命令
 

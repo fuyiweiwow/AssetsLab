@@ -49,10 +49,16 @@ def copy_action(source_action: bpy.types.Action, target: bpy.types.Object) -> tu
     target_action = bpy.data.actions.new(f"{source_action.name}_on_{target.name}")
     copied_curves = 0
     copied_bones: set[str] = set()
+    quaternion_bones: set[str] = set()
+    euler_bones: set[str] = set()
     for curve in source_action.fcurves:
         bone_name = action_bone_name(curve.data_path)
         if bone_name is None or target.pose.bones.get(bone_name) is None:
             continue
+        if curve.data_path.endswith("rotation_quaternion"):
+            quaternion_bones.add(bone_name)
+        elif curve.data_path.endswith("rotation_euler"):
+            euler_bones.add(bone_name)
         group = target_action.groups.get(bone_name) or target_action.groups.new(bone_name)
         copied = target_action.fcurves.new(
             curve.data_path,
@@ -70,6 +76,15 @@ def copy_action(source_action: bpy.types.Action, target: bpy.types.Object) -> tu
     if copied_curves == 0:
         bpy.data.actions.remove(target_action)
         raise RuntimeError("motion action has no pose-bone curves matching the target armature")
+    # Blender evaluates quaternion F-curves only when the target pose bone is
+    # in quaternion rotation mode. The imported AccuRIG/Mixamo-style FBX
+    # actions commonly use quaternions while the prepared actor defaults to
+    # XYZ Euler, which otherwise produces a silent 'copied but not moving'
+    # failure.
+    for bone_name in quaternion_bones:
+        target.pose.bones[bone_name].rotation_mode = "QUATERNION"
+    for bone_name in euler_bones - quaternion_bones:
+        target.pose.bones[bone_name].rotation_mode = "XYZ"
     target_action.use_fake_user = True
     return target_action, copied_curves, copied_bones
 
