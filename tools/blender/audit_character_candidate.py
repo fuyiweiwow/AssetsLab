@@ -38,7 +38,7 @@ def load_source(source: Path) -> None:
     if source.suffix.lower() in {".glb", ".gltf"}:
         bpy.ops.import_scene.gltf(filepath=str(source))
         return
-    bpy.ops.import_scene.obj(filepath=str(source))
+    bpy.ops.wm.obj_import(filepath=str(source))
 
 
 def world_bounds(meshes: list[bpy.types.Object]) -> tuple[Vector, Vector]:
