@@ -86,20 +86,15 @@ python tools\build_face_variant_preview.py `
 
 ## 自动测试
 
+当前分支只保留固定五官基线，随机脸/耳变体暂缓。使用以下命令验证
+两种性别的 128 个五官组件帧：
+
 ```powershell
-powershell.exe -ExecutionPolicy Bypass -File .\tools\run_face_variant_test.ps1
+python .\tools\validate_base_features.py
 ```
 
-测试覆盖：
-
-1. 8 组生成五官资源是否完整加载；
-2. 同 seed 是否稳定；
-3. seed 是否能覆盖男性变体池；
-4. 固定 `base_features_v1` 模式是否仍能加载；
-5. `--appearance-variant=3` 是否能强制切换；
-6. 运行时逐个切换 0 到 7 是否改变对应脸部和耳朵图层。
-
-总管线 `tools/run_pixel_asset_end_to_end.ps1` 已包含这组测试。
+运行时回归由 `tools/run_headless_tests.ps1` 负责，并默认加载
+`base_features_v1`。
 
 ## 下一步
 

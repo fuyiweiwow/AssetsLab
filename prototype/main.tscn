@@ -7,8 +7,8 @@
 [ext_resource type="Texture2D" path="res://assets/characters/chibi/lower_body_walk_4way.png" id="5_lower_body"]
 [ext_resource type="Texture2D" path="res://assets/characters/chibi/arms_walk_4way.png" id="6_arms"]
 [ext_resource type="Texture2D" path="res://assets/characters/chibi/feet_walk_4way.png" id="7_feet"]
-[ext_resource type="Texture2D" path="res://assets/characters/faces/ear_00/frames/walk_row0_frame0.png" id="8_ear"]
-[ext_resource type="Texture2D" path="res://assets/characters/faces/face_00/frames/walk_row0_frame0.png" id="9_face"]
+[ext_resource type="Texture2D" path="res://assets/characters/base_features_v1/male/ear_frames/walk_row0_frame0.png" id="8_ear"]
+[ext_resource type="Texture2D" path="res://assets/characters/base_features_v1/male/face_frames/walk_row0_frame0.png" id="9_face"]
 
 [sub_resource type="RectangleShape2D" id="RectangleShape2D_player"]
 size = Vector2(34, 24)

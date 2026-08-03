@@ -35,7 +35,6 @@ $godotPath = Resolve-GodotExecutable -RequestedPath $GodotPath -AssetsLabRoot $a
 $pythonPath = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot $assetsLabRoot
 $pythonModules = Join-Path $assetsLabRoot ".tools\python"
 $frameDirectory = Join-Path $prototypeRoot "test_output\capture_frames"
-$randomAppearanceRoot = Join-Path $prototypeRoot "test_output\random_appearance"
 $gifName = if ($BomboBodyRight) {
     "movement_bombo_body_candidate.gif"
 } elseif ($RgsBodyRight) {
@@ -65,43 +64,11 @@ $logPath = Join-Path $prototypeRoot "test_output\capture.log"
 $previousGeneratorPythonPath = $env:PYTHONPATH
 $env:PYTHONPATH = $pythonModules
 try {
-    $generatorArguments = @(
-        (Join-Path $assetsLabRoot "tools\generate_random_appearance.py"),
-        "--output", (Join-Path $randomAppearanceRoot $(if ($Female) { "female" } else { "male" }))
-    )
-    if ($Female) {
-        $generatorArguments += "--female"
-    }
-    if ($Compact) {
-        $generatorArguments += "--compact"
-    }
-    if ($PSBoundParameters.ContainsKey("AppearanceSeed")) {
-        $generatorArguments += @("--seed", "$AppearanceSeed")
-    }
-    $generatorOutput = & $pythonPath @generatorArguments 2>&1
-    $generatorExitCode = $LASTEXITCODE
-    $generatorOutput | ForEach-Object { Write-Output $_ }
-    if ($generatorExitCode -ne 0) {
-        throw "Random appearance generation failed with exit code $generatorExitCode"
-    }
-    $seedLine = $generatorOutput | Where-Object { "$_" -match "^RANDOM_APPEARANCE_SEED=" } | Select-Object -Last 1
-    if ($null -eq $seedLine) {
-        throw "Random appearance generator did not return a seed"
-    }
-    $appearanceSeed = [int]("$seedLine" -replace "^RANDOM_APPEARANCE_SEED=", "")
-    $validationOutput = & $pythonPath (Join-Path $assetsLabRoot "tools\validate_random_appearance.py") --root (Join-Path $randomAppearanceRoot $(if ($Female) { "female" } else { "male" })) 2>&1
-    $validationExitCode = $LASTEXITCODE
-    $validationOutput | ForEach-Object { Write-Output $_ }
-    if ($validationExitCode -ne 0) {
-        throw "Random appearance validation failed with exit code $validationExitCode"
-    }
-    if ($BaseFeatures) {
-        $baseValidationOutput = & $pythonPath (Join-Path $assetsLabRoot "tools\validate_base_features.py") 2>&1
-        $baseValidationExitCode = $LASTEXITCODE
-        $baseValidationOutput | ForEach-Object { Write-Output $_ }
-        if ($baseValidationExitCode -ne 0) {
-            throw "Base feature validation failed with exit code $baseValidationExitCode"
-        }
+    $baseValidationOutput = & $pythonPath (Join-Path $assetsLabRoot "tools\validate_base_features.py") 2>&1
+    $baseValidationExitCode = $LASTEXITCODE
+    $baseValidationOutput | ForEach-Object { Write-Output $_ }
+    if ($baseValidationExitCode -ne 0) {
+        throw "Base feature validation failed with exit code $baseValidationExitCode"
     }
 }
 finally {
@@ -128,11 +95,7 @@ if ($Female) {
 if ($Compact) {
     $godotArguments += "--compact"
 }
-if ($BaseFeatures) {
-    $godotArguments += "--base-features"
-} else {
-    $godotArguments += "--appearance-seed=$appearanceSeed"
-}
+$godotArguments += "--base-features"
 if ($RebuildHead) {
     $godotArguments += "--rebuild-head"
 }

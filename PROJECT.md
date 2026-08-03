@@ -519,22 +519,11 @@ yet the production character system and does not include random hair or clothing
 
 `tools/run_headless_tests.ps1` runs the male smoke test and optionally the female smoke test with `--headless`; add `-Compact` to test the compact asset variant. Set `$env:GODOT_BIN` (or `$env:GODOT_PATH`) or pass `-GodotPath` when Godot is installed in a different directory.
 
-`tools/process_face_variants.py` converts the image-generated face and ear
-reference sheets into transparent 64 x 64 layers and writes
-`prototype/assets/characters/faces/face_manifest.json`. Use
-`-AppearanceSeed 12345` with the headless runner to verify a repeatable
-appearance selection.
-
-The random appearance test package is generated at each test startup under
-`prototype/test_output/random_appearance/`. It contains composited 4 x 8
-runtime frames and a manifest, and is ignored by Git. The package uses the same
-seed passed to Godot, so the generated preview and the original movement/GIF
-test exercise the same face, ears, and base layers.
-
-The fixed fitting candidate is stored under
+The current default face and ear layers are the fixed fitting candidate under
 `prototype/assets/characters/base_features_v1/`. It is generated with
 direction-aware 4 x 8 frames and per-frame registration against the existing
-head alpha bounds. It is intentionally marked `randomization_ready: false`;
-random variants should only consume it after the base movement GIF is accepted.
+head alpha bounds. It is intentionally marked `randomization_ready: false`.
+Random face and ear variants remain deferred until the base movement and the
+new 3D feature extraction pipeline are accepted.
 
 `tools/capture_walk_gif.ps1` resolves Python from `-PythonPath`, `$env:PYTHON_BIN`, PATH, or the local `.venv`/sibling fallback. Pillow is required for GIF conversion.

@@ -33,7 +33,7 @@
 
 - `prototype/assets/characters/chibi/`
 - `prototype/assets/characters/chibi_compact/`
-- `prototype/assets/characters/faces/`
+- `prototype/assets/characters/base_features_v1/`
 - `prototype/assets/characters/base_features_v1/`
 - `prototype/assets/characters/runtime/chibi_accurig_walk_test_v1/`
 - `prototype/assets/characters/rebuild_*` 和 `generated/skeleton_walk_pipeline_v1/`

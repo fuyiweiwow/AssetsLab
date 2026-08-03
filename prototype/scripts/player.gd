@@ -11,7 +11,7 @@ var walk_phase := 0.0
 var space_was_down := false
 var variant := "male"
 var asset_root := "chibi"
-var base_features := false
+var base_features := true
 var rebuild_head := false
 var rebuild_body := false
 var rgs_body_right := false
@@ -136,13 +136,10 @@ func _load_frame_textures() -> void:
 				head_path = rebuild_base + "face_base_frames/walk_row%d_frame%d.png" % [row, column]
 				ear_path = rebuild_base + "ears_frames/walk_row%d_frame%d.png" % [row, column]
 				face_path = rebuild_base + "face_frames/walk_row%d_frame%d.png" % [row, column]
-			elif base_features:
+			else:
 				var feature_base := "res://assets/characters/base_features_v1/%s/" % variant
 				ear_path = feature_base + "ear_frames/walk_row%d_frame%d.png" % [row, column]
 				face_path = feature_base + "face_frames/walk_row%d_frame%d.png" % [row, column]
-			else:
-				ear_path = "res://assets/characters/faces/ear_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
-				face_path = "res://assets/characters/faces/face_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
 			var torso_texture := load(torso_path) as Texture2D
 			var arms_texture := load(arms_path) as Texture2D
 			var lower_body_texture := load(lower_body_path) as Texture2D
@@ -194,37 +191,6 @@ func _read_appearance_variant_override() -> int:
 			if value >= 0 and value < APPEARANCE_VARIANT_COUNT:
 				return value
 	return -1
-
-
-func set_appearance_variant(next_variant: int) -> bool:
-	"""Switch the generated face/ear overlay without rebuilding body frames."""
-	if base_features or rebuild_head:
-		return false
-	if next_variant < 0 or next_variant >= APPEARANCE_VARIANT_COUNT:
-		return false
-	appearance_variant = next_variant
-	_load_appearance_frame_textures()
-	_apply_frame(posmod(int(walk_phase), 8))
-	return ear_frame_textures.size() == 32 and face_frame_textures.size() == 32
-
-
-func _load_appearance_frame_textures() -> void:
-	ear_frame_textures.clear()
-	face_frame_textures.clear()
-	for row in range(4):
-		for column in range(8):
-			var ear_path := "res://assets/characters/faces/ear_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
-			var face_path := "res://assets/characters/faces/face_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
-			var ear_texture := load(ear_path) as Texture2D
-			var face_texture := load(face_path) as Texture2D
-			if ear_texture != null:
-				ear_frame_textures.append(ear_texture)
-			else:
-				push_error("Missing appearance ear frame: " + ear_path)
-			if face_texture != null:
-				face_frame_textures.append(face_texture)
-			else:
-				push_error("Missing appearance face frame: " + face_path)
 
 
 func _load_body_anchor_offsets() -> void:
