@@ -29,7 +29,7 @@ def main() -> int:
     records: list[dict[str, object]] = []
     previews: list[tuple[Image.Image, Image.Image]] = []
 
-    for candidate in sorted(root.glob("seed_*_style_*")):
+    for candidate in sorted(path for path in root.glob("seed_*") if path.is_dir()):
         metadata_path = candidate / "render" / "face_variant.json"
         if not metadata_path.is_file():
             raise RuntimeError(f"missing rendered face metadata: {metadata_path}")
@@ -53,7 +53,7 @@ def main() -> int:
         )
 
     if not records:
-        raise RuntimeError(f"no seed_*_style_* directories found in {root}")
+        raise RuntimeError(f"no seed_* directories found in {root}")
     ordered = sorted(zip(records, previews), key=lambda entry: int(entry[0]["style_id"]))
     records = [entry[0] for entry in ordered]
     previews = [entry[1] for entry in ordered]

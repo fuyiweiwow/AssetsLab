@@ -65,6 +65,37 @@ frames, unique style ids, and writes the phone-readable comparison sheet.
 - Existing runtime regression passed:
   `PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1 appearance=1`.
 
+## Re-run
+
+Use the batch entry point to rebuild the disposable static review output.  It
+only permits deletion below `prototype/test_output`, renders the four coverage
+seeds, creates 64px frames, builds the contact sheet, and checks that every
+style is represented exactly once:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\run_chibi_face_randomization_preview.ps1
+```
+
+The current output is
+`prototype/test_output/face_randomization_v2/`.  The validator is also
+available independently:
+
+```powershell
+python .\tools\validate_chibi_face_randomization.py `
+  --root .\prototype\test_output\face_randomization_v2
+```
+
+Create the dependency-free mobile gallery after a preview run:
+
+```powershell
+python .\tools\build_chibi_face_randomization_gallery.py `
+  --root .\prototype\test_output\face_randomization_v2
+```
+
+It writes `gallery.html` next to the preview manifest and uses relative image
+paths, so the same static preview server can expose it without a Godot GUI or
+web build step.
+
 ## Next decision
 
 Review the four face-style candidates before promoting one or more styles to
