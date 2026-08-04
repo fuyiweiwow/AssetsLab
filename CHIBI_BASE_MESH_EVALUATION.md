@@ -3,11 +3,15 @@
 ## Decision
 
 The candidate under `third_party/chibi-base-meshblender.zip` is the actual
-model requested for this project. It is not a ready-made animated actor, but
-it is a viable appearance source for the render-to-pixel pipeline.
+downloaded model requested for the early technical test. It is not a
+ready-made animated actor and is not approved as the current appearance
+source. It remains useful only as a documented pipeline diagnostic until its
+silhouette matches `front-character-anchor.png`.
 
 The previous `neutral_chibi_actor_v1` was a body built from zero on GuideRig.
-It is rejected and must not be used as evidence for this model.
+It is rejected and must not be used as evidence for this model. The later
+AccuRIG actor renders and scale trials are also rejected as appearance
+candidates; they are retained only as failure evidence.
 
 ## Audit result
 

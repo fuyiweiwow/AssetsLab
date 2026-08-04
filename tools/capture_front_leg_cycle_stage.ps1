@@ -13,7 +13,6 @@ $pythonPath = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot
 
 $arguments = @(
     "--headless",
-    "--display-driver", "windows",
     "--rendering-driver", "opengl3",
     "--rendering-method", "gl_compatibility",
     "--audio-driver", "Dummy",

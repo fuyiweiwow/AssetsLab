@@ -25,6 +25,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--camera-contract", type=Path, default=None)
     parser.add_argument("--head-scale", type=float, default=1.18)
     parser.add_argument("--body-scale", type=float, default=0.86)
+    parser.add_argument("--body-width-scale", type=float, default=1.0)
+    parser.add_argument("--body-depth-scale", type=float, default=1.0)
     parser.add_argument("--preserve-source-transform", action="store_true")
     parser.add_argument("--rigid-head", action="store_true")
     parser.add_argument("--head-split-z", type=float, default=1.3)
@@ -164,6 +166,22 @@ def scale_head_region(mesh: bpy.types.Object, scale: float) -> None:
     mesh.data.update()
 
 
+def scale_body_region(mesh: bpy.types.Object, width_scale: float, depth_scale: float) -> None:
+    """Widen the separated body around its local center without moving the rig."""
+    if width_scale <= 0.0 or depth_scale <= 0.0:
+        raise ValueError("body width/depth scales must be positive")
+    x_values = [vertex.co.x for vertex in mesh.data.vertices]
+    y_values = [vertex.co.y for vertex in mesh.data.vertices]
+    if not x_values or not y_values:
+        raise ValueError("body mesh has no vertices")
+    center_x = (min(x_values) + max(x_values)) * 0.5
+    center_y = (min(y_values) + max(y_values)) * 0.5
+    for vertex in mesh.data.vertices:
+        vertex.co.x = center_x + (vertex.co.x - center_x) * width_scale
+        vertex.co.y = center_y + (vertex.co.y - center_y) * depth_scale
+    mesh.data.update()
+
+
 def evaluated_bounds(scene: bpy.types.Scene, mesh: bpy.types.Object, frames: list[int]) -> tuple[Vector, Vector]:
     low = Vector((float("inf"), float("inf"), float("inf")))
     high = Vector((float("-inf"), float("-inf"), float("-inf")))
@@ -285,6 +303,7 @@ def setup_scene(options: argparse.Namespace):
     low, high = bounds(mesh)
     if options.rigid_head:
         mesh = split_rigid_head(mesh, options.head_split_z * fit_scale)
+        scale_body_region(mesh, options.body_width_scale, options.body_depth_scale)
     foot_z = min((rig.matrix_world @ bone.head_local).z for bone in rig.data.bones if bone.name in {"Bone.014", "Bone.018"})
     mesh.location.z += foot_z - low.z
     mesh.location.x = rig.location.x

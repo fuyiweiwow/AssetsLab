@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="zh-CN">
+<meta charset="utf-8">
+<title>Chibi Eye Calibration Annotator</title>
+<style>
+body{font-family:system-ui,sans-serif;background:#202124;color:#eee;margin:20px}
+h1{font-size:22px}.hint{max-width:1100px;line-height:1.7;color:#d7d7d7}
+.views{display:flex;gap:20px;flex-wrap:wrap}.panel{background:#2b2c30;padding:12px;border-radius:8px}
+.stage{position:relative;width:512px;height:512px;background:#ddd;overflow:hidden}.stage img{width:512px;height:512px;display:block}.stage canvas{position:absolute;left:0;top:0}
+button{font-size:16px;padding:8px 14px;margin:14px 8px 0 0;cursor:pointer}
+label{display:block;margin:8px 0}.value{color:#8fd3ff;font-weight:700}
+</style>
+<h1>Q 版演员眼睛校准标注工具</h1>
+<div class="hint">
+  这次只标注眼睛，不要标当前错误的眼睛，也不要重新标注骨骼。请把圆点拖到你希望最终眼睛中心的位置。
+  <br>正面：左眼中心、右眼中心应放在脸内，不要放在头部轮廓外。
+  <br>侧面：先把“眼球中心”放到头部内部，再把“虹彩朝向点”放到角色正面方向；本图角色正面朝右，所以朝向点通常在中心点右侧。最后把红色“头部前表面点”放在同一高度的头部轮廓线上，不能放到头外。
+  <br>如果你不确定深度，优先保证眼球中心在头部内部，后续我会根据模型表面自动计算嵌入深度。
+</div>
+<div class="views">
+  <div class="panel"><b>Front / 正面</b><div class="stage"><img src="../prototype/assets/characters/generated/chibi_binding_annotation_tool/front.png"><canvas id="front" width="512" height="512"></canvas></div></div>
+  <div class="panel"><b>Side / 侧面（角色正面朝右）</b><div class="stage"><img src="../prototype/assets/characters/generated/chibi_binding_annotation_tool/side.png"><canvas id="side" width="512" height="512"></canvas></div></div>
+</div>
+<div id="readout"></div>
+<button id="download">下载眼睛校准 JSON</button><button id="reset">重置参考点</button>
+<script>
+const config={
+  front:[
+    {key:'screen_left_eye_center',label:'画面左侧眼睛中心',color:'#55c7ff',x:220,y:175},
+    {key:'screen_right_eye_center',label:'画面右侧眼睛中心',color:'#ff79c6',x:292,y:175}
+  ],
+  side:[
+    {key:'eye_center',label:'侧面眼球中心',color:'#55c7ff',x:282,y:174},
+    {key:'iris_forward',label:'虹彩朝向点',color:'#ffcf55',x:320,y:174},
+    {key:'face_front_surface',label:'头部前表面点',color:'#ff5d5d',x:350,y:174}
+  ]
+};
+const state=JSON.parse(JSON.stringify(config));
+function draw(id){
+  const c=document.getElementById(id),ctx=c.getContext('2d');ctx.clearRect(0,0,512,512);ctx.font='15px system-ui';
+  state[id].forEach((p,i)=>{
+    ctx.strokeStyle=p.color;ctx.fillStyle=p.color;ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(p.x,p.y,9,0,Math.PI*2);ctx.stroke();ctx.fillText(p.label, p.x+12, p.y-10);
+    if(id==='side' && i>0){const base=state.side[0];ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(base.x,base.y);ctx.lineTo(p.x,p.y);ctx.stroke();ctx.setLineDash([])}
+    if(id==='front'){const a=state.front[0],b=state.front[1];ctx.setLineDash([7,5]);ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.setLineDash([])}
+  });
+}
+function setup(id){
+  const c=document.getElementById(id);let drag=-1;
+  c.addEventListener('pointerdown',e=>{const x=e.offsetX,y=e.offsetY;const d=state[id].map(p=>Math.hypot(p.x-x,p.y-y));const nearest=Math.min(...d);if(nearest<32)drag=d.indexOf(nearest);if(drag>=0)c.setPointerCapture(e.pointerId)});
+  c.addEventListener('pointermove',e=>{if(drag>=0){state[id][drag].x=Math.max(0,Math.min(511,e.offsetX));state[id][drag].y=Math.max(0,Math.min(511,e.offsetY));draw(id);read()}});
+  c.addEventListener('pointerup',()=>drag=-1);draw(id)
+}
+function read(){
+  const rows=[];for(const id of ['front','side'])for(const p of state[id])rows.push(`<label>${p.label}: <span class="value">(${Math.round(p.x)}, ${Math.round(p.y)})</span></label>`);
+  document.getElementById('readout').innerHTML=rows.join('');
+}
+document.getElementById('download').onclick=()=>{
+  const data={schema:'assetslab_chibi_eye_calibration_v2',source_views:{front:'clean_actor_front',side:'clean_actor_side'},views:state,notes:'User-marked desired eye centers, side-view iris forward direction, and head front surface at eye height. Points are in 512x512 pixels.'};
+  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));a.download='chibi_eye_calibration.json';a.click();
+};
+document.getElementById('reset').onclick=()=>{for(const id of ['front','side'])state[id]=JSON.parse(JSON.stringify(config[id]));draw('front');draw('side');read()};
+setup('front');setup('side');read();
+</script>

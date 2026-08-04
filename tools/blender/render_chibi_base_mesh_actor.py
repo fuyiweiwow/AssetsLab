@@ -32,6 +32,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--blend", required=True, type=Path)
     parser.add_argument("--head-scale", type=float, default=1.18)
     parser.add_argument("--body-scale", type=float, default=0.86)
+    parser.add_argument("--body-width-scale", type=float, default=1.0)
+    parser.add_argument("--body-depth-scale", type=float, default=1.0)
     parser.add_argument("--preserve-source-transform", action="store_true")
     parser.add_argument("--rigid-head", action="store_true")
     parser.add_argument("--head-split-z", type=float, default=1.3)
@@ -99,6 +101,8 @@ def main() -> int:
         camera_contract=None,
         head_scale=options.head_scale,
         body_scale=options.body_scale,
+        body_width_scale=options.body_width_scale,
+        body_depth_scale=options.body_depth_scale,
         preserve_source_transform=options.preserve_source_transform,
         rigid_head=True if options.binding_lines is not None else options.rigid_head,
         head_split_z=options.head_split_z,

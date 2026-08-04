@@ -16,6 +16,8 @@ ROWS = 2
 VARIANT_COUNT = COLUMNS * ROWS
 DIRECTIONS = ["front", "right", "back", "left"]
 FRAME_COUNT = 8
+FACE_MAX_SIZE = (20, 8)
+EAR_MAX_SIZE = (32, 12)
 
 VARIANT_FACTORS = [
     {"eye_shape": "gentle_oval", "blush": False},
@@ -67,7 +69,7 @@ def chroma_key(cell: Image.Image) -> Image.Image:
     return rgba
 
 
-def fit_overlay(cell: Image.Image) -> Image.Image:
+def fit_overlay(cell: Image.Image, max_width: int, max_height: int) -> Image.Image:
     keyed = chroma_key(cell)
     bbox = keyed.getchannel("A").getbbox()
     if bbox is None:
@@ -76,7 +78,11 @@ def fit_overlay(cell: Image.Image) -> Image.Image:
     # Keep the generated relative spacing, but normalize the feature group to
     # the same 64x64 registration used by the character head layers.
     cropped = keyed.crop(bbox)
-    scale = min(1.0, 48.0 / max(cropped.width, cropped.height))
+    scale = min(
+        1.0,
+        max_width / max(cropped.width, 1),
+        max_height / max(cropped.height, 1),
+    )
     resized = cropped.resize(
         (
             max(1, round(cropped.width * scale)),
@@ -99,10 +105,15 @@ def fit_overlay(cell: Image.Image) -> Image.Image:
     return canvas
 
 
-def process_overlay_sheet(source: Image.Image, variant_id: int) -> Image.Image:
+def process_overlay_sheet(
+    source: Image.Image,
+    variant_id: int,
+    max_width: int,
+    max_height: int,
+) -> Image.Image:
     row = variant_id // COLUMNS
     column = variant_id % COLUMNS
-    return fit_overlay(source.crop(frame_bounds(source, row, column)))
+    return fit_overlay(source.crop(frame_bounds(source, row, column)), max_width, max_height)
 
 
 def empty_frame() -> Image.Image:
@@ -122,8 +133,8 @@ def main() -> None:
     for variant_id in range(VARIANT_COUNT):
         row = variant_id // COLUMNS
         column = variant_id % COLUMNS
-        overlay = process_overlay_sheet(source, variant_id)
-        ear_overlay = process_overlay_sheet(ear_source, variant_id)
+        overlay = process_overlay_sheet(source, variant_id, *FACE_MAX_SIZE)
+        ear_overlay = process_overlay_sheet(ear_source, variant_id, *EAR_MAX_SIZE)
         variant_root = OUTPUT / f"face_{variant_id:02d}"
         frame_root = variant_root / "frames"
         frame_root.mkdir(parents=True, exist_ok=True)
@@ -172,6 +183,10 @@ def main() -> None:
         "directions": DIRECTIONS,
         "frame_count_per_direction": FRAME_COUNT,
         "variant_count": VARIANT_COUNT,
+        "front_overlay_limits": {
+            "face": list(FACE_MAX_SIZE),
+            "ear": list(EAR_MAX_SIZE),
+        },
         "selection": "stable appearance_seed selects one face variant",
         "gender_rules": {
             "male": {"allowed_variants": [0, 2, 4, 6], "blush": False},

@@ -234,3 +234,6 @@ pixel cells, and source-model identity. Visual acceptance remains pending:
 the head is stable, while the nearly absent neck produces a visible seam and
 the body binding still needs manual refinement. This is now the preferred
 annotated candidate for the next binding experiment; it is not runtime-ready.
+## 清理说明（2026-08-02）
+
+KIIRA 外部模型及其 Q2/Q3 试拍脚本已从工作树移除。这里保留的内容仅作为历史决策记录；不要再按照其中的 KIIRA 路线执行。当前基线改为真实演员的运行时四方向像素资源包，详见 `docs/PROJECT_STATUS_2026-08-02.md`。

@@ -2,6 +2,10 @@ param(
     [string]$BlenderPath = "E:\env\Blender\blender.exe",
     [string]$WalkFbxPath = "E:\env\temp\opencode\kiira_anim_pack\Walk.fbx",
     [string]$OutputName = "chibi_base_mesh_actor_v2",
+    [double]$HeadScale = 1.18,
+    [double]$BodyScale = 0.86,
+    [double]$BodyWidthScale = 1.0,
+    [double]$BodyDepthScale = 1.0,
     [double]$HeadSplitZ = 1.3,
     [string]$BindingLinesPath = ""
 )
@@ -25,7 +29,7 @@ if ($BindingLinesPath -ne "") {
     $bindingLineArgs = @("--binding-lines", $BindingLinesPath)
 }
 
-& $BlenderPath --background --python (Join-Path $root "tools\blender\render_chibi_base_mesh_actor.py") -- --source-blend $source --walk-fbx $WalkFbxPath --render-dir $renderRoot --blend $blend --preserve-source-transform --rigid-head --head-split-z $HeadSplitZ @bindingLineArgs
+& $BlenderPath --background --python (Join-Path $root "tools\blender\render_chibi_base_mesh_actor.py") -- --source-blend $source --walk-fbx $WalkFbxPath --render-dir $renderRoot --blend $blend --head-scale $HeadScale --body-scale $BodyScale --body-width-scale $BodyWidthScale --body-depth-scale $BodyDepthScale --preserve-source-transform --rigid-head --head-split-z $HeadSplitZ @bindingLineArgs
 if ($LASTEXITCODE -ne 0) { throw "chibi base mesh Blender build failed: $LASTEXITCODE" }
 & $pythonPath (Join-Path $root "tools\process_chibi_base_mesh_actor_pixels.py") --render-dir $renderRoot --output-dir $pixelRoot --actor-blend $blend --source-archive $source
 if ($LASTEXITCODE -ne 0) { throw "chibi base mesh pixelization failed: $LASTEXITCODE" }

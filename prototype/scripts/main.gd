@@ -19,7 +19,21 @@ var has_bomb := false
 
 
 func _ready() -> void:
-	player = $Player
+	var runtime_mode := "--pixel-runtime-actor" in OS.get_cmdline_user_args()
+	if runtime_mode:
+		var legacy_player := $Player as CharacterBody2D
+		legacy_player.visible = false
+		legacy_player.set_physics_process(false)
+		for child in legacy_player.get_children():
+			if child is CollisionShape2D:
+				child.set_deferred("disabled", true)
+		var runtime_player := preload("res://scripts/pixel_runtime_player.gd").new() as CharacterBody2D
+		runtime_player.name = "PixelRuntimePlayer"
+		runtime_player.global_position = legacy_player.global_position
+		add_child(runtime_player)
+		player = runtime_player
+	else:
+		player = $Player
 	player.bomb_requested.connect(_on_player_bomb_requested)
 	for wall_rect in WALL_RECTS:
 		_add_wall(wall_rect)

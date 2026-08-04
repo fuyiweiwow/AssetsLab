@@ -7,6 +7,8 @@ prototype/preview/calibration/*.json
 third_party/rgs_modular_animated_characters/
 prototype/archive/retired_keyframe_rig/
 prototype/archive/retired_walk_candidates/
+prototype/assets/external/
+prototype/assets/Koban Chibi Base Mesh.rar
 prototype/assets/characters/chibi_phase_v1/
 prototype/assets/characters/rebuild_body_pose_v1/
 prototype/assets/characters/walk_pose_board.json
@@ -17,4 +19,6 @@ tools/validate_phase_corrected_body.py
 tools/build_pose_board_body.py
 tools/refine_limb_puzzle_motion.py
 *.import
+prototype/**/*.uid
+prototype/**/*.tmp
 __pycache__/

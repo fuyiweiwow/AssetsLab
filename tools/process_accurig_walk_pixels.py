@@ -14,15 +14,19 @@ def main() -> int:
     parser.add_argument("--render-dir", required=True, type=Path)
     parser.add_argument("--output-dir", required=True, type=Path)
     parser.add_argument("--size", type=int, default=64)
+    parser.add_argument("--frame-count", type=int, default=8)
+    parser.add_argument("--fps", type=float, default=8.0)
     args = parser.parse_args()
     if args.size <= 0:
         raise SystemExit("size must be positive")
+    if args.frame_count < 2 or args.fps <= 0.0:
+        raise SystemExit("frame count must be at least two and fps must be positive")
     if args.output_dir.exists():
         shutil.rmtree(args.output_dir)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
     directions = ("front", "right", "back", "left")
-    frame_count = 8
+    frame_count = args.frame_count
     sheets: dict[str, str] = {}
     frames: list[dict[str, object]] = []
 
@@ -59,7 +63,7 @@ def main() -> int:
             args.output_dir / f"{direction}.gif",
             save_all=True,
             append_images=gif_frames[1:],
-            duration=140,
+            duration=round(1000.0 / args.fps),
             loop=0,
             disposal=2,
         )
