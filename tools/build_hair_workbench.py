@@ -123,6 +123,7 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     button:disabled, select:disabled { opacity: .45; cursor: default; }
     .controls { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
     .controls label { color: #d5b9ad; font-size: .82rem; }
+    .notice { flex: 1 1 100%; min-height: 1.2em; color: #f0c2a5; font-size: .8rem; }
     .panel { padding: 13px; margin-bottom: 12px; }
     .slot-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 9px; }
     .slot { padding: 10px; border: 1px solid #5d4140; border-radius: 10px; }
@@ -164,6 +165,7 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
       <button type="button" id="save">保存设计</button>
       <button type="button" id="export">导出设计 JSON</button>
       <a href="../index.html">返回 Gallery</a>
+      <span class="notice" id="action-status">等待操作</span>
     </div>
   </section>
   <section class="panel">
@@ -185,6 +187,7 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
       <span class="status pending" id="preview-status">未生成</span>
       <p id="preview-gender">性别：—</p>
       <p class="object-list" id="preview-objects">组件：—</p>
+      <p class="meta" id="preview-signature">组合签名：—</p>
       <div class="links"><a id="sheet-link" class="hidden" target="_blank" rel="noreferrer">像素四视图</a><a id="gallery-link" class="hidden" target="_blank" rel="noreferrer">对应 Gallery</a></div>
       <p class="hint" id="preview-note">选择组件后点击“生成组合预览”。</p>
     </aside>
@@ -231,6 +234,10 @@ function selectedObjects() {
   return SLOT_DEFS.map((slot) => componentFor(slot.role)?.object).filter(Boolean);
 }
 
+function selectionKey() {
+  return SLOT_DEFS.map((slot) => `${slot.role}:${slotState[slot.role]?.component_id || 'none'}`).join('|');
+}
+
 function findCandidate(objects) {
   const key = objectKey(objects);
   return DATA.candidates.find((item) => item.gender === gender && objectKey(item.objects) === key) || null;
@@ -266,21 +273,35 @@ function renderSlots() {
     slotState[button.dataset.role].selection_mode = button.dataset.slotMode;
     slotState[button.dataset.role].locked = button.dataset.slotMode === 'pool_pick';
     renderSlots();
+    byId('action-status').textContent = `${button.dataset.role} 已切换为${button.dataset.slotMode === 'pool_pick' ? '手选' : '随机'}；点击“随机未锁定部件”后更新。`;
   });
   for (const select of document.querySelectorAll('.slot select')) select.addEventListener('change', () => {
     slotState[select.dataset.role].component_id = select.value;
+    byId('action-status').textContent = `${select.dataset.role} 已手动选择。`;
     showCurrent();
   });
 }
 
 function randomizeUnlocked() {
+  const before = selectionKey();
+  let attempts = 0;
   for (const slot of SLOT_DEFS) {
     const state = slotState[slot.role];
     if (state.locked) continue;
     state.component_id = randomOption(poolFor(slot.role), !slot.required)?.component_id || '';
   }
+  while (selectionKey() === before && attempts < 8) {
+    attempts += 1;
+    for (const slot of SLOT_DEFS) {
+      const state = slotState[slot.role];
+      if (!state.locked) state.component_id = randomOption(poolFor(slot.role), !slot.required)?.component_id || '';
+    }
+  }
+  const changed = SLOT_DEFS.filter((slot) => slotState[slot.role].component_id !== before.split('|').find((item) => item.startsWith(`${slot.role}:`))?.split(':').slice(1).join(':')).length;
   renderSlots();
   showCurrent();
+  const unlocked = SLOT_DEFS.filter((slot) => !slotState[slot.role].locked).length;
+  byId('action-status').textContent = changed ? `已随机更新 ${changed} 个未锁定部件；当前组合等待预览生成。` : (unlocked ? '随机池结果与上次相同，已保留当前组合。' : '所有部件都已手选锁定，没有可随机的部件。');
 }
 
 function showCurrent() {
@@ -292,6 +313,7 @@ function showCurrent() {
   byId('preview-status').classList.toggle('pending', !record);
   byId('preview-gender').textContent = `性别：${gender === 'female' ? '女性' : '男性'}`;
   byId('preview-objects').textContent = `组件：${objects.map(objectLabel).join(' / ') || '—'}`;
+  byId('preview-signature').textContent = `组合签名：${selectionKey()}`;
   for (const direction of ['front', 'right', 'back', 'left']) {
     byId(direction).src = record ? record[direction] : '';
     byId(direction).alt = record ? `${record.id} ${direction}` : '尚未生成预览';
