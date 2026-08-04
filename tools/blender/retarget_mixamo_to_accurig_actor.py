@@ -54,6 +54,13 @@ ARM_CHAIN = {
     "CC_Base_R_Hand",
 }
 
+FOOT_CHAIN = {
+    "CC_Base_L_Foot",
+    "CC_Base_L_ToeBase",
+    "CC_Base_R_Foot",
+    "CC_Base_R_ToeBase",
+}
+
 
 def cli_args() -> argparse.Namespace:
     argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
@@ -87,6 +94,33 @@ def cli_args() -> argparse.Namespace:
         default=90.0,
         help="extra X-axis basis rotation used only for Mixamo arm swing",
     )
+    parser.add_argument(
+        "--arm-neutral-before-motion",
+        action="store_true",
+        help="apply the lowered-arm neutral pose before the mapped swing (diagnostic candidate)",
+    )
+    parser.add_argument(
+        "--foot-inward-deg",
+        type=float,
+        default=0.0,
+        help="small side-signed local-Z correction for foot/toe heading",
+    )
+    parser.add_argument(
+        "--world-rest-basis",
+        action="store_true",
+        help="build the retarget basis from armature-world rest matrices, including FBX object rotation",
+    )
+    parser.add_argument(
+        "--arm-swing-world-axis",
+        action="store_true",
+        help="diagnostic mode: extract Mixamo arm swing and apply it around actor world Z",
+    )
+    parser.add_argument(
+        "--arm-swing-scale",
+        type=float,
+        default=1.0,
+        help="scale for the world-Z arm swing in diagnostic mode",
+    )
     return parser.parse_args(argv)
 
 
@@ -100,6 +134,13 @@ def find_imported_armature(before: set[str]) -> bpy.types.Object:
     if len(found) != 1:
         raise RuntimeError(f"expected one imported Mixamo armature, found {[obj.name for obj in found]}")
     return found[0]
+
+
+def rotation_only(matrix: Matrix) -> Matrix:
+    """Return a rotation-only matrix while preserving the matrix's columns."""
+    value = matrix.to_3x3()
+    columns = [value.col[index].normalized() for index in range(3)]
+    return Matrix(columns).transposed()
 
 
 def main() -> int:
@@ -172,6 +213,9 @@ def main() -> int:
     for target_name, source_name in mapping.items():
         target_rest = target.data.bones[target_name].matrix_local.to_3x3()
         source_rest = source.data.bones[source_name].matrix_local.to_3x3()
+        if options.world_rest_basis:
+            target_rest = rotation_only(target.matrix_world.to_3x3() @ target_rest)
+            source_rest = rotation_only(source.matrix_world.to_3x3() @ source_rest)
         axis_maps[target_name] = (
             target_rest.inverted() @ source_to_target_world @ source_rest
         ).to_quaternion()
@@ -198,7 +242,26 @@ def main() -> int:
             )
             if target_name in ARM_CHAIN:
                 delta = source_base_rotation[target_name].inverted() @ source_bone.rotation_quaternion
-                mapped_pose = axis_map @ delta @ axis_map.inverted()
+                if options.arm_swing_world_axis:
+                    # The Mixamo walk's useful arm swing is primarily a twist
+                    # around its local X axis, which is the character vertical
+                    # axis in the imported source. The actor's lowered arm
+                    # bones have a diagonal local X axis, so copying that local
+                    # axis directly creates lateral/front-view waving. Extract
+                    # the signed source swing and reapply it around actor world
+                    # Z, preserving forward/back motion for the chibi pose.
+                    source_axis, source_angle = delta.to_axis_angle()
+                    source_sign = -1.0 if source_axis.x < 0.0 else 1.0
+                    signed_angle = source_angle * source_sign * options.arm_swing_scale
+                    world_swing = Quaternion((0.0, 0.0, 1.0), signed_angle)
+                    target_rest_matrix = rotation_only(
+                        target.matrix_world.to_3x3()
+                        @ target.data.bones[target_name].matrix_local.to_3x3()
+                    )
+                    target_rest_quat = target_rest_matrix.to_quaternion()
+                    mapped_pose = target_rest_quat.inverted() @ world_swing @ target_rest_quat
+                else:
+                    mapped_pose = axis_map @ delta @ axis_map.inverted()
                 neutral = Quaternion((1.0, 0.0, 0.0, 0.0))
                 if target_name.endswith("_Upperarm"):
                     side_sign = -1.0 if target_name.startswith("CC_Base_L_") else 1.0
@@ -208,7 +271,15 @@ def main() -> int:
                 # the fixed down-at-the-side neutral pose. Applying neutral
                 # first rotates the Y-axis swing into an unwanted lateral
                 # movement.
-                bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose @ neutral
+                if options.arm_neutral_before_motion:
+                    bone.rotation_quaternion = target_base_rotation[target_name] @ neutral @ mapped_pose
+                else:
+                    bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose @ neutral
+            elif target_name in FOOT_CHAIN and options.foot_inward_deg:
+                side_sign = 1.0 if target_name.startswith("CC_Base_L_") else -1.0
+                half_angle = math.radians(options.foot_inward_deg * side_sign) * 0.5
+                inward = Quaternion((math.cos(half_angle), 0.0, 0.0, math.sin(half_angle)))
+                bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose @ inward
             elif options.source_pose_mode == "absolute":
                 mapped_pose = axis_map @ source_bone.rotation_quaternion @ axis_map.inverted()
                 bone.rotation_quaternion = target_base_rotation[target_name] @ mapped_pose
@@ -241,6 +312,11 @@ def main() -> int:
         "source_pose_mode": options.source_pose_mode,
         "arm_neutral_deg": options.arm_neutral_deg,
         "arm_global_axis_deg": options.arm_global_axis_deg,
+        "arm_neutral_before_motion": options.arm_neutral_before_motion,
+        "foot_inward_deg": options.foot_inward_deg,
+        "world_rest_basis": options.world_rest_basis,
+        "arm_swing_world_axis": options.arm_swing_world_axis,
+        "arm_swing_scale": options.arm_swing_scale,
         "features": "existing eye, brow and ear head attachments preserved",
     }
     output_path.with_suffix(".json").write_text(json.dumps(manifest, indent=2, ensure_ascii=False), encoding="utf-8")
