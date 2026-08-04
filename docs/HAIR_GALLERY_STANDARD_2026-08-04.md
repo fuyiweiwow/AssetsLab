@@ -42,7 +42,7 @@ http://desktop-dk81254.tailf01571.ts.net:8000/hair_candidates_2026_08_04/index.h
 - `tools/blender/fit_blend_hair_candidate.py`：后台追加、组装、贴合和四视图渲染；支持 Chloe 源网格归一化，也支持 male 的 `base/bangs/side/back` 展示网格重新组装。
 - `tools/build_hair_randomization_gallery.py`：生成单个发型 gallery，支持 `--candidate` 精选候选和 `--output` 输出多个子页面。
 - `tools/build_hair_gallery_index.py`：根据 catalog 生成统一入口。
-- `tools/build_hair_workbench.py`：生成整体发型/组件装配随机化工作台，支持保存本机评审组合并回链 Gallery。
+- `tools/build_hair_workbench.py`：生成统一发型设计与随机池评审页面，支持每个槽位随机池随机/手选、保存设计并回链 Gallery。
 - `prototype/assets/hair/hair_gallery_catalog_v1.json`：统一入口的可追踪登记表，新增 gallery 时只需增加一条记录。
 
 ## 侧视图像素补偿
@@ -97,6 +97,7 @@ python tools\build_hair_gallery_index.py `
 python tools\build_hair_workbench.py `
   --root prototype\test_output\hair_candidates_2026_08_04 `
   --component-catalog prototype\assets\hair\hair_component_catalog_v1.json `
+  --pool-catalog prototype\assets\hair\hair_random_pool_v1.json `
   --gallery-catalog prototype\assets\hair\hair_gallery_catalog_v1.json `
   --output prototype\test_output\hair_candidates_2026_08_04\workbench\index.html
 ```

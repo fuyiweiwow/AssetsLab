@@ -107,7 +107,7 @@ def main() -> int:
 <body><main>
   <h1>AssetsLab Hair Galleries</h1>
   <p class="lead">统一发型评审入口 · 先按性别筛选，再进入基础、推荐或实验 Gallery。</p>
-  <p class="workbench-link"><a href="workbench/index.html">打开发型随机化与组件装配工作台</a></p>
+  <p class="workbench-link"><a href="workbench/index.html">打开发型设计与随机池评审页面</a></p>
   <nav class="tabs" aria-label="按性别筛选">
     <button class="tab active" type="button" data-filter="all" aria-pressed="true">全部</button>
     <button class="tab" type="button" data-filter="female" aria-pressed="false">女性</button>

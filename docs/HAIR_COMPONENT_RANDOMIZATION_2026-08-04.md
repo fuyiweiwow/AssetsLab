@@ -21,7 +21,7 @@
 - `base_cap`：源文件里的底层帽/头皮覆盖件，未经四视图检查不进入默认随机。
 - `experimental_back_shell`：目前有白缝、露头皮或覆盖不完整的后发件，只保留在审查池。
 
-完整清单见 `prototype/assets/hair/hair_component_catalog_v1.json`。
+完整源组件清单见 `prototype/assets/hair/hair_component_catalog_v1.json`；当前允许随机抽取的成员见 `prototype/assets/hair/hair_random_pool_v1.json`。实验组件不会自动进入随机池。
 
 ## 当前分类判断
 
