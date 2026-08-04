@@ -60,3 +60,5 @@ python .\tools\build_hair_gallery_index.py `
 推荐池和实验池必须分开；未通过四视图、接缝、耳朵遮挡和侧视像素补偿检查的候选只能进入实验池。
 
 随机化评审工作台由 `tools\build_hair_workbench.py` 生成，支持整体发型随机化、组件装配随机化和本机评审列表。它通过统一 Gallery 入口的“发型随机化与组件装配工作台”链接打开。
+
+下一阶段按 `docs\HAIR_DESIGN_RANDOM_POOL_REVIEW_2026-08-04.md` 收敛为单一组件设计页面：各槽位支持随机池随机或手选，并将预定义设计与随机池 Gallery 分离。

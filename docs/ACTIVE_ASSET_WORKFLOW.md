@@ -11,6 +11,7 @@
 - 当前像素运行时包：`prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
 - 当前发型源：`prototype/assets/hair/Blender-Chloe_Hair.blend`、`prototype/assets/hair/male_source/Blend_Hair.blend`
 - 发型组件分类和兼容规则：`prototype/assets/hair/hair_component_catalog_v1.json`、`docs/HAIR_COMPONENT_RANDOMIZATION_2026-08-04.md`
+- 发型设计/随机池/评审页面设计：`docs/HAIR_DESIGN_RANDOM_POOL_REVIEW_2026-08-04.md`
 
 `female_more` 与 Chloe 源几何重复，不作为独立资源保留。男性源中的全部刘海和女性 Chloe 的全部后发先进入审查 gallery，只有通过四视图和像素验收的候选才能进入推荐池。
 
