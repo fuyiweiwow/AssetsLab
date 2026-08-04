@@ -28,8 +28,12 @@ try {
 
     function Invoke-HairPreview([string]$genderName, [string[]]$objects, [string]$sourceBlend, [string]$anchor, [bool]$normalizeSource) {
         $script:total++
-        $parts = $objects | ForEach-Object { $_ -replace "^.*_hair_", "" -replace "_", "-" }
-        $name = "pool_{0}_{1}" -f $genderName, ($parts -join "_")
+        if ($genderName -eq "female") {
+            $name = "pool_female_{0}_{1}" -f $objects[1].Split('_')[-1], $objects[2].Split('_')[-1]
+        } else {
+            $backSuffix = if ($objects.Count -gt 2) { $objects[2].Split('_')[-1] } else { "none" }
+            $name = "pool_male_{0}_{1}_{2}" -f $objects[0].Split('_')[-1], $objects[1].Split('_')[-1], $backSuffix
+        }
         $output = Join-Path $OutputRoot $name
         New-Item -ItemType Directory -Force -Path $output | Out-Null
         $arguments = @(
@@ -38,12 +42,12 @@ try {
             "--hair-objects"
         ) + $objects + @(
             "--source-anchor-object", $anchor,
-            "--normalize-components-to-head",
             "--actor-blend", $actor,
             "--output-blend", (Join-Path $output "actor.blend"),
             "--output-dir", $output
         )
         if ($normalizeSource) { $arguments += "--normalize-source-component-layout" }
+        else { $arguments += "--normalize-components-to-head" }
         & $Blender @arguments 2>&1 | Select-String -Pattern "CHIBI_BLEND_HAIR_CANDIDATE_PASS|Error|error"
         if ($LASTEXITCODE -ne 0) { throw "Hair preview generation failed: $name" }
     }
