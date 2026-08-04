@@ -1,0 +1,377 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Chibi Eye Calibrator</title>
+  <style>
+    :root { color-scheme: dark; --bg:#101522; --panel:#1b2435; --line:#35445f; --text:#f5f7fb; --muted:#aebbd0; --accent:#8fd3ff; --pink:#ff78b7; --cyan:#55d9ff; --danger:#ff9a9a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(145deg,#0e1420,#1c2940); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(1500px,100%); margin:auto; padding:18px 16px 42px; }
+    h1 { margin:0 0 3px; font-size:clamp(24px,4vw,36px); }
+    h2 { margin:0 0 8px; font-size:18px; }
+    p { margin:5px 0 10px; color:var(--muted); }
+    code { color:#d8f2ff; word-break:break-word; }
+    .layout { display:grid; grid-template-columns:minmax(0,1fr) 330px; gap:14px; align-items:start; }
+    .panel { border:1px solid var(--line); border-radius:14px; background:rgba(27,36,53,.94); padding:13px; }
+    .viewport { min-height:620px; padding:0; overflow:hidden; position:relative; background:#090e18; }
+    canvas { display:block; width:100%; height:620px; }
+    .status { position:absolute; left:12px; top:10px; color:#b9f2c7; pointer-events:none; }
+    .error { color:var(--danger); }
+    .toolbar { display:flex; flex-wrap:wrap; gap:7px; padding:10px 12px 0; }
+    button, select, input { font:inherit; }
+    button { cursor:pointer; color:var(--text); background:#263653; border:1px solid #496082; border-radius:8px; padding:6px 10px; }
+    button:hover, button.active { border-color:var(--accent); background:#315176; }
+    button.primary { background:#28708f; border-color:#75d7ff; }
+    .side { display:grid; gap:12px; }
+    .row { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+    .row3 { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    label { display:grid; gap:3px; color:var(--muted); font-size:13px; }
+    input { width:100%; min-width:0; padding:6px 7px; color:var(--text); background:#111a2a; border:1px solid #43516a; border-radius:7px; }
+    input:focus { outline:2px solid #6fc6ef; outline-offset:1px; }
+    .eye-tabs { display:flex; gap:7px; margin-bottom:9px; }
+    .eye-tabs button { flex:1; }
+    .eye-tabs .left.active { border-color:var(--cyan); }
+    .eye-tabs .right.active { border-color:var(--pink); }
+    .small { font-size:12px; color:var(--muted); }
+    textarea { width:100%; min-height:190px; resize:vertical; padding:8px; color:#d8f2ff; background:#0c1320; border:1px solid #43516a; border-radius:8px; font:12px/1.4 ui-monospace,SFMono-Regular,Consolas,monospace; }
+    .legend { display:flex; flex-wrap:wrap; gap:10px; margin-top:8px; color:var(--muted); font-size:12px; }
+    .dot { display:inline-block; width:9px; height:9px; border-radius:50%; margin-right:4px; }
+    .cyan { background:var(--cyan); } .pink { background:var(--pink); } .yellow { background:#ffe29a; }
+    @media (max-width:900px) { .layout { grid-template-columns:1fr; } .viewport, canvas { min-height:500px; height:500px; } }
+  </style>
+  <script type="importmap">
+  {"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.180.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.180.0/examples/jsm/"}}
+  </script>
+</head>
+<body>
+<main>
+  <h1>Chibi 眼球网页校准器</h1>
+  <p>拖动或旋转选中的眼球，切换正面/侧面/背面检查位置；最后复制下方 JSON 发回给我。</p>
+  <div class="layout">
+    <section class="panel viewport">
+      <div class="status" id="status">正在加载模型…</div>
+      <canvas id="viewport" aria-label="3D 角色和眼球校准视口"></canvas>
+      <div class="toolbar">
+        <button data-view="front" class="active">正面</button>
+        <button data-view="right">右侧</button>
+        <button data-view="back">背面</button>
+        <button data-view="top">上方</button>
+        <button id="fit">重新聚焦</button>
+        <button id="modeTranslate" class="active">移动工具</button>
+        <button id="modeRotate">旋转工具</button>
+      </div>
+    </section>
+
+    <aside class="side">
+      <section class="panel">
+        <h2>当前编辑对象</h2>
+        <div class="eye-tabs">
+          <button id="selectLeft" class="left active">左眼（青色）</button>
+          <button id="selectRight" class="right">右眼（粉色）</button>
+        </div>
+        <p class="small">移动模式下可直接用鼠标拖动彩色眼球，也可拖三轴工具；旋转模式下拖旋转工具。数值改动会立即反映到视口，导出后我会转换回 Blender。</p>
+        <h2>位置</h2>
+        <div class="row3">
+          <label>X<input id="posX" type="number" step="0.01"></label>
+          <label>Y<input id="posY" type="number" step="0.01"></label>
+          <label>Z<input id="posZ" type="number" step="0.01"></label>
+        </div>
+        <h2 style="margin-top:10px">旋转（度）</h2>
+        <div class="row3">
+          <label>X / 俯仰<input id="rotX" type="number" step="1"></label>
+          <label>Y / 滚转<input id="rotY" type="number" step="1"></label>
+          <label>Z / 水平<input id="rotZ" type="number" step="1"></label>
+        </div>
+        <div class="toolbar" style="padding:12px 0 0">
+          <button id="resetEye">恢复该眼初始值</button>
+          <button id="resetBoth">恢复双眼初始值</button>
+        </div>
+        <div class="legend"><span><i class="dot cyan"></i>左眼</span><span><i class="dot pink"></i>右眼</span><span><i class="dot yellow"></i>瞳孔方向辅助标记</span></div>
+      </section>
+
+      <section class="panel">
+        <h2>反馈 JSON</h2>
+        <p class="small">点击“更新 JSON”后复制全部内容发给我。它只记录眼球校准结果，不会修改原始 FBX。</p>
+        <textarea id="output" spellcheck="false" aria-label="眼球校准 JSON"></textarea>
+        <div class="toolbar" style="padding:9px 0 0">
+          <button id="updateJson" class="primary">更新 JSON</button>
+          <button id="copyJson">复制 JSON</button>
+          <button id="downloadJson">下载 JSON</button>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>使用提示</h2>
+        <p class="small">1. 先点“正面”，确认双眼没有跑到头后面。<br>2. 再点“右侧”，检查眼球是否在头部内部、瞳孔是否朝前。<br>3. 选中眼球后可拖动彩色辅助框，也可直接改数值。<br>4. 调整满意后点击“更新 JSON”，把文本粘贴回对话。</p>
+        <p class="small">网页预览使用白色眼球和瞳孔方向标记；最终渲染仍以 Blender 的 Procedural Anime Eye Shader 为准。</p>
+      </section>
+    </aside>
+  </div>
+</main>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { TransformControls } from 'three/addons/controls/TransformControls.js';
+import { DragControls } from 'three/addons/controls/DragControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const canvas = document.getElementById('viewport');
+const status = document.getElementById('status');
+const scene = new THREE.Scene();
+scene.background = new THREE.Color(0x090e18);
+const camera = new THREE.PerspectiveCamera(35, 1, 0.01, 1000);
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.shadowMap.enabled = true;
+const orbit = new OrbitControls(camera, renderer.domElement);
+orbit.enableDamping = true;
+orbit.dampingFactor = 0.08;
+const transform = new TransformControls(camera, renderer.domElement);
+transform.setSize(0.7);
+scene.add(transform.getHelper());
+transform.addEventListener('dragging-changed', event => { orbit.enabled = !event.value; });
+transform.addEventListener('change', () => { syncFields(); updateGuides(); updateJson(); });
+let dragControls = null;
+let editMode = 'translate';
+
+scene.add(new THREE.HemisphereLight(0xbfdcff, 0x293044, 2.1));
+const key = new THREE.DirectionalLight(0xffffff, 2.6);
+key.position.set(-4, -6, 8); key.castShadow = true; scene.add(key);
+const grid = new THREE.GridHelper(8, 16, 0x40516d, 0x25334a);
+  grid.position.y = -2.5; scene.add(grid);
+
+const modelRoot = new THREE.Group();
+scene.add(modelRoot);
+const eyeState = {};
+const guides = {};
+let selectedName = 'EyeL';
+let modelReady = false;
+
+function findEye(root, shortName) {
+  const exact = root.getObjectByName(`ProceduralAnimeEye_${shortName}`);
+  if (exact) return exact;
+  let found = null;
+  root.traverse(object => { if (!found && object.name.endsWith(shortName)) found = object; });
+  return found;
+}
+
+function setStatus(message, isError = false) {
+  status.textContent = message;
+  status.className = isError ? 'status error' : 'status';
+}
+
+function makeGuide(name, color) {
+  const root = new THREE.Group();
+  root.name = `${name}DirectionGuide`;
+  const iris = new THREE.Mesh(new THREE.CircleGeometry(0.10, 32), new THREE.MeshBasicMaterial({ color, side: THREE.DoubleSide }));
+  const pupil = new THREE.Mesh(new THREE.CircleGeometry(0.045, 24), new THREE.MeshBasicMaterial({ color: 0x151a27, side: THREE.DoubleSide }));
+  const glint = new THREE.Mesh(new THREE.CircleGeometry(0.018, 16), new THREE.MeshBasicMaterial({ color: 0xffffff, side: THREE.DoubleSide }));
+  root.add(iris, pupil, glint);
+  scene.add(root);
+  return { root, iris, pupil, glint, color };
+}
+
+function updateOneGuide(name) {
+  const state = eyeState[name];
+  const guide = guides[name];
+  if (!state || !guide) return;
+  const eye = state.object;
+  const size = new THREE.Box3().setFromObject(eye).getSize(new THREE.Vector3());
+  const radius = Math.max(size.x, size.y, size.z) * 0.5;
+  // The source object origin may not equal the actual mesh center.
+  const bounds = new THREE.Box3().setFromObject(eye);
+  const center = bounds.getCenter(new THREE.Vector3());
+  // Blender forward -Y becomes glTF/Three forward +Z after the exporter axis conversion.
+  const forward = new THREE.Vector3(0, 0, 1).applyQuaternion(eye.getWorldQuaternion(new THREE.Quaternion())).normalize();
+  const normal = new THREE.Vector3(0, 0, 1);
+  const guidePosition = center.clone().addScaledVector(forward, radius * 1.03);
+  guide.root.position.copy(guidePosition);
+  guide.root.quaternion.setFromUnitVectors(normal, forward);
+  const scale = Math.max(radius / 0.235, 0.1);
+  guide.root.scale.setScalar(scale);
+  guide.pupil.position.set(0, 0, 0.004);
+  guide.glint.position.set(-0.04, 0.04, 0.008);
+}
+
+function updateGuides() { updateOneGuide('EyeL'); updateOneGuide('EyeR'); }
+
+function deg(value) { return THREE.MathUtils.radToDeg(value); }
+function num(value) { return Number(Number(value).toFixed(4)); }
+
+function syncFields() {
+  const state = eyeState[selectedName];
+  if (!state) return;
+  const eye = state.object;
+  document.getElementById('posX').value = num(eye.position.x);
+  document.getElementById('posY').value = num(eye.position.y);
+  document.getElementById('posZ').value = num(eye.position.z);
+  document.getElementById('rotX').value = num(deg(eye.rotation.x));
+  document.getElementById('rotY').value = num(deg(eye.rotation.y));
+  document.getElementById('rotZ').value = num(deg(eye.rotation.z));
+}
+
+function applyFields() {
+  const state = eyeState[selectedName];
+  if (!state) return;
+  const eye = state.object;
+  eye.position.set(Number(document.getElementById('posX').value), Number(document.getElementById('posY').value), Number(document.getElementById('posZ').value));
+  eye.rotation.set(
+    THREE.MathUtils.degToRad(Number(document.getElementById('rotX').value)),
+    THREE.MathUtils.degToRad(Number(document.getElementById('rotY').value)),
+    THREE.MathUtils.degToRad(Number(document.getElementById('rotZ').value)),
+  );
+  updateGuides();
+  transform.attach(eye);
+  updateJson();
+}
+
+function selectEye(name) {
+  selectedName = name;
+  document.getElementById('selectLeft').classList.toggle('active', name === 'EyeL');
+  document.getElementById('selectRight').classList.toggle('active', name === 'EyeR');
+  if (eyeState[name]) transform.attach(eyeState[name].object);
+  syncFields();
+}
+
+function resetEye(name) {
+  const state = eyeState[name];
+  if (!state) return;
+  state.object.position.copy(state.initialPosition);
+  state.object.rotation.copy(state.initialRotation);
+  if (name === selectedName) syncFields();
+  updateGuides(); updateJson();
+}
+
+function fitView() {
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const radius = Math.max(size.x, size.y, size.z) * 0.65;
+  orbit.target.copy(center);
+  camera.position.set(center.x, center.y + radius * 0.25, center.z + radius * 3.3);
+  camera.near = Math.max(0.001, radius / 100); camera.far = radius * 30; camera.updateProjectionMatrix();
+  orbit.update();
+}
+
+function setView(view) {
+  const box = new THREE.Box3().setFromObject(modelRoot);
+  const center = box.getCenter(new THREE.Vector3());
+  const size = box.getSize(new THREE.Vector3());
+  const distance = Math.max(size.x, size.y, size.z) * 2.9;
+  const positions = {
+    front: [center.x, center.y, center.z + distance],
+    right: [center.x + distance, center.y, center.z],
+    back: [center.x, center.y, center.z - distance],
+    top: [center.x, center.y + distance, center.z],
+  };
+  camera.position.set(...positions[view]);
+  orbit.target.copy(center); orbit.update();
+  document.querySelectorAll('[data-view]').forEach(button => button.classList.toggle('active', button.dataset.view === view));
+}
+
+function snapshot() {
+  const payload = {
+    schema: 'assetslab_chibi_eye_web_calibration_v1',
+    created_at: new Date().toISOString(),
+    model: 'chibi_base_mesh_accurig_rigged_v1 + Procedural Anime Eye Shader',
+    forward_axis: '-Y',
+    web_forward_axis: '+Z',
+    eyes: {},
+    note: '网页校准器导出的 glTF/Three.js 坐标；请回传给 AssetsLab 转换回 Blender 后继续测试。',
+  };
+  for (const name of ['EyeL', 'EyeR']) {
+    const eye = eyeState[name]?.object;
+    if (!eye) continue;
+    payload.eyes[name] = {
+      position: { x: num(eye.position.x), y: num(eye.position.y), z: num(eye.position.z) },
+      rotation_euler_deg: { x: num(deg(eye.rotation.x)), y: num(deg(eye.rotation.y)), z: num(deg(eye.rotation.z)) },
+      forward_axis: '-Y',
+      web_forward_axis: '+Z',
+    };
+  }
+  return payload;
+}
+
+function updateJson() {
+  document.getElementById('output').value = JSON.stringify(snapshot(), null, 2);
+}
+
+function downloadText(filename, text) {
+  const blob = new Blob([text], { type: 'application/json;charset=utf-8' });
+  const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = filename; link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
+}
+
+function resize() {
+  const rect = canvas.getBoundingClientRect();
+  renderer.setSize(rect.width, rect.height, false);
+  camera.aspect = rect.width / Math.max(rect.height, 1); camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+
+document.querySelectorAll('[data-view]').forEach(button => button.addEventListener('click', () => setView(button.dataset.view)));
+document.getElementById('fit').addEventListener('click', fitView);
+document.getElementById('selectLeft').addEventListener('click', () => selectEye('EyeL'));
+document.getElementById('selectRight').addEventListener('click', () => selectEye('EyeR'));
+document.getElementById('resetEye').addEventListener('click', () => resetEye(selectedName));
+document.getElementById('resetBoth').addEventListener('click', () => { resetEye('EyeL'); resetEye('EyeR'); });
+['posX','posY','posZ','rotX','rotY','rotZ'].forEach(id => {
+  document.getElementById(id).addEventListener('input', applyFields);
+  document.getElementById(id).addEventListener('change', applyFields);
+});
+document.getElementById('modeTranslate').addEventListener('click', () => {
+  editMode = 'translate';
+  transform.setMode('translate');
+  if (dragControls) dragControls.enabled = true;
+  document.getElementById('modeTranslate').classList.add('active');
+  document.getElementById('modeRotate').classList.remove('active');
+});
+document.getElementById('modeRotate').addEventListener('click', () => {
+  editMode = 'rotate';
+  transform.setMode('rotate');
+  if (dragControls) dragControls.enabled = false;
+  document.getElementById('modeRotate').classList.add('active');
+  document.getElementById('modeTranslate').classList.remove('active');
+});
+document.getElementById('updateJson').addEventListener('click', updateJson);
+document.getElementById('copyJson').addEventListener('click', async () => { const output = document.getElementById('output'); output.select(); await navigator.clipboard.writeText(output.value); setStatus('JSON 已复制，可以粘贴回对话。'); });
+document.getElementById('downloadJson').addEventListener('click', () => downloadText('chibi_eye_web_calibration.json', document.getElementById('output').value));
+
+const loader = new GLTFLoader();
+loader.load('assets/chibi_eye_web_calibrator.glb', gltf => {
+  modelRoot.add(gltf.scene);
+  const left = findEye(gltf.scene, 'EyeL');
+  const right = findEye(gltf.scene, 'EyeR');
+  if (!left || !right) { setStatus('模型已加载，但没有找到 EyeL / EyeR 对象。', true); return; }
+  eyeState.EyeL = { object: left, initialPosition: left.position.clone(), initialRotation: left.rotation.clone() };
+  eyeState.EyeR = { object: right, initialPosition: right.position.clone(), initialRotation: right.rotation.clone() };
+  guides.EyeL = makeGuide('EyeL', 0x55d9ff);
+  guides.EyeR = makeGuide('EyeR', 0xff78b7);
+  dragControls = new DragControls([left, right], camera, renderer.domElement);
+  dragControls.enabled = true;
+  dragControls.addEventListener('dragstart', event => {
+    orbit.enabled = false;
+    selectEye(event.object === left ? 'EyeL' : 'EyeR');
+  });
+  dragControls.addEventListener('drag', () => {
+    syncFields(); updateGuides(); updateJson();
+  });
+  dragControls.addEventListener('dragend', () => { orbit.enabled = true; });
+  modelReady = true;
+  resize(); fitView(); selectEye('EyeL'); updateGuides(); updateJson();
+  setStatus('模型已加载：先检查正面，再检查右侧。');
+}, undefined, error => setStatus(`模型加载失败：${error.message || error}`, true));
+
+function animate() {
+  requestAnimationFrame(animate);
+  if (modelReady) updateGuides();
+  orbit.update(); renderer.render(scene, camera);
+}
+resize(); animate();
+</script>
+</body>
+</html>

@@ -11,7 +11,7 @@ var walk_phase := 0.0
 var space_was_down := false
 var variant := "male"
 var asset_root := "chibi"
-var base_features := false
+var base_features := true
 var rebuild_head := false
 var rebuild_body := false
 var rgs_body_right := false
@@ -22,6 +22,7 @@ var latest_generated_body := false
 var vertical_body_candidate := false
 var appearance_seed: int = 20260730
 var appearance_variant: int = 0
+const APPEARANCE_VARIANT_COUNT := 8
 var body_anchor_offsets: Dictionary = {}
 var torso_frame_textures: Array[Texture2D] = []
 var arms_frame_textures: Array[Texture2D] = []
@@ -60,6 +61,9 @@ func _ready() -> void:
 	vertical_body_candidate = "--vertical-body-candidate" in user_args
 	appearance_seed = _read_appearance_seed()
 	appearance_variant = appearance_variant_for_seed(appearance_seed, variant == "female")
+	var appearance_override := _read_appearance_variant_override()
+	if appearance_override >= 0:
+		appearance_variant = appearance_override
 	_load_frame_textures()
 	_load_rgs_walk_reference_frames()
 	_load_milestone_body_frames()
@@ -132,13 +136,10 @@ func _load_frame_textures() -> void:
 				head_path = rebuild_base + "face_base_frames/walk_row%d_frame%d.png" % [row, column]
 				ear_path = rebuild_base + "ears_frames/walk_row%d_frame%d.png" % [row, column]
 				face_path = rebuild_base + "face_frames/walk_row%d_frame%d.png" % [row, column]
-			elif base_features:
+			else:
 				var feature_base := "res://assets/characters/base_features_v1/%s/" % variant
 				ear_path = feature_base + "ear_frames/walk_row%d_frame%d.png" % [row, column]
 				face_path = feature_base + "face_frames/walk_row%d_frame%d.png" % [row, column]
-			else:
-				ear_path = "res://assets/characters/faces/ear_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
-				face_path = "res://assets/characters/faces/face_%02d/frames/walk_row%d_frame%d.png" % [appearance_variant, row, column]
 			var torso_texture := load(torso_path) as Texture2D
 			var arms_texture := load(arms_path) as Texture2D
 			var lower_body_texture := load(lower_body_path) as Texture2D
@@ -181,6 +182,15 @@ func _read_appearance_seed() -> int:
 		if argument.begins_with("--appearance-seed="):
 			return argument.trim_prefix("--appearance-seed=").to_int()
 	return appearance_seed
+
+
+func _read_appearance_variant_override() -> int:
+	for argument in OS.get_cmdline_user_args():
+		if argument.begins_with("--appearance-variant="):
+			var value := argument.trim_prefix("--appearance-variant=").to_int()
+			if value >= 0 and value < APPEARANCE_VARIANT_COUNT:
+				return value
+	return -1
 
 
 func _load_body_anchor_offsets() -> void:

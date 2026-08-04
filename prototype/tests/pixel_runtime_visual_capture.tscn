@@ -1,0 +1,6 @@
+[gd_scene load_steps=2 format=3]
+
+[ext_resource type="Script" path="res://tests/pixel_runtime_visual_capture.gd" id="1_visual_capture"]
+
+[node name="PixelRuntimeVisualCapture" type="Node2D"]
+script = ExtResource("1_visual_capture")

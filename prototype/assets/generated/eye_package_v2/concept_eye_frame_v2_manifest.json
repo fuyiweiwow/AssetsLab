@@ -1,0 +1,25 @@
+{
+  "schema": "assetslab_concept_eye_frame_v2",
+  "source": "E:\\WorkProject\\AssetsLab\\front-character-anchor.png",
+  "method": "rounded_rectangle_landmark_trace",
+  "regions": {
+    "L": {
+      "box_xyxy": [
+        365,
+        460,
+        505,
+        560
+      ],
+      "output": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\generated\\eye_package_v2\\concept_eye_frame_v2_L.png"
+    },
+    "R": {
+      "box_xyxy": [
+        550,
+        460,
+        695,
+        560
+      ],
+      "output": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\generated\\eye_package_v2\\concept_eye_frame_v2_R.png"
+    }
+  }
+}

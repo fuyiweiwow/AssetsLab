@@ -1,0 +1,35 @@
+{
+  "schema": "assetslab_chibi_accurig_input_v1",
+  "source": "E:\\WorkProject\\AssetsLab\\third_party\\chibi-base-meshblender.zip",
+  "output_fbx": "E:\\WorkProject\\AssetsLab\\prototype\\assets\\characters\\generated\\chibi_base_mesh_accurig_input_v3\\chibi_base_mesh_accurig_input_v3.fbx",
+  "mesh_name": "ChibiBaseMesh_AccuRIG_Input",
+  "vertex_count": 16296,
+  "polygon_count": 16256,
+  "source_modifier_actions": [
+    {
+      "name": "Mirror",
+      "type": "MIRROR",
+      "action": "applied"
+    },
+    {
+      "name": "Subdivision",
+      "type": "SUBSURF",
+      "action": "applied"
+    }
+  ],
+  "centered_on_xy": true,
+  "bottom_at_z": 0.0,
+  "bounds_min": [
+    -0.762075662612915,
+    -0.7460548281669617,
+    0.0
+  ],
+  "bounds_max": [
+    0.762075662612915,
+    0.7460548281669617,
+    3.08616304397583
+  ],
+  "armature_included": false,
+  "camera_included": false,
+  "neutral_pose": true
+}
