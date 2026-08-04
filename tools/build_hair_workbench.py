@@ -117,6 +117,9 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .lead { margin: 0 0 16px; }
     .bar, .panel, .saved { border: 1px solid #765247; border-radius: 14px; background: #2a2024ee; box-shadow: 0 8px 24px #0006; }
     .bar { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px; margin-bottom: 12px; }
+    .workspace { display: grid; grid-template-columns: minmax(300px, 350px) minmax(0, 1fr); gap: 12px; align-items: start; }
+    .left-column, .right-column { min-width: 0; }
+    .right-column { max-width: 720px; }
     button, select { border: 1px solid #765247; border-radius: 9px; padding: 7px 10px; background: #201a21; color: #f7eee8; font: inherit; }
     button { cursor: pointer; }
     button.active, button.primary { background: #b86649; border-color: #e59a73; color: #fff4ec; }
@@ -134,10 +137,10 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .slot-modes { display: flex; gap: 5px; margin-bottom: 7px; }
     .slot-modes button { padding: 4px 7px; font-size: .72rem; }
     .slot select { width: 100%; box-sizing: border-box; }
-    .preview { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 12px; }
+    .preview { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px; }
     .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
     figure { margin: 0; color: #d5b9ad; text-align: center; font-size: .72rem; }
-    figure img { display: block; width: 100%; aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; background: #151219; border-radius: 7px; }
+    figure img { display: block; width: 100%; max-height: 185px; aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; background: #151219; border-radius: 7px; }
     .details { padding: 10px; border-left: 1px solid #5d4140; }
     .details p { margin: 6px 0; }
     .object-list { color: #f0c2a5; word-break: break-word; }
@@ -151,51 +154,58 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .saved-item .objects { flex: 1 1 260px; color: #d5b9ad; word-break: break-word; }
     .hidden { display: none !important; }
     footer { margin-top: 14px; }
-    @media (max-width: 700px) { .preview { grid-template-columns: 1fr; } .details { border-left: 0; border-top: 1px solid #5d4140; } .views { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 820px) { .workspace { grid-template-columns: 1fr; } .right-column { max-width: none; } }
+    @media (max-width: 700px) { .preview { grid-template-columns: 1fr; } .details { border-left: 0; border-top: 1px solid #5d4140; } .views { grid-template-columns: repeat(2, 1fr); } figure img { max-height: none; } }
   </style>
 </head>
 <body><main>
   <h1>AssetsLab 发型设计与随机池评审</h1>
   <p class="lead">每个部件都可以从随机池随机或从随机池手选。base 必须存在；保存的设计不会自动加入随机池。当前只展示已经由 Blender 生成的组合预览。</p>
-  <section class="bar">
-    <div class="controls">
-      <label>性别 <button type="button" class="gender active" data-gender="female">女性</button><button type="button" class="gender" data-gender="male">男性</button></label>
-      <button type="button" class="primary" id="randomize">随机未锁定部件</button>
-      <button type="button" id="generate">生成组合预览</button>
-      <button type="button" id="save">保存设计</button>
-      <button type="button" id="export">导出设计 JSON</button>
-      <a href="../index.html">返回 Gallery</a>
-      <span class="notice" id="action-status">等待操作</span>
+  <div class="workspace">
+    <div class="left-column">
+      <section class="bar">
+        <div class="controls">
+          <label>性别 <button type="button" class="gender active" data-gender="female">女性</button><button type="button" class="gender" data-gender="male">男性</button></label>
+          <button type="button" class="primary" id="randomize">随机未锁定部件</button>
+          <button type="button" id="generate">生成组合预览</button>
+          <button type="button" id="save">保存设计</button>
+          <button type="button" id="export">导出设计 JSON</button>
+          <a href="../index.html">返回 Gallery</a>
+          <span class="notice" id="action-status">等待操作</span>
+        </div>
+      </section>
+      <section class="panel">
+        <h2>组件槽位</h2>
+        <p class="hint">随机池当前包含 <span id="pool-count">0</span> 个组件；“手选”仍然只允许选择随机池成员，预定义设计不会进入随机池。</p>
+        <div class="slot-grid" id="slots"></div>
+      </section>
     </div>
-  </section>
-  <section class="panel">
-    <h2>组件槽位</h2>
-    <p class="hint">随机池当前包含 <span id="pool-count">0</span> 个组件；“手选”仍然只允许选择随机池成员，预定义设计不会进入随机池。</p>
-    <div class="slot-grid" id="slots"></div>
-  </section>
-  <section class="panel preview">
-    <div>
-      <h2 id="preview-title">等待组合预览</h2>
-      <div class="views">
-        <figure><img id="front" alt="正面预览"><figcaption>正面</figcaption></figure>
-        <figure><img id="right" alt="右侧预览"><figcaption>右侧</figcaption></figure>
-        <figure><img id="back" alt="背面预览"><figcaption>背面</figcaption></figure>
-        <figure><img id="left" alt="左侧预览"><figcaption>左侧</figcaption></figure>
-      </div>
+    <div class="right-column">
+      <section class="panel preview">
+        <div>
+          <h2 id="preview-title">等待组合预览</h2>
+          <div class="views">
+            <figure><img id="front" alt="正面预览"><figcaption>正面</figcaption></figure>
+            <figure><img id="right" alt="右侧预览"><figcaption>右侧</figcaption></figure>
+            <figure><img id="back" alt="背面预览"><figcaption>背面</figcaption></figure>
+            <figure><img id="left" alt="左侧预览"><figcaption>左侧</figcaption></figure>
+          </div>
+        </div>
+        <aside class="details">
+          <span class="status pending" id="preview-status">未生成</span>
+          <p id="preview-gender">性别：—</p>
+          <p class="object-list" id="preview-objects">组件：—</p>
+          <p class="meta" id="preview-signature">组合签名：—</p>
+          <div class="links"><a id="sheet-link" class="hidden" target="_blank" rel="noreferrer">像素四视图</a><a id="gallery-link" class="hidden" target="_blank" rel="noreferrer">对应 Gallery</a></div>
+          <p class="hint" id="preview-note">选择组件后点击“生成组合预览”。</p>
+        </aside>
+      </section>
+      <section class="saved">
+        <h2>已保存设计（不属于随机池）</h2>
+        <div class="saved-list" id="saved-list"><p class="hint">尚未保存设计。</p></div>
+      </section>
     </div>
-    <aside class="details">
-      <span class="status pending" id="preview-status">未生成</span>
-      <p id="preview-gender">性别：—</p>
-      <p class="object-list" id="preview-objects">组件：—</p>
-      <p class="meta" id="preview-signature">组合签名：—</p>
-      <div class="links"><a id="sheet-link" class="hidden" target="_blank" rel="noreferrer">像素四视图</a><a id="gallery-link" class="hidden" target="_blank" rel="noreferrer">对应 Gallery</a></div>
-      <p class="hint" id="preview-note">选择组件后点击“生成组合预览”。</p>
-    </aside>
-  </section>
-  <section class="saved">
-    <h2>已保存设计（不属于随机池）</h2>
-    <div class="saved-list" id="saved-list"><p class="hint">尚未保存设计。</p></div>
-  </section>
+  </div>
   <footer>数据来源：hair_random_pool_v1.json 与候选 manifest；设计记录保存在当前浏览器 localStorage。</footer>
 </main>
 <script>
