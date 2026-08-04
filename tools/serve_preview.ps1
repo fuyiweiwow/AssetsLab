@@ -1,18 +1,12 @@
 param(
     [Parameter(Mandatory = $false)]
-    [int]$Port = 8000,
+    [int]$Port = 8765,
 
     [Parameter(Mandatory = $false)]
     [string]$PythonPath,
 
     [Parameter(Mandatory = $false)]
-    [string]$UnusedSnapshotName,
-
-    [Parameter(Mandatory = $false)]
-    [int]$HairVariantCacheMaxCount = 40,
-
-    [Parameter(Mandatory = $false)]
-    [long]$HairVariantCacheMaxBytes = 536870912
+    [string]$SnapshotName
 )
 
 $ErrorActionPreference = "Stop"
@@ -20,19 +14,27 @@ $assetsLabRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot "resolve_python.ps1")
 $python = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot $assetsLabRoot
 
-$previewRoot = Join-Path $assetsLabRoot "prototype"
+$previewRoot = Join-Path $assetsLabRoot "prototype\preview"
 $serverPython = Join-Path (Split-Path -Parent $python) "pythonw.exe"
 if (-not (Test-Path -LiteralPath $serverPython -PathType Leaf)) {
     $serverPython = $python
 }
+$publishArguments = @("tools\publish_preview.py")
+if (-not [string]::IsNullOrWhiteSpace($SnapshotName)) {
+    $publishArguments += @("--name", $SnapshotName)
+}
+$publishOutput = & $python @publishArguments
+$publishOutput
+
+$snapshotLine = $publishOutput | Select-String "PREVIEW_SNAPSHOT_PASS" | Select-Object -Last 1
+$snapshotNameValue = if ($snapshotLine) { ($snapshotLine.ToString() -split "name=", 2)[1].Trim() } else { "" }
+
 $existing = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
 if ($existing) {
     Write-Output "PREVIEW_SERVER_ALREADY_RUNNING port=$Port"
 } else {
     $server = Start-Process -WindowStyle Hidden -WorkingDirectory $assetsLabRoot -PassThru -FilePath $serverPython -ArgumentList @(
-        "tools\lan_preview_server.py", "--port", $Port.ToString(), "--directory", $previewRoot,
-        "--hair-variant-cache-max-count", $HairVariantCacheMaxCount.ToString(),
-        "--hair-variant-cache-max-bytes", $HairVariantCacheMaxBytes.ToString()
+        "tools\lan_preview_server.py", "--port", $Port.ToString(), "--directory", $previewRoot
     )
     $server.Id | Set-Content -LiteralPath (Join-Path $assetsLabRoot "prototype\test_output\lan_preview.pid") -Encoding ascii
     Start-Sleep -Milliseconds 500
@@ -55,7 +57,13 @@ if (-not [string]::IsNullOrWhiteSpace($tailscalePath)) {
 }
 
 $orderedAddresses = @($tailscaleAddresses + $addresses | Select-Object -Unique)
-$urls = foreach ($address in $orderedAddresses) { "http://$address`:$Port/preview/" }
+$urls = foreach ($address in $orderedAddresses) {
+    if ([string]::IsNullOrWhiteSpace($snapshotNameValue)) {
+        "http://$address`:$Port/"
+    } else {
+        "http://$address`:$Port/snapshots/$snapshotNameValue/"
+    }
+}
 $urlText = $urls -join [Environment]::NewLine
 $urlText | Set-Content -LiteralPath (Join-Path $assetsLabRoot "prototype\test_output\lan_preview_url.txt") -Encoding utf8
 Write-Output "PREVIEW_SERVER_ROOT=$previewRoot"

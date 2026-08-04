@@ -1,64 +1,333 @@
-# AssetsLab Prototype
+# AssetsLab Minimal Prototype
 
-当前项目只保留一条可重建的最小流程：
+Target engine: Godot 4.6.2.
 
-```text
-素体演员 + 骨骼标定
-  -> 眼睛/眉毛/耳朵挂载与随机化
-  -> 发型候选组装与 Gallery 审查
-  -> 四方向渲染
-  -> 最近邻像素化
-  -> Godot 无 GUI 运行时验证
-```
+This prototype is intentionally UI-free. It is a command-line validated gameplay slice for:
 
-详细保留清单、命令和清理规则见：
+- four-direction movement;
+- eight-frame walk animation;
+- collision against arena walls;
+- one bomb with a short fuse and blast feedback;
+- QQTang-style oversized-head neutral base as the current runtime skin: shared torso, arms, lower-body, feet, plus male/female head layers.
+- deterministic front-facing ear and eye/blush layers selected by an appearance seed.
 
-```text
-docs/ACTIVE_ASSET_WORKFLOW.md
-```
+Body source rule: new horizontal walk work starts from the recommended neutral
+base `../walk-base-4way-male-4frame-sheet.png`. The current eight-frame review
+candidate is `assets/characters/generated/recommended_base_horizontal_layer_fix_v1/`.
+The later `female_adventurer_reference_mannequin_v1_adapted` output is a redraw
+comparison fixture and must not be treated as the recommended base.
 
-## 当前核心路径
+The generated front/back vertical movement candidate is kept separately at
+`assets/characters/generated/body_vertical_update_v1/runtime/`; it is a review
+candidate and does not replace the current runtime body. The complete reference
+package on the `history0731` branch contains diagonal timing strips, but the
+prototype remains four-direction until that contract is stable.
 
-- 演员：`assets/characters/generated/chibi_eyes_ears_pixel_walk_source_v1.blend`
-- 骨骼标定：`assets/characters/generated/chibi_base_mesh_accurig_input_v3/`、`chibi_base_mesh_accurig_calibrated_v1.fbx`
-- 眼睛/眉毛/耳朵：`assets/characters/base_features_v1/`
-- 当前像素运行时：`assets/characters/runtime/chibi_eyes_ears_walk_v1/`
-- 发型：`assets/hair/`
+The latest automatic vertical preview is published through the snapshot server
+when `capture_walk_gif.ps1 -VerticalCandidate -VerticalOnly` is run. The
+four-direction clothed style experiment from the external pixel-art skill is
+also preview-only and is stored under
+`assets/characters/generated/skill_pixel_art_experiment_v1/`.
 
-## 无 GUI 验证
-
-使用项目上级目录的 Blender console 可执行文件：
-
-```powershell
-& ..\blender-4.5.10-windows-x64\blender.exe -b --python tools\blender\fit_blend_hair_candidate.py -- --help
-```
-
-生成人脸/耳朵随机化预览：
+The new skeleton-first walk workflow is independent of the older body
+candidates. Its current first gate is a front-view static skeleton. Run:
 
 ```powershell
-.\tools\run_chibi_face_randomization_preview.ps1
+.\tools\capture_front_skeleton_stage.ps1
 ```
 
-运行像素运行时端到端检查：
+This uses the Godot console executable with `--headless`, writes
+`test_output/skeleton_pipeline/front_base.png`, and must pass before the
+eight-frame leg loop is started.
+
+The current active step is the leg-only front-view loop. Run:
 
 ```powershell
-.\tools\run_pixel_asset_end_to_end.ps1
+.\tools\capture_front_leg_cycle_stage.ps1
 ```
 
-所有 Blender 和 Godot 验证均使用后台/console 模式，不打开 GUI。视觉检查通过预览服务器的 Tailscale 地址完成。
+It writes eight independent captures plus
+`test_output/skeleton_pipeline/front_legs.gif`. Pelvis, arms, torso, and head
+must remain static in this step.
 
-## 发型 Gallery
-
-发型规范见 `docs/HAIR_GALLERY_STANDARD_2026-08-04.md`。统一入口由以下命令生成：
+The next isolated step adds only the pelvis bob over those accepted leg frames:
 
 ```powershell
-python .\tools\build_hair_gallery_index.py `
-  --root .\test_output\hair_candidates_2026_08_04 `
-  --catalog .\assets\hair\hair_gallery_catalog_v1.json
+.\tools\capture_front_pelvis_bob_stage.ps1
 ```
 
-推荐池和实验池必须分开；未通过四视图、接缝、耳朵遮挡和侧视像素补偿检查的候选只能进入实验池。
+It writes eight captures plus `test_output/skeleton_pipeline/front_pelvis_bob.gif`.
+The pelvis moves vertically by at most 6px peak-to-peak; the head and arms stay
+static, and each foot position must exactly match stage 2.
 
-统一发型设计与随机池评审页面由 `tools\build_hair_workbench.py` 生成，支持每个槽位随机池随机、随机池手选和设计保存。它通过统一 Gallery 入口的“发型随机化与组件装配工作台”链接打开。
+The final front-view skeleton step adds only opposite arm swings:
 
-下一阶段按 `docs\HAIR_DESIGN_RANDOM_POOL_REVIEW_2026-08-04.md` 收敛为单一组件设计页面：各槽位支持随机池随机或手选，并将预定义设计与随机池 Gallery 分离。
+```powershell
+.\tools\capture_front_arm_swing_stage.ps1
+```
+
+It writes eight captures plus `test_output/skeleton_pipeline/front_arm_swing.gif`.
+Hands must remain below their shoulders and on their own side of the center
+axis; all accepted stage-3 lower-body values remain unchanged.
+
+The first side-view gate is deliberately static:
+
+```powershell
+.\tools\capture_side_skeleton_stage.ps1
+```
+
+It writes `test_output/skeleton_pipeline/side_base.png`. The capture must show
+one right-facing profile, a shared foot baseline, and explicit front/rear limb
+depth before the side-view leg loop is created.
+
+The next isolated side step is the leg-only loop:
+
+```powershell
+.\tools\capture_side_leg_cycle_stage.ps1
+```
+
+It writes eight captures plus `test_output/skeleton_pipeline/side_legs.gif`.
+F0/F4 are contact frames; only the rear leg lifts during F1–F3 and only the
+front leg lifts during F5–F7. The pelvis and arms remain static.
+
+The next side step adds only the pelvis bob:
+
+```powershell
+.\tools\capture_side_pelvis_bob_stage.ps1
+```
+
+It writes eight captures plus `test_output/skeleton_pipeline/side_pelvis_bob.gif`.
+The pelvis moves vertically by at most 6px peak-to-peak while all side-leg foot
+coordinates and upper-body coordinates remain unchanged.
+
+The final side-view step adds only counterphased arms:
+
+```powershell
+.\tools\capture_side_arm_swing_stage.ps1
+```
+
+It writes eight captures plus `test_output/skeleton_pipeline/side_arm_swing.gif`.
+The arms are opposite each other and counterphased to the legs; all accepted
+side pelvis, foot, and depth-order keys remain unchanged.
+
+The back-view pelvis stage retains the accepted back-leg foot coordinates and
+adds only a vertical 6px peak-to-peak pelvis bob:
+
+```powershell
+.\tools\capture_back_pelvis_bob_stage.ps1
+```
+
+The final back-view stage adds only the counterphased left/right arm swing:
+
+```powershell
+.\tools\capture_back_arm_swing_stage.ps1
+```
+
+Both scripts write eight captures and a GIF under
+`test_output/skeleton_pipeline/`. The back arms stay below their shoulders and
+on their own side of the center axis; the accepted lower-body coordinates stay
+unchanged.
+
+The left-facing profile is the exact joint mirror of the accepted right-facing
+cycle, and the four-direction review confirms shared head/neck anchors,
+pelvis phase, and foot baseline across all eight frames:
+
+```powershell
+.\tools\capture_left_mirror_stage.ps1
+.\tools\capture_four_direction_anchor_review.ps1
+```
+
+The next active gate draws only neutral geometric body blocks over that
+accepted four-direction motion. It is a 2D render guide for later art (or
+3D-guided redraw), not a production sprite:
+
+```powershell
+.\tools\capture_neutral_body_block_stage.ps1
+```
+
+The following calibration locks the shared head center and neck point while
+the lower body moves. It exports the same eight-frame four-direction review
+with a cyan registration overlay:
+
+```powershell
+.\tools\capture_calibrated_head_attachment_stage.ps1
+```
+
+## Skeleton Pipeline Status
+
+Paused after calibrated head attachment. Remaining: male/female variants and
+modular face-hair-clothing layers.
+
+## 3D Guide G0
+
+The offline Blender guide starts with a single static neutral mannequin and
+four orthographic cameras. It is a pose/depth/registration source for later
+pixel authoring only; the Godot runtime still uses transparent 2D layers.
+The contract is stored at
+`assets/characters/generated/skeleton_walk_pipeline_v1/3d_guide_v1/camera_contract.json`.
+It locks a 256 x 256 guide render to the 64 x 64 runtime frame with a shared
+head center `(32,16)`, neck `(32,25)`, and foot baseline `y=60`.
+
+Blender 4.5.0 is installed portably at `E:\env\Blender\blender.exe`. Rebuild
+the source `.blend`, four transparent reference views, and contact sheet with:
+
+```powershell
+.\tools\capture_3d_guide_g0.ps1
+```
+
+The generated review images are ignored under `test_output/3d_guide_g0/`; the
+reproducible `.blend`, contract, builder, and validator are tracked. G1 will
+add the accepted eight-frame walk and export separate silhouette, part-ID, and
+depth reference passes before any final pixels are drawn.
+
+Controls:
+
+- `WASD` or arrow keys: move.
+- `Space`: place one bomb.
+
+Append `--female` to run the same prototype with the female-presenting base.
+Append `--compact` to use the isolated compact-stride candidate assets.
+Append `--appearance-seed=12345` to select a repeatable face/ear combination.
+Use `-BaseFeatures` on the test scripts to validate the fixed directional
+`base_features_v1` set before enabling randomization.
+
+Run from the repository root. The test scripts resolve Godot in this order: `-GodotPath`, `GODOT_BIN`/`GODOT_PATH`, `godot`/`godot4` on `PATH`, then the legacy adjacent `Godot-4.6.2` directory:
+
+```powershell
+$env:GODOT_BIN = 'E:\Path\To\Godot_v4.6.2-stable_win64_console.exe'
+.\tools\run_headless_tests.ps1 -Female
+
+# Or pass a different local installation for one run:
+.\tools\run_headless_tests.ps1 -GodotPath 'E:\Other\Godot\godot.exe' -Female
+```
+
+The verified CC0 RGS right-facing walk reference can be loaded into the Godot
+smoke test with:
+
+```powershell
+.\tools\run_headless_tests.ps1 -RebuildHead -RebuildBody -RgsWalkReference -AppearanceSeed 20260730
+```
+
+`-RgsWalkReference` activates the eight-frame RGS motion reference through an
+isolated runtime slot. It is not the final character style; the next body pass
+will redraw our own art against its pose timing.
+
+Generate a hidden-window W/A/S/D capture and GIF from the repository root:
+
+```powershell
+.\tools\capture_walk_gif.ps1
+```
+
+Add `-Female` to capture the female-presenting base, `-Compact` to capture the compact-stride candidate, `-RgsWalkReference` to capture the open-source motion reference, or `-MilestoneBodyRight` to capture the frozen pixel-project milestone directly.
+Add `-RebuildHead` to capture the calibrated `rebuild_atlas_v1_runtime/male` head on the current body.
+Combine it with `-LatestGeneratedBody` to validate the latest generated body
+adapter under `assets/characters/generated/female_adventurer_reference_mannequin_v1_adapted/`.
+Use `-VerticalCandidate -VerticalOnly` to capture only the generated front/back
+vertical candidate, without mixing it with the four-direction runtime body.
+Add `-RightOnly` with `-MilestoneBodyRight` to capture only the eight-frame right-facing milestone loop and avoid mixing other direction assets.
+
+Both test entry points generate a fresh random appearance package under
+`prototype/test_output/random_appearance/` before starting Godot. The package
+contains the selected seed, a composited 4 x 8 walk atlas, individual frames,
+and a preview. Pass `-AppearanceSeed 12345` to reproduce one package exactly.
+When `-BaseFeatures` is used, the test additionally validates and runs the
+non-random base feature set.
+
+The capture script resolves Python from `-PythonPath`, `PYTHON_BIN`, PATH, or the local `.venv`/sibling fallback. Pillow is required for GIF conversion.
+
+Build the candidate vertical frames and structure-preserving skin previews from
+the repository root:
+
+```powershell
+python .\tools\build_body_vertical_update.py
+python .\tools\recolor_body_palettes.py
+```
+
+The palette tool writes `light`, `warm`, and `deep` variants while preserving
+the source frame size and alpha mask byte-for-byte. These are preview assets;
+they are not wired into the player yet.
+
+Random face and ear variants are currently deferred. The active runtime uses
+the validated fixed layers under `assets/characters/base_features_v1/`.
+
+The Godot process uses `--headless` with the Windows/OpenGL renderer, so no editor or game window is presented even if the capture is started repeatedly. The resolver requires a `_console.exe` build; it fails closed if a GUI binary has no unambiguous console sibling. PNG frames and the GIF are written to `prototype/test_output/`; this directory is ignored by Git. The GIF is `prototype/test_output/movement_walk.gif`.
+
+The headless test runner validates all 192 frames across six chibi layers and
+512 face/ear component frames before launching Godot. It checks fixed frame
+size, layer seam ranges, the shared foot baseline, transparent rear appearance
+rows, and deterministic seed selection. Add `-Compact` to validate and run the
+compact variant.
+
+The generated walk sheets are source assets. The processed transparent atlases
+under `assets/characters/chibi/` are the runtime inputs for this prototype. The
+runtime stack is independent `Feet` + `LowerBody` + `Arms` + `Torso` + `Ear` +
+male/female `Head` + `Face` layers. The first appearance pass has no nose or
+mouth; hair and clothing remain future layers.
+
+Open `preview/index.html` for the persistent local asset preview. It uses
+project-tracked files instead of `test_output/`, so the page remains usable
+after temporary test artifacts are cleaned.
+
+Publish a timestamped snapshot and start a read-only LAN server for phone
+review from the repository root:
+
+```powershell
+.\tools\serve_preview.ps1 -SnapshotName rear_ear_fix
+```
+
+The command prints one or more `http://<LAN-IP>:8765/snapshots/<snapshot>/`
+addresses. Each run creates a separate snapshot under the ignored
+`prototype/preview/snapshots/` directory, so a previous change can be compared
+later without being overwritten.
+
+Stop the background preview server with:
+
+```powershell
+.\tools\stop_preview.ps1
+```
+
+Preview access rule: when a person needs to inspect a visual result, use the
+Tailscale URL printed by the preview server. Local file links, `localhost`,
+and temporary chat attachments are not reliable as the only access method.
+Whenever Tailscale is used, proactively include the complete preview URL in
+the response. If nobody requests visual review, do not generate an additional
+preview.
+
+The current preview includes the recommended horizontal leg-depth correction
+candidate, the older redraw adapter as a comparison, the calibrated head
+runtime, and the vertical candidate. Historical proxy GIFs, retired body
+candidates, and old skeleton experiments are intentionally excluded from the
+new page.
+
+Use the interactive component calibration page at
+`http://<Tailscale-IP>:8765/calibrate.html`. It can move the face and ear
+parts independently for all four directions and save the calibration JSON to
+`prototype/preview/calibration/latest.json`.
+
+## Rejected 3D neutral actor test tool
+
+The following tool builds a neutral, featureless body from zero on the project
+GuideRig. It is a rejected prototype and is not the downloaded
+`chibi-base-meshblender` model. It is retained only to test the generic
+four-direction, eight-frame render-to-pixel pipeline:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\build_neutral_chibi_actor.ps1
+```
+
+The tool writes the `.blend` and pose manifest under
+`assets/characters/generated/neutral_chibi_actor_v1/`, 256x256 review renders
+under `test_output/neutral_chibi_actor_v1_3d/`, and the 64x64 review sheet under
+`assets/characters/generated/neutral_chibi_actor_v1_pixels/`. Use `-Strict` to
+make the shared foot-baseline check fail until the current one-pixel
+registration warning is corrected. See the repository-level
+`NEUTRAL_CHIBI_ACTOR_TESTING.md` for the acceptance gates and output contract.
+
+The actual downloaded-model tool is:
+
+```powershell
+powershell.exe -ExecutionPolicy Bypass -File .\tools\build_chibi_base_mesh_actor.ps1
+```
+
+Its evaluation, outputs, and current limitations are recorded in
+`CHIBI_BASE_MESH_EVALUATION.md`.
