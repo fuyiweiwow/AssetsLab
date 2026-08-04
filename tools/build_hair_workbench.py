@@ -155,6 +155,8 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
     a { color: #ffc7a3; }
     .saved { padding: 13px; margin-top: 12px; }
+    .review-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
+    .review-status { color: #f0c2a5; font-size: .8rem; min-height: 1.2em; }
     .saved-list { display: grid; gap: 7px; }
     .saved-item { display: flex; flex-wrap: wrap; gap: 7px; align-items: center; padding: 8px; border-radius: 8px; background: #201a21; font-size: .78rem; }
     .saved-item .objects { flex: 1 1 260px; color: #d5b9ad; word-break: break-word; }
@@ -206,6 +208,16 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
           <p class="hint" id="preview-note">选择组件后点击“生成组合预览”。</p>
         </aside>
       </section>
+      <section class="panel">
+        <h2>种子评审</h2>
+        <p class="hint">当前组合可先保存为本机种子候选。加入候选不会立即修改正式随机池，销毁只删除本机候选记录。</p>
+        <div class="review-actions">
+          <button type="button" class="primary" id="accept-pool">加入随机池候选</button>
+          <button type="button" id="discard-candidate">销毁候选记录</button>
+        </div>
+        <p class="review-status" id="review-status"></p>
+        <div class="saved-list" id="review-list"><p class="hint">暂无本机随机池候选。</p></div>
+      </section>
       <section class="saved">
         <h2>已保存设计（不属于随机池）</h2>
         <div class="saved-list" id="saved-list"><p class="hint">尚未保存设计。</p></div>
@@ -217,6 +229,7 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
 <script>
 const DATA = __DATA__;
 const STORAGE_KEY = 'assetslab_hair_design_reviews_v1';
+const REVIEW_STORAGE_KEY = 'assetslab_hair_seed_pool_candidates_v1';
 const SLOT_DEFS = [
   { role: 'base_cap', label: 'Base', required: true },
   { role: 'front_bangs', label: '前发 / 刘海', required: false },
@@ -369,6 +382,60 @@ function saveCurrent() {
   renderSaved();
 }
 
+function reviewCandidates() {
+  try { return JSON.parse(localStorage.getItem(REVIEW_STORAGE_KEY) || '[]'); } catch { return []; }
+}
+
+function acceptPoolCandidate() {
+  if (!current || !componentFor('base_cap')) {
+    byId('review-status').textContent = '缺少必选 base，不能加入候选池。';
+    return;
+  }
+  const candidates = reviewCandidates();
+  const objects = selectedObjects();
+  const candidate = {
+    schema: 'assetslab_hair_seed_pool_candidate_v1',
+    candidate_id: `seed_${gender}_${Date.now()}`,
+    gender,
+    seed: current.seed,
+    slots: JSON.parse(JSON.stringify(current.slots)),
+    objects,
+    preview: current.record ? { raw_four_view: current.record.sheet || current.record.front, gallery: current.record.gallery || null } : null,
+    lifecycle: 'pool_candidate',
+    created_at: new Date().toISOString()
+  };
+  candidates.unshift(candidate);
+  localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(candidates.slice(0, 50)));
+  current.review_candidate_id = candidate.candidate_id;
+  byId('review-status').textContent = `已加入本机随机池候选：${candidate.candidate_id}`;
+  renderReviewCandidates();
+}
+
+function discardCandidate() {
+  if (!current) {
+    byId('review-status').textContent = '当前没有可销毁的候选记录。';
+    return;
+  }
+  const candidateId = current.review_candidate_id;
+  if (candidateId) {
+    const remaining = reviewCandidates().filter((candidate) => candidate.candidate_id !== candidateId);
+    localStorage.setItem(REVIEW_STORAGE_KEY, JSON.stringify(remaining));
+    renderReviewCandidates();
+  }
+  current = null;
+  for (const direction of ['front', 'right', 'back', 'left']) byId(direction).src = '';
+  byId('preview-title').textContent = '候选已销毁';
+  byId('preview-status').textContent = '已销毁';
+  byId('preview-status').classList.add('pending');
+  byId('preview-gender').textContent = '性别：—';
+  byId('preview-objects').textContent = '组件：—';
+  byId('preview-signature').textContent = '组合签名：—';
+  byId('sheet-link').classList.add('hidden');
+  byId('gallery-link').classList.add('hidden');
+  byId('preview-note').textContent = '只删除了本机候选记录；没有删除正式随机池或缓存源文件。';
+  byId('review-status').textContent = candidateId ? `候选记录已销毁：${candidateId}` : '当前候选草稿已销毁。';
+}
+
 function savedReviews() {
   try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]'); } catch { return []; }
 }
@@ -384,6 +451,21 @@ function renderSaved() {
     const objects = document.createElement('span'); objects.className = 'objects'; objects.textContent = Object.values(review.slots).map((slot) => slot.component_id).filter(Boolean).join(' / ');
     item.append(title, objects);
     if (review.record?.gallery) { const link = document.createElement('a'); link.href = review.record.gallery; link.target = '_blank'; link.textContent = 'Gallery'; item.append(link); }
+    list.append(item);
+  }
+}
+
+function renderReviewCandidates() {
+  const list = byId('review-list');
+  const candidates = reviewCandidates();
+  list.innerHTML = '';
+  if (!candidates.length) { list.innerHTML = '<p class="hint">暂无本机随机池候选。</p>'; return; }
+  for (const candidate of candidates) {
+    const item = document.createElement('div'); item.className = 'saved-item';
+    const title = document.createElement('strong'); title.textContent = `${candidate.gender === 'female' ? '女性' : '男性'} · ${candidate.candidate_id}`;
+    const objects = document.createElement('span'); objects.className = 'objects'; objects.textContent = (candidate.objects || []).map(objectLabel).join(' / ');
+    item.append(title, objects);
+    if (candidate.preview?.gallery) { const link = document.createElement('a'); link.href = candidate.preview.gallery; link.target = '_blank'; link.textContent = 'Gallery'; item.append(link); }
     list.append(item);
   }
 }
@@ -406,7 +488,9 @@ byId('random-toggle').addEventListener('click', () => {
 byId('generate').addEventListener('click', generatePreview);
 byId('save').addEventListener('click', saveCurrent);
 byId('export').addEventListener('click', exportDesigns);
-initializeSlots(); renderSlots(); showCurrent(); renderSaved();
+byId('accept-pool').addEventListener('click', acceptPoolCandidate);
+byId('discard-candidate').addEventListener('click', discardCandidate);
+initializeSlots(); renderSlots(); showCurrent(); renderSaved(); renderReviewCandidates();
 updateRandomToggle();
 </script>
 </body></html>'''
