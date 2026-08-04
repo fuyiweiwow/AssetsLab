@@ -166,8 +166,8 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
       <section class="bar">
         <div class="controls">
           <label>性别 <button type="button" class="gender active" data-gender="female">女性</button><button type="button" class="gender" data-gender="male">男性</button></label>
-          <button type="button" class="primary" id="randomize">随机未锁定部件</button>
-          <button type="button" id="generate">生成组合预览</button>
+          <button type="button" class="toggle active" id="random-toggle" aria-pressed="true">随机未锁定：开</button>
+          <button type="button" class="primary" id="generate">生成组合预览</button>
           <button type="button" id="save">保存设计</button>
           <button type="button" id="export">导出设计 JSON</button>
           <a href="../index.html">返回 Gallery</a>
@@ -221,6 +221,7 @@ const SLOT_DEFS = [
 let gender = 'female';
 let slotState = {};
 let current = null;
+let randomUnlockedEnabled = true;
 
 const byId = (id) => document.getElementById(id);
 const objectLabel = (name) => name.replace(/^Chloe_hair_|^Colin_hair_/, '');
@@ -283,7 +284,7 @@ function renderSlots() {
     slotState[button.dataset.role].selection_mode = button.dataset.slotMode;
     slotState[button.dataset.role].locked = button.dataset.slotMode === 'pool_pick';
     renderSlots();
-    byId('action-status').textContent = `${button.dataset.role} 已切换为${button.dataset.slotMode === 'pool_pick' ? '手选' : '随机'}；点击“随机未锁定部件”后更新。`;
+    byId('action-status').textContent = `${button.dataset.role} 已切换为${button.dataset.slotMode === 'pool_pick' ? '手选' : '随机'}；点击“生成组合预览”后更新。`;
   });
   for (const select of document.querySelectorAll('.slot select')) select.addEventListener('change', () => {
     slotState[select.dataset.role].component_id = select.value;
@@ -311,7 +312,23 @@ function randomizeUnlocked() {
   renderSlots();
   showCurrent();
   const unlocked = SLOT_DEFS.filter((slot) => !slotState[slot.role].locked).length;
-  byId('action-status').textContent = changed ? `已随机更新 ${changed} 个未锁定部件；当前组合等待预览生成。` : (unlocked ? '随机池结果与上次相同，已保留当前组合。' : '所有部件都已手选锁定，没有可随机的部件。');
+  byId('action-status').textContent = changed ? `已随机更新 ${changed} 个未锁定部件并生成组合预览。` : (unlocked ? '随机池结果与上次相同，已保留当前组合。' : '所有部件都已手选锁定，没有可随机的部件。');
+}
+
+function updateRandomToggle() {
+  const toggle = byId('random-toggle');
+  toggle.classList.toggle('active', randomUnlockedEnabled);
+  toggle.setAttribute('aria-pressed', String(randomUnlockedEnabled));
+  toggle.textContent = `随机未锁定：${randomUnlockedEnabled ? '开' : '关'}`;
+}
+
+function generatePreview() {
+  if (randomUnlockedEnabled) {
+    randomizeUnlocked();
+  } else {
+    showCurrent();
+    byId('action-status').textContent = '已按当前手选组件生成预览。';
+  }
 }
 
 function showCurrent() {
@@ -375,11 +392,16 @@ for (const button of document.querySelectorAll('[data-gender]')) button.addEvent
   for (const item of document.querySelectorAll('[data-gender]')) item.classList.toggle('active', item === button);
   initializeSlots(); renderSlots(); showCurrent();
 });
-byId('randomize').addEventListener('click', randomizeUnlocked);
-byId('generate').addEventListener('click', showCurrent);
+byId('random-toggle').addEventListener('click', () => {
+  randomUnlockedEnabled = !randomUnlockedEnabled;
+  updateRandomToggle();
+  byId('action-status').textContent = randomUnlockedEnabled ? '已开启随机未锁定；点击生成按钮时会重抽未锁定部件。' : '已关闭随机未锁定；点击生成按钮时使用当前手选组件。';
+});
+byId('generate').addEventListener('click', generatePreview);
 byId('save').addEventListener('click', saveCurrent);
 byId('export').addEventListener('click', exportDesigns);
 initializeSlots(); renderSlots(); showCurrent(); renderSaved();
+updateRandomToggle();
 </script>
 </body></html>'''
     page = template.replace("__DATA__", data)
