@@ -3,6 +3,7 @@
   "galleries": [
     {
       "id": "female_base",
+      "gender": "female",
       "title": "女性（基础）",
       "path": "chloe_gallery/base_gallery.html",
       "preview": "chloe_gallery/seed_01_baseline/pixel/front_pixel.png",
@@ -12,6 +13,7 @@
     },
     {
       "id": "female_recommended",
+      "gender": "female",
       "title": "女性（推荐）",
       "path": "chloe_gallery/gallery.html",
       "preview": "chloe_gallery/seed_04_bangs04/pixel/front_pixel.png",
@@ -21,6 +23,7 @@
     },
     {
       "id": "female_experimental",
+      "gender": "female",
       "title": "女性（实验）",
       "path": "female_experimental_gallery/experimental_gallery.html",
       "preview": "female_experimental_gallery/bun_back01_back03/pixel/front_pixel.png",
@@ -30,6 +33,7 @@
     },
     {
       "id": "female_hair_audit",
+      "gender": "female",
       "title": "女性（全后发实验）",
       "path": "female_experimental_gallery/all_back_gallery.html",
       "preview": "female_experimental_gallery/full_back_03/pixel/front_pixel.png",
@@ -39,6 +43,7 @@
     },
     {
       "id": "male_base",
+      "gender": "male",
       "title": "男性（基础）",
       "path": "male_gallery/gallery.html",
       "preview": "male_gallery/seed_back01/pixel/front_pixel.png",
@@ -48,6 +53,7 @@
     },
     {
       "id": "male_recommended",
+      "gender": "male",
       "title": "男性（刘海推荐）",
       "path": "male_gallery/assembly_gallery.html",
       "preview": "male_gallery/assembly_seed_02/pixel/front_pixel.png",
@@ -57,6 +63,7 @@
     },
     {
       "id": "male_full",
+      "gender": "male",
       "title": "男性（完整池）",
       "path": "male_gallery/full_gallery.html",
       "preview": "male_gallery/assembly_seed_02/pixel/front_pixel.png",
@@ -66,6 +73,7 @@
     },
     {
       "id": "male_bangs_audit",
+      "gender": "male",
       "title": "男性（全刘海实验）",
       "path": "male_gallery/all_bangs_gallery.html",
       "preview": "male_gallery/full_bangs_08/pixel/front_pixel.png",

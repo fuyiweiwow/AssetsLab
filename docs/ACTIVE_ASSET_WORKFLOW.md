@@ -10,6 +10,7 @@
 - 当前耳朵候选与锚点：`cartoon_ear_candidate_v3.blend`、`chibi_ear_anchor_calibration_v1.json`
 - 当前像素运行时包：`prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
 - 当前发型源：`prototype/assets/hair/Blender-Chloe_Hair.blend`、`prototype/assets/hair/male_source/Blend_Hair.blend`
+- 发型组件分类和兼容规则：`prototype/assets/hair/hair_component_catalog_v1.json`、`docs/HAIR_COMPONENT_RANDOMIZATION_2026-08-04.md`
 
 `female_more` 与 Chloe 源几何重复，不作为独立资源保留。男性源中的全部刘海和女性 Chloe 的全部后发先进入审查 gallery，只有通过四视图和像素验收的候选才能进入推荐池。
 
@@ -19,7 +20,7 @@
 2. 用 `tools/run_chibi_face_randomization_preview.ps1` 生成固定种子的人脸/耳朵随机化预览。
 3. 用 `tools/validate_chibi_face_randomization.py` 检查 4 方向、像素尺寸、种子稳定性和耳朵锚点策略。
 4. 用 `tools/blender/fit_blend_hair_candidate.py` 生成发型四视图。
-5. 用 `tools/build_hair_randomization_gallery.py` 生成候选页，再用 `tools/build_hair_gallery_index.py` 生成统一入口。
+5. 用 `tools/build_hair_randomization_gallery.py` 生成候选页，再用 `tools/build_hair_gallery_index.py` 生成统一入口；入口使用男女 Tab 筛选，避免为性别增加独立页面 UI。
 6. 用 `tools/process_accurig_walk_pixels.py` 和 `tools/validate_pixel_runtime_package.py` 完成 3D 到像素运行时包的转换与检查。
 7. 用 `tools/run_pixel_asset_end_to_end.ps1` 运行 Godot 的无 GUI 端到端验证。
 

@@ -1,0 +1,123 @@
+{
+  "schema": "assetslab_hair_component_catalog_v1",
+  "randomization_policy": {
+    "default_mode": "validated_base_first",
+    "recommended_mix": {
+      "validated_complete_styles": 0.8,
+      "constrained_component_variants": 0.2
+    },
+    "rule": "先从完整且通过四视图检查的发型种子中随机；组件随机化只允许在兼容矩阵内组合，不允许任意 front x side x back。"
+  },
+  "component_groups": [
+    {
+      "id": "female_front_bangs",
+      "gender": "female",
+      "role": "front_bangs",
+      "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
+      "objects": ["Chloe_hair_bangs_01", "Chloe_hair_bangs_02", "Chloe_hair_bangs_03", "Chloe_hair_bangs_04", "Chloe_hair_bangs_05"],
+      "status": "recommended",
+      "can_replace_base": false,
+      "compatible_with": ["female_side", "female_back_shell_01"],
+      "notes": "前发主体；需要和完整后发壳一起使用。"
+    },
+    {
+      "id": "female_side",
+      "gender": "female",
+      "role": "side_coverage",
+      "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
+      "objects": ["Chloe_hair_side_01", "Chloe_hair_side_02", "Chloe_hair_side_03", "Chloe_hair_side_04", "Chloe_hair_side_05"],
+      "status": "recommended",
+      "can_replace_base": false,
+      "compatible_with": ["female_front_bangs", "female_back_shell_01"],
+      "notes": "侧面覆盖和侧发变化；需检查耳朵遮挡及侧面头皮缝。"
+    },
+    {
+      "id": "female_back_shell_01",
+      "gender": "female",
+      "role": "complete_back_shell",
+      "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
+      "objects": ["Chloe_hair_back_01"],
+      "status": "recommended",
+      "can_replace_base": true,
+      "compatible_with": ["female_front_bangs", "female_side", "female_back_attachment"],
+      "notes": "当前确认的完整后发/头顶壳，是女性组件随机化的默认底座。"
+    },
+    {
+      "id": "female_back_attachment",
+      "gender": "female",
+      "role": "back_attachment",
+      "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
+      "objects": ["Chloe_hair_back_02", "Chloe_hair_back_03"],
+      "status": "experimental",
+      "can_replace_base": false,
+      "compatible_with": ["female_back_shell_01"],
+      "notes": "丸子/后部装饰类附件；不能独立替换完整后发壳，否则会露出头皮。"
+    },
+    {
+      "id": "female_back_experimental",
+      "gender": "female",
+      "role": "experimental_back_shell",
+      "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
+      "objects": ["Chloe_hair_back_04", "Chloe_hair_back_05", "Chloe_hair_back_06", "Chloe_hair_back_07", "Chloe_hair_back_08", "Chloe_hair_back_09"],
+      "status": "experimental",
+      "can_replace_base": false,
+      "compatible_with": [],
+      "notes": "全后发审查池；当前存在白色头皮缝或覆盖不完整，先不进入默认随机。"
+    },
+    {
+      "id": "male_front_bangs",
+      "gender": "male",
+      "role": "front_bangs",
+      "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
+      "objects": ["Colin_hair_bangs_01", "Colin_hair_bangs_02", "Colin_hair_bangs_03", "Colin_hair_bangs_04", "Colin_hair_bangs_05", "Colin_hair_bangs_06", "Colin_hair_bangs_07", "Colin_hair_bangs_08"],
+      "status": "experimental",
+      "can_replace_base": false,
+      "compatible_with": ["male_side", "male_back_shell"],
+      "notes": "素材本身差异明显，但当前组合时被共用顶/后壳遮挡；必须单独做前后深度排序后再升级。"
+    },
+    {
+      "id": "male_side",
+      "gender": "male",
+      "role": "side_coverage",
+      "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
+      "objects": ["Colin_hair_side_01", "Colin_hair_side_02"],
+      "status": "recommended",
+      "can_replace_base": false,
+      "compatible_with": ["male_front_bangs", "male_back_shell"],
+      "notes": "男性侧发组件；仍需检查耳朵轮廓和侧面接缝。"
+    },
+    {
+      "id": "male_back_shell",
+      "gender": "male",
+      "role": "complete_back_shell",
+      "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
+      "objects": ["Colin_hair_back_01", "Colin_hair_back_02", "Colin_hair_back_03", "Colin_hair_back_04", "Colin_hair_back_05"],
+      "status": "recommended",
+      "can_replace_base": true,
+      "compatible_with": ["male_front_bangs", "male_side"],
+      "notes": "当前男性后发基础池；back_06 已知不完整，不在推荐对象中。"
+    },
+    {
+      "id": "male_back_experimental",
+      "gender": "male",
+      "role": "experimental_back_shell",
+      "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
+      "objects": ["Colin_hair_back_06"],
+      "status": "experimental",
+      "can_replace_base": false,
+      "compatible_with": [],
+      "notes": "已知背面/覆盖不完整，保留作审查记录，不进入默认随机。"
+    },
+    {
+      "id": "male_base_cap",
+      "gender": "male",
+      "role": "base_cap",
+      "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
+      "objects": ["Colin_hair_base_01", "Colin_hair_base_02"],
+      "status": "experimental",
+      "can_replace_base": false,
+      "compatible_with": ["male_front_bangs", "male_side", "male_back_shell"],
+      "notes": "源文件中的基础帽/底层组件；使用前需要确认不会制造额头或侧面白缝。"
+    }
+  ]
+}

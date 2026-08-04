@@ -34,9 +34,11 @@ def main() -> int:
     for record in records:
         if not isinstance(record, dict):
             raise RuntimeError("invalid gallery catalog record")
-        required = ("id", "title", "path", "category", "status", "description")
+        required = ("id", "gender", "title", "path", "category", "status", "description")
         if not all(isinstance(record.get(key), str) for key in required):
             raise RuntimeError(f"invalid gallery record: {record}")
+        if record["gender"] not in {"female", "male"}:
+            raise RuntimeError(f"invalid gallery gender: {record}")
         gallery = root / record["path"]
         if not gallery.is_file():
             raise RuntimeError(f"gallery page is missing: {gallery}")
@@ -55,7 +57,7 @@ def main() -> int:
         }.get(record["status"], "experimental")
         cards.append(
             f"""
-            <article class="card {status_class}">
+            <article class="card {status_class}" data-gender="{html.escape(record['gender'])}">
               <a class="card-link" href="{url_path(record['path'])}">
                 {preview_tag}
                 <div class="copy">
@@ -81,7 +83,11 @@ def main() -> int:
     main {{ max-width: 1060px; margin: auto; }}
     h1 {{ margin: 0 0 6px; font-size: clamp(1.55rem, 6vw, 2.5rem); }}
     .lead {{ margin: 0 0 22px; color: #d5b9ad; line-height: 1.5; }}
+    .tabs {{ display: flex; gap: 8px; margin: 0 0 18px; }}
+    .tab {{ border: 1px solid #765247; border-radius: 999px; padding: 8px 15px; background: #2a2024cc; color: #d5b9ad; cursor: pointer; font: inherit; }}
+    .tab.active {{ background: #b86649; border-color: #e59a73; color: #fff4ec; }}
     .grid {{ display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px; }}
+    .card.hidden {{ display: none; }}
     .card {{ overflow: hidden; border: 1px solid #765247; border-radius: 16px; background: #2a2024ee; box-shadow: 0 8px 24px #0007; }}
     .card.base {{ border-color: #5d7084; }}
     .card.experimental {{ border-color: #897249; }}
@@ -99,10 +105,33 @@ def main() -> int:
 </head>
 <body><main>
   <h1>AssetsLab Hair Galleries</h1>
-  <p class="lead">统一发型评审入口 · 女性、男性、刘海组装和实验池 · 点击卡片进入子 gallery</p>
+  <p class="lead">统一发型评审入口 · 先按性别筛选，再进入基础、推荐或实验 Gallery。</p>
+  <nav class="tabs" aria-label="按性别筛选">
+    <button class="tab active" type="button" data-filter="all" aria-pressed="true">全部</button>
+    <button class="tab" type="button" data-filter="female" aria-pressed="false">女性</button>
+    <button class="tab" type="button" data-filter="male" aria-pressed="false">男性</button>
+  </nav>
   <section class="grid">{"".join(cards)}</section>
   <footer>Catalog schema: {SCHEMA}</footer>
-</main></body></html>"""
+</main>
+<script>
+  const tabs = [...document.querySelectorAll('[data-filter]')];
+  const cards = [...document.querySelectorAll('.card[data-gender]')];
+  for (const tab of tabs) {{
+    tab.addEventListener('click', () => {{
+      const filter = tab.dataset.filter;
+      for (const item of tabs) {{
+        const active = item === tab;
+        item.classList.toggle('active', active);
+        item.setAttribute('aria-pressed', String(active));
+      }}
+      for (const card of cards) {{
+        card.classList.toggle('hidden', filter !== 'all' && card.dataset.gender !== filter);
+      }}
+    }});
+  }}
+</script>
+</body></html>"""
     output = (args.output or (root / "index.html")).resolve()
     output.write_text(page, encoding="utf-8")
     print(f"HAIR_GALLERY_INDEX_PASS cards={len(cards)} output={output}")
