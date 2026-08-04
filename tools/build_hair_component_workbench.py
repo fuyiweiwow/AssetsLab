@@ -241,6 +241,13 @@ function refreshReferences() {
   const reference = options.find((item) => item.object === selectedReference);
   const preview = DATA.previews.find((item) => item.source_object === selectedReference);
   byId('reference-info').innerHTML = reference ? `${preview ? `<img class="reference-preview" src="${preview.front}" alt="${reference.object} 预览">` : ''}<strong>${reference.object}</strong><span>共享池角色：${roles[reference.role] || reference.role}</span><span>来源：${reference.source_blend || '未登记'}</span><span>这是一个参考部件，不会自动拼接其它槽位。</span>` : '<span>当前角色没有可用参考部件。</span>';
+  if (preview) {
+    const deleteButton = document.createElement('button');
+    deleteButton.type = 'button';
+    deleteButton.textContent = '删除部件预览缓存';
+    deleteButton.addEventListener('click', () => deletePreview(preview.id, '部件'));
+    byId('reference-info').append(deleteButton);
+  }
 }
 function assemblyOptions(role) { return DATA.components.filter((item) => item.gender === selectedGender && item.role === role && item.pool && !item.preset); }
 function refreshAssemblySlots() {
@@ -275,11 +282,23 @@ function renderVariants() {
     if (variant.blend) { const link = document.createElement('a'); link.href = variant.blend; link.target = '_blank'; link.textContent = '打开候选 Blend'; card.append(link); }
     card.prepend(matchLabel, scoreLabel);
     const scoreButton = document.createElement('button'); scoreButton.type = 'button'; scoreButton.textContent = '评估匹配度'; scoreButton.addEventListener('click', () => scoreVariant(variant)); card.querySelector('.actions')?.prepend(scoreButton);
+    const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.textContent = '删除预览缓存'; deleteButton.addEventListener('click', () => deletePreview(variant.id, '单部件')); card.querySelector('.actions')?.append(deleteButton);
     list.append(card);
     card.querySelector('[data-accept]')?.addEventListener('click', () => saveReview(variant, 'accepted_candidate'));
     card.querySelector('[data-discard]')?.addEventListener('click', () => saveReview(variant, 'discarded'));
     card.querySelector('[data-select-variant]')?.addEventListener('click', () => { selectedVariantId = variant.id; renderVariants(); renderAssemblies(); });
   }
+}
+async function deletePreview(previewId, label) {
+  if (!confirm(`确认删除${label}预览缓存？这不会删除源 Blend 或正式随机池。`)) return;
+  byId('status').textContent = '正在删除预览缓存…';
+  try {
+    const response = await fetch('/api/delete-hair-preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ schema: 'assetslab_hair_preview_delete_request_v1', preview_id: previewId }) });
+    const result = await response.json();
+    if (!response.ok || !result.deleted) throw new Error(result.error || '删除失败');
+    byId('status').textContent = `已删除：${(result.removed || []).join('、')}`;
+    window.location.reload();
+  } catch (error) { byId('status').textContent = `删除失败：${error.message}`; }
 }
 async function scoreVariant(variant) {
   byId('status').textContent = '正在计算部件可用度和各位置最佳匹配，请稍候…';
@@ -295,6 +314,7 @@ function renderAssemblies() {
     card.innerHTML = `<h3>${assembly.id}</h3><div class="views"><figure><img src="${assembly.front}" alt="正面"><figcaption>正面</figcaption></figure><figure><img src="${assembly.right}" alt="右侧"><figcaption>右侧</figcaption></figure><figure><img src="${assembly.back}" alt="背面"><figcaption>背面</figcaption></figure><figure><img src="${assembly.left}" alt="左侧"><figcaption>左侧</figcaption></figure></div><p class="meta">部件：${(assembly.components || []).join(' / ')}</p>${assembly.model ? '<button type="button" data-load-model>加载 3D 模型</button>' : '<p class="hint">暂无 GLB 模型缓存</p>'}`;
     if (assembly.blend) { const link = document.createElement('a'); link.href = assembly.blend; link.target = '_blank'; link.textContent = '打开联合候选 Blend'; card.append(link); }
     card.querySelector('[data-load-model]')?.addEventListener('click', () => { byId('model-viewer').src = assembly.model; byId('model-note').textContent = `已加载 ${assembly.id}；拖动模型可查看各个角度。`; });
+    const deleteButton = document.createElement('button'); deleteButton.type = 'button'; deleteButton.textContent = '删除联合预览'; deleteButton.addEventListener('click', () => deletePreview(assembly.id, '联合')); card.append(deleteButton);
     list.append(card);
   }
 }

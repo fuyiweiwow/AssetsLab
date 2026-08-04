@@ -48,6 +48,7 @@ http://desktop-dk81254.tailf01571.ts.net:8000/hair_candidates_2026_08_04/index.h
 - `tools/blender/generate_hair_component_assembly.py`：将单部件变体与其它池部件联合生成四方向预览和 GLB。
 - `tools/build_hair_component_workbench.py`：生成单部件变体评审页面，与组合工作台共享正式部件池。
 - `tools/score_hair_component_compatibility.py`：根据兼容矩阵、源文件一致性和缓存几何尺寸给出离线筛选分及各角色最佳匹配列表。
+- 单部件工作台支持删除单部件、联合和共享池部件预览缓存；删除单部件时会一并清理其关联联合预览。该操作只作用于明确的 `prototype/test_output` 测试缓存，不删除源 Blend、正式随机池或保存的设计。
 - `tools/generate_hair_pool_preview_cache.ps1`：按当前随机池静默生成可复用的组合预览缓存。
 - `prototype/assets/hair/hair_gallery_catalog_v1.json`：统一入口的可追踪登记表，新增 gallery 时只需增加一条记录。
 
@@ -140,7 +141,7 @@ python tools\build_hair_component_workbench.py `
 
 单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。选择 base、侧发、后发等其它池成员后，还可以生成联合预览。联合预览会同时导出 `model.glb`，页面用只读 `model-viewer` 提供手机触摸旋转和缩放。该接口不会改写正式随机池，也不会打开 Blender GUI。
 
-每个变体卡片都可以执行匹配度评估。评分是离线筛选分，不替代最终联合四视图验收；评分结果会列出 base、侧发、后发等位置的最高分候选。尚未进入正式池的实验部件允许评估，但结果会携带实验警告。
+每个变体卡片都可以执行匹配度评估。评分是离线筛选分，不替代最终联合四视图验收；评分结果会列出 base、侧发、后发等位置的最高分候选。尚未进入正式池的实验部件允许评估，但结果会携带实验警告。评分不会在生成预览后自动执行：卡片初始显示“尚未评估可用度”，点击“评估匹配度”后才生成并写入 `compatibility.json`；如果尚未生成共享部件预览缓存，几何尺寸项保持中性，仍可初筛，但应补齐缓存后复评。
 
 测试缓存可以按数量和总字节数控制。默认最多保留 40 个 `variant_*` / `assembly_*` 目录、总计 512 MiB；清理只作用于 `prototype\test_output\hair_component_variants_2026_08_04` 下的生成缓存，不删除源 Blend 或正式资源。需要更小的测试缓存时：
 

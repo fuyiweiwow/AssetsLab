@@ -363,6 +363,46 @@ def score_hair_component_variant(payload: dict[str, object]) -> dict[str, object
     return json.loads(output.read_text(encoding="utf-8"))
 
 
+def delete_hair_preview(payload: dict[str, object]) -> dict[str, object]:
+    preview_id = str(payload.get("preview_id", ""))
+    if not re.fullmatch(r"(?:variant|assembly|component)_[A-Za-z0-9_-]+", preview_id):
+        raise ValueError("invalid preview id")
+    if preview_id.startswith("component_"):
+        roots = [HAIR_COMPONENT_PREVIEW_ROOT]
+    else:
+        roots = [HAIR_VARIANT_ROOT]
+    target = next((root / preview_id for root in roots if (root / preview_id).is_dir()), None)
+    if target is None:
+        raise ValueError("preview cache not found")
+    removed = [preview_id]
+    if preview_id.startswith("variant_"):
+        for assembly_dir in HAIR_VARIANT_ROOT.glob("assembly_*"):
+            manifest_path = assembly_dir / "manifest.json"
+            if not manifest_path.is_file():
+                continue
+            manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+            if manifest.get("variant_id") == preview_id:
+                shutil.rmtree(assembly_dir)
+                removed.append(assembly_dir.name)
+    if target.parent.resolve() not in {HAIR_VARIANT_ROOT.resolve(), HAIR_COMPONENT_PREVIEW_ROOT.resolve()}:
+        raise RuntimeError("refusing to delete outside preview cache roots")
+    shutil.rmtree(target)
+    prune_hair_variant_cache()
+    page_command = [
+        sys.executable, str(HAIR_VARIANT_PAGE_SCRIPT),
+        "--component-catalog", str(HAIR_COMPONENT_CATALOG),
+        "--pool-catalog", str(HAIR_POOL),
+        "--variant-root", str(HAIR_VARIANT_ROOT),
+        "--component-preview-root", str(HAIR_COMPONENT_PREVIEW_ROOT),
+        "--output", str(HAIR_VARIANT_ROOT / "workbench" / "index.html"),
+    ]
+    result = subprocess.run(page_command, cwd=REPO_ROOT, capture_output=True, text=True, timeout=30, creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0))
+    if result.returncode != 0:
+        detail = (result.stderr or result.stdout or "component page rebuild failed").strip()
+        raise RuntimeError(detail[-2000:])
+    return {"removed": removed}
+
+
 class PreviewHandler(SimpleHTTPRequestHandler):
     server_version = "AssetsLabPreview/1.0"
 
@@ -383,6 +423,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             return
         if self.path == "/api/score-hair-component":
             self._score_hair_component()
+            return
+        if self.path == "/api/delete-hair-preview":
+            self._delete_hair_preview()
             return
         if self.path == "/api/save-pixel-art":
             self._save_pixel_art()
@@ -494,6 +537,17 @@ class PreviewHandler(SimpleHTTPRequestHandler):
             self._send_json({"scored": True, "score": result})
         except Exception as error:
             self._send_json({"scored": False, "error": str(error)}, 400)
+
+    def _delete_hair_preview(self) -> None:
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            if payload.get("schema") != "assetslab_hair_preview_delete_request_v1":
+                raise ValueError("unsupported hair preview delete request schema")
+            result = delete_hair_preview(payload)
+            self._send_json({"deleted": True, **result})
+        except Exception as error:
+            self._send_json({"deleted": False, "error": str(error)}, 400)
 
     def _save_pixel_art(self) -> None:
         try:
