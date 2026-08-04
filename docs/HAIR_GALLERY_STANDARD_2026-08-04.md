@@ -134,7 +134,16 @@ python tools\build_hair_component_workbench.py `
   --output prototype\test_output\hair_component_variants_2026_08_04\workbench\index.html
 ```
 
-单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。该接口不会改写正式随机池，也不会打开 Blender GUI。
+单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。选择 base、侧发、后发等其它池成员后，还可以生成联合预览。该接口不会改写正式随机池，也不会打开 Blender GUI。
+
+测试缓存可以按数量和总字节数控制。默认最多保留 40 个 `variant_*` / `assembly_*` 目录、总计 512 MiB；清理只作用于 `prototype\test_output\hair_component_variants_2026_08_04` 下的生成缓存，不删除源 Blend 或正式资源。需要更小的测试缓存时：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\serve_preview.ps1 `
+  -Port 8765 `
+  -HairVariantCacheMaxCount 12 `
+  -HairVariantCacheMaxBytes 134217728
+```
 
 ## 验收规则
 

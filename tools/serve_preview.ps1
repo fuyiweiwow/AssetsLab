@@ -6,7 +6,13 @@ param(
     [string]$PythonPath,
 
     [Parameter(Mandatory = $false)]
-    [string]$UnusedSnapshotName
+    [string]$UnusedSnapshotName,
+
+    [Parameter(Mandatory = $false)]
+    [int]$HairVariantCacheMaxCount = 40,
+
+    [Parameter(Mandatory = $false)]
+    [long]$HairVariantCacheMaxBytes = 536870912
 )
 
 $ErrorActionPreference = "Stop"
@@ -24,7 +30,9 @@ if ($existing) {
     Write-Output "PREVIEW_SERVER_ALREADY_RUNNING port=$Port"
 } else {
     $server = Start-Process -WindowStyle Hidden -WorkingDirectory $assetsLabRoot -PassThru -FilePath $serverPython -ArgumentList @(
-        "tools\lan_preview_server.py", "--port", $Port.ToString(), "--directory", $previewRoot
+        "tools\lan_preview_server.py", "--port", $Port.ToString(), "--directory", $previewRoot,
+        "--hair-variant-cache-max-count", $HairVariantCacheMaxCount.ToString(),
+        "--hair-variant-cache-max-bytes", $HairVariantCacheMaxBytes.ToString()
     )
     $server.Id | Set-Content -LiteralPath (Join-Path $assetsLabRoot "prototype\test_output\lan_preview.pid") -Encoding ascii
     Start-Sleep -Milliseconds 500

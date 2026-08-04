@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import base64
+import hashlib
 import json
 import os
 import re
@@ -17,10 +18,13 @@ from pathlib import Path
 REPO_ROOT = Path(__file__).resolve().parent.parent
 HAIR_VARIANT_ROOT = REPO_ROOT / "prototype" / "test_output" / "hair_component_variants_2026_08_04"
 HAIR_VARIANT_SCRIPT = REPO_ROOT / "tools" / "blender" / "generate_hair_component_variant.py"
+HAIR_ASSEMBLY_SCRIPT = REPO_ROOT / "tools" / "blender" / "generate_hair_component_assembly.py"
 HAIR_VARIANT_PAGE_SCRIPT = REPO_ROOT / "tools" / "build_hair_component_workbench.py"
 HAIR_POOL = REPO_ROOT / "prototype" / "assets" / "hair" / "hair_random_pool_v1.json"
 HAIR_COMPONENT_CATALOG = REPO_ROOT / "prototype" / "assets" / "hair" / "hair_component_catalog_v1.json"
 HAIR_VARIANT_LOCK = threading.Lock()
+CACHE_MAX_COUNT = 40
+CACHE_MAX_BYTES = 512 * 1024 * 1024
 
 
 def resolve_blender() -> str:
@@ -80,6 +84,33 @@ def hair_component_request(payload: dict[str, object]) -> dict[str, object]:
     }
 
 
+def cache_size(path: Path) -> int:
+    return sum(item.stat().st_size for item in path.rglob("*") if item.is_file())
+
+
+def prune_hair_variant_cache() -> list[str]:
+    """Remove only generated test-cache directories under the explicit cache root."""
+    if not HAIR_VARIANT_ROOT.is_dir():
+        return []
+    entries = sorted(
+        [
+            item
+            for item in HAIR_VARIANT_ROOT.iterdir()
+            if item.is_dir() and (item.name.startswith("variant_") or item.name.startswith("assembly_"))
+        ],
+        key=lambda item: item.stat().st_mtime,
+    )
+    removed: list[str] = []
+    total = sum(cache_size(item) for item in entries)
+    while entries and (len(entries) > CACHE_MAX_COUNT or total > CACHE_MAX_BYTES):
+        target = entries.pop(0)
+        target_size = cache_size(target)
+        shutil.rmtree(target)
+        total -= target_size
+        removed.append(target.name)
+    return removed
+
+
 def generate_hair_component_variant(payload: dict[str, object]) -> dict[str, object]:
     request = hair_component_request(payload)
     output_dir = request["output_dir"]
@@ -125,6 +156,7 @@ def generate_hair_component_variant(payload: dict[str, object]) -> dict[str, obj
     if result.returncode != 0 or not manifest.is_file():
         detail = (result.stderr or result.stdout or "Blender generation failed").strip()
         raise RuntimeError(detail[-2000:])
+    prune_hair_variant_cache()
     page_command = [
         sys.executable,
         str(HAIR_VARIANT_PAGE_SCRIPT),
@@ -151,6 +183,86 @@ def generate_hair_component_variant(payload: dict[str, object]) -> dict[str, obj
     return {"cached": False, "output_name": request["output_name"]}
 
 
+def generate_hair_component_assembly(payload: dict[str, object]) -> dict[str, object]:
+    variant_id = str(payload.get("variant_id", ""))
+    if not re.fullmatch(r"variant_[A-Za-z0-9_-]+", variant_id):
+        raise ValueError("invalid variant id")
+    variant_dir = (HAIR_VARIANT_ROOT / variant_id).resolve()
+    if variant_dir.parent != HAIR_VARIANT_ROOT.resolve():
+        raise ValueError("variant is outside the test cache")
+    variant_manifest = variant_dir / "manifest.json"
+    if not variant_manifest.is_file():
+        raise ValueError("variant manifest not found")
+    manifest = json.loads(variant_manifest.read_text(encoding="utf-8"))
+    if manifest.get("schema") != "assetslab_hair_component_variant_v1":
+        raise ValueError("unexpected variant manifest schema")
+    pool = json.loads(HAIR_POOL.read_text(encoding="utf-8"))
+    catalog = json.loads(HAIR_COMPONENT_CATALOG.read_text(encoding="utf-8"))
+    groups = {item["id"]: item for item in catalog.get("component_groups", [])}
+    requested_ids = payload.get("additional_component_ids", [])
+    if not isinstance(requested_ids, list) or len(requested_ids) > 5:
+        raise ValueError("additional components must be a list of at most five items")
+    component_items = []
+    source_blend = Path(str(manifest["source_blend"])).resolve()
+    for component_id in requested_ids:
+        item = next((entry for entry in pool.get("components", []) if entry.get("component_id") == component_id), None)
+        if not item or not item.get("pool") or item.get("preset"):
+            raise ValueError(f"component is not in the shared random pool: {component_id}")
+        item_source = (REPO_ROOT / str(groups.get(item.get("group_id"), {}).get("source_blend", ""))).resolve()
+        if item_source != source_blend:
+            raise ValueError("joint preview components must use the same source bundle")
+        component_items.append({"object": item["object"], "source_blend": str(item_source), "source_anchor_object": manifest.get("source_anchor_object")})
+    if not component_items:
+        raise ValueError("select at least one additional component for a joint preview")
+    digest = hashlib.sha1((variant_id + "|" + "|".join(sorted(str(item) for item in requested_ids))).encode("utf-8")).hexdigest()[:10]
+    output_name = f"assembly_{variant_id}_{digest}"
+    output_dir = HAIR_VARIANT_ROOT / output_name
+    manifest_path = output_dir / "manifest.json"
+    if manifest_path.is_file():
+        return {"cached": True, "output_name": output_name}
+    output_dir.mkdir(parents=True, exist_ok=True)
+    additional_path = output_dir / "additional_components.json"
+    additional_path.write_text(json.dumps(component_items, indent=2), encoding="utf-8")
+    actor = REPO_ROOT / "prototype" / "assets" / "characters" / "generated" / "chibi_eyes_ears_pixel_walk_source_v1.blend"
+    command = [
+        resolve_blender(),
+        "-b",
+        "--python",
+        str(HAIR_ASSEMBLY_SCRIPT),
+        "--",
+        "--variant-manifest",
+        str(variant_manifest),
+        "--additional-components",
+        str(additional_path),
+        "--actor-blend",
+        str(actor),
+        "--output-blend",
+        str(output_dir / "actor.blend"),
+        "--output-dir",
+        str(output_dir),
+    ]
+    creationflags = getattr(subprocess, "CREATE_NO_WINDOW", 0)
+    with HAIR_VARIANT_LOCK:
+        result = subprocess.run(command, cwd=REPO_ROOT, capture_output=True, text=True, timeout=180, creationflags=creationflags)
+    if result.returncode != 0 or not manifest_path.is_file():
+        detail = (result.stderr or result.stdout or "Blender assembly generation failed").strip()
+        raise RuntimeError(detail[-2000:])
+    prune_hair_variant_cache()
+    page_command = [
+        sys.executable,
+        str(HAIR_VARIANT_PAGE_SCRIPT),
+        "--component-catalog", str(HAIR_COMPONENT_CATALOG),
+        "--pool-catalog", str(HAIR_POOL),
+        "--variant-root", str(HAIR_VARIANT_ROOT),
+        "--output", str(HAIR_VARIANT_ROOT / "workbench" / "index.html"),
+    ]
+    page_result = subprocess.run(page_command, cwd=REPO_ROOT, capture_output=True, text=True, timeout=30, creationflags=creationflags)
+    if page_result.returncode != 0:
+        detail = (page_result.stderr or page_result.stdout or "component page rebuild failed").strip()
+        raise RuntimeError(detail[-2000:])
+    return {"cached": False, "output_name": output_name}
+
+
 class PreviewHandler(SimpleHTTPRequestHandler):
     server_version = "AssetsLabPreview/1.0"
 
@@ -162,6 +274,9 @@ class PreviewHandler(SimpleHTTPRequestHandler):
     def do_POST(self) -> None:
         if self.path == "/api/generate-hair-component-variant":
             self._generate_hair_component_variant()
+            return
+        if self.path == "/api/generate-hair-component-assembly":
+            self._generate_hair_component_assembly()
             return
         if self.path == "/api/save-pixel-art":
             self._save_pixel_art()
@@ -226,6 +341,25 @@ class PreviewHandler(SimpleHTTPRequestHandler):
         except Exception as error:
             self._send_json({"generated": False, "error": str(error)}, 400)
 
+    def _generate_hair_component_assembly(self) -> None:
+        try:
+            length = int(self.headers.get("Content-Length", "0"))
+            payload = json.loads(self.rfile.read(length).decode("utf-8"))
+            if payload.get("schema") != "assetslab_hair_component_assembly_request_v1":
+                raise ValueError("unsupported hair component assembly request schema")
+            result = generate_hair_component_assembly(payload)
+            cache_buster = int(time.time())
+            self._send_json(
+                {
+                    "generated": True,
+                    "cached": result["cached"],
+                    "assembly_id": result["output_name"],
+                    "page": f"/test_output/hair_component_variants_2026_08_04/workbench/index.html?v={cache_buster}",
+                }
+            )
+        except Exception as error:
+            self._send_json({"generated": False, "error": str(error)}, 400)
+
     def _save_pixel_art(self) -> None:
         try:
             length = int(self.headers.get("Content-Length", "0"))
@@ -264,9 +398,15 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="AssetsLab LAN preview server with local preview saves")
     parser.add_argument("--port", type=int, required=True)
     parser.add_argument("--directory", type=Path, required=True)
+    parser.add_argument("--hair-variant-cache-max-count", type=int, default=40)
+    parser.add_argument("--hair-variant-cache-max-bytes", type=int, default=512 * 1024 * 1024)
     args = parser.parse_args()
+    global CACHE_MAX_COUNT, CACHE_MAX_BYTES
+    CACHE_MAX_COUNT = max(1, args.hair_variant_cache_max_count)
+    CACHE_MAX_BYTES = max(1, args.hair_variant_cache_max_bytes)
     root = args.directory.resolve()
     os.chdir(root)
+    prune_hair_variant_cache()
     server = ThreadingHTTPServer(("0.0.0.0", args.port), PreviewHandler)
     server.serve_forever()
     return 0

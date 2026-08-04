@@ -9,6 +9,7 @@ from pathlib import Path
 
 POOL_SCHEMA = "assetslab_hair_random_pool_v1"
 VARIANT_SCHEMA = "assetslab_hair_component_variant_v1"
+ASSEMBLY_SCHEMA = "assetslab_hair_component_assembly_preview_v1"
 
 
 def url_path(path: Path, base: Path) -> str:
@@ -66,8 +67,38 @@ def scan_variants(root: Path, output_dir: Path) -> list[dict[str, object]]:
     return records
 
 
-def build_page(output: Path, components: list[dict[str, object]], variants: list[dict[str, object]]) -> None:
-    data = json.dumps({"components": components, "variants": variants}, ensure_ascii=False, separators=(",", ":"))
+def scan_assemblies(root: Path, output_dir: Path) -> list[dict[str, object]]:
+    records: list[dict[str, object]] = []
+    if not root.is_dir():
+        return records
+    for manifest_path in sorted(root.rglob("manifest.json")):
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if manifest.get("schema") != ASSEMBLY_SCHEMA:
+            continue
+        candidate = manifest_path.parent
+        if not all((candidate / f"{direction}.png").is_file() for direction in ("front", "right", "back", "left")):
+            continue
+        records.append(
+            {
+                "id": str(candidate.relative_to(root)).replace("\\", "/"),
+                "variant_id": manifest.get("variant_id", ""),
+                "components": manifest.get("components", []),
+                "variant_seed": manifest.get("variant_seed"),
+                "status": manifest.get("status", "assembly_review_required"),
+                "front": url_path(candidate / "front.png", output_dir),
+                "right": url_path(candidate / "right.png", output_dir),
+                "back": url_path(candidate / "back.png", output_dir),
+                "left": url_path(candidate / "left.png", output_dir),
+                "blend": url_path(candidate / "actor.blend", output_dir)
+                if (candidate / "actor.blend").is_file()
+                else "",
+            }
+        )
+    return records
+
+
+def build_page(output: Path, components: list[dict[str, object]], variants: list[dict[str, object]], assemblies: list[dict[str, object]]) -> None:
+    data = json.dumps({"components": components, "variants": variants, "assemblies": assemblies}, ensure_ascii=False, separators=(",", ":"))
     template = r'''<!doctype html>
 <html lang="zh-CN">
 <head>
@@ -120,6 +151,9 @@ def build_page(output: Path, components: list[dict[str, object]], variants: list
         <label>变体 Seed<input id="seed" type="number" value="1001" step="1"></label>
         <label>变体强度<select id="strength"><option value="0.08">轻微 8%</option><option value="0.12" selected>标准 12%</option><option value="0.18">明显 18%</option></select></label>
         <div class="button-row"><button type="button" id="random-seed">随机 Seed</button><button type="button" class="primary" id="generate-variant">生成并预览</button><button type="button" id="download-request">导出请求</button></div>
+        <h3>联合预览部件</h3>
+        <div class="controls" id="assembly-slots"></div>
+        <button type="button" class="primary" id="generate-assembly">生成联合预览</button>
         <p class="status" id="status"></p>
         <p class="hint">生成请求由页面导出；实际几何生成由 Blender 后台工具执行。正式随机池不会被直接改写。</p>
         <a href="../workbench/index.html">返回组合装配工作台</a>
@@ -128,6 +162,8 @@ def build_page(output: Path, components: list[dict[str, object]], variants: list
     <section class="panel">
       <h2 id="results-title">单部件变体结果</h2>
       <div class="variant-grid" id="variants"></div>
+      <h2 id="assemblies-title">联合预览结果</h2>
+      <div class="variant-grid" id="assemblies"></div>
     </section>
   </div>
   <footer>参考来源：hair_random_pool_v1.json；结果来源：assetslab_hair_component_variant_v1 manifest。</footer>
@@ -139,6 +175,9 @@ const byId = (id) => document.getElementById(id);
 let selectedGender = 'female';
 let selectedRole = '';
 let selectedReference = '';
+let selectedVariantId = '';
+const ASSEMBLY_ROLES = ['base_cap', 'front_bangs', 'side_coverage', 'back_section', 'back_attachment'];
+let assemblyState = {};
 const genders = { female: '女性', male: '男性' };
 const roles = { base_cap: 'Base', front_bangs: '前发 / 刘海', side_coverage: '侧发', back_section: '后脑发段', back_attachment: '后部附件' };
 function poolComponents() { return DATA.components.filter((item) => item.gender === selectedGender && item.pool && !item.preset); }
@@ -158,6 +197,24 @@ function refreshReferences() {
   const reference = options.find((item) => item.object === selectedReference);
   byId('reference-info').innerHTML = reference ? `<strong>${reference.object}</strong><span>共享池角色：${roles[reference.role] || reference.role}</span><span>来源：${reference.source_blend || '未登记'}</span><span>这是一个参考部件，不会自动拼接其它槽位。</span>` : '<span>当前角色没有可用参考部件。</span>';
 }
+function assemblyOptions(role) { return DATA.components.filter((item) => item.gender === selectedGender && item.role === role && item.pool && !item.preset); }
+function refreshAssemblySlots() {
+  const container = byId('assembly-slots');
+  if (!container) return;
+  container.innerHTML = '';
+  for (const role of ASSEMBLY_ROLES) {
+    if (role === selectedRole) continue;
+    const options = assemblyOptions(role);
+    if (!options.length) continue;
+    if (!(role in assemblyState) || !options.some((item) => item.component_id === assemblyState[role])) assemblyState[role] = role === 'base_cap' ? options[0].component_id : '';
+    const label = document.createElement('label'); label.textContent = `${roles[role] || role}（可选）`;
+    const select = document.createElement('select'); select.dataset.assemblyRole = role;
+    select.innerHTML = `<option value="">不加入</option>` + options.map((item) => `<option value="${item.component_id}">${item.object}</option>`).join('');
+    select.value = assemblyState[role]; select.addEventListener('change', (event) => { assemblyState[role] = event.target.value; });
+    label.append(select); container.append(label);
+  }
+}
+function selectedVariant() { return DATA.variants.find((item) => item.id === selectedVariantId) || DATA.variants.find((item) => item.source_object === selectedReference); }
 function renderVariants() {
   const reviews = reviewRecords();
   const matches = DATA.variants.filter((item) => item.source_object === selectedReference && reviews[item.id]?.status !== 'discarded');
@@ -166,11 +223,24 @@ function renderVariants() {
   if (!matches.length) { list.innerHTML = '<p class="hint">当前参考部件还没有生成变体。导出请求后由 Blender 后台生成，再重新构建本页。</p>'; return; }
   for (const variant of matches) {
     const card = document.createElement('article'); card.className = 'variant';
-    card.innerHTML = `<h3>Seed ${variant.variant_seed} · ${variant.id}</h3><div class="views"><figure><img src="${variant.front}" alt="正面"><figcaption>正面</figcaption></figure><figure><img src="${variant.right}" alt="右侧"><figcaption>右侧</figcaption></figure><figure><img src="${variant.back}" alt="背面"><figcaption>背面</figcaption></figure><figure><img src="${variant.left}" alt="左侧"><figcaption>左侧</figcaption></figure></div><p class="meta">强度 ${Number(variant.variant.strength || 0).toFixed(2)} · 宽 ${Number(variant.variant.width_scale || 1).toFixed(3)} · 深 ${Number(variant.variant.depth_scale || 1).toFixed(3)} · 高 ${Number(variant.variant.height_scale || 1).toFixed(3)}</p><div class="actions"><button type="button" data-accept="${encodeURIComponent(variant.id)}">加入本机候选</button><button type="button" data-discard="${encodeURIComponent(variant.id)}">销毁候选</button><span class="status">${reviews[variant.id]?.status === 'accepted_candidate' ? '已加入本机候选' : ''}</span></div>`;
+    card.innerHTML = `<h3>Seed ${variant.variant_seed} · ${variant.id}</h3><div class="views"><figure><img src="${variant.front}" alt="正面"><figcaption>正面</figcaption></figure><figure><img src="${variant.right}" alt="右侧"><figcaption>右侧</figcaption></figure><figure><img src="${variant.back}" alt="背面"><figcaption>背面</figcaption></figure><figure><img src="${variant.left}" alt="左侧"><figcaption>左侧</figcaption></figure></div><p class="meta">强度 ${Number(variant.variant.strength || 0).toFixed(2)} · 宽 ${Number(variant.variant.width_scale || 1).toFixed(3)} · 深 ${Number(variant.variant.depth_scale || 1).toFixed(3)} · 高 ${Number(variant.variant.height_scale || 1).toFixed(3)}</p><div class="actions"><button type="button" data-select-variant="${encodeURIComponent(variant.id)}">${selectedVariantId === variant.id ? '已选作联合预览' : '选择联合预览'}</button><button type="button" data-accept="${encodeURIComponent(variant.id)}">加入本机候选</button><button type="button" data-discard="${encodeURIComponent(variant.id)}">销毁候选</button><span class="status">${reviews[variant.id]?.status === 'accepted_candidate' ? '已加入本机候选' : ''}</span></div>`;
     if (variant.blend) { const link = document.createElement('a'); link.href = variant.blend; link.target = '_blank'; link.textContent = '打开候选 Blend'; card.append(link); }
     list.append(card);
     card.querySelector('[data-accept]')?.addEventListener('click', () => saveReview(variant, 'accepted_candidate'));
     card.querySelector('[data-discard]')?.addEventListener('click', () => saveReview(variant, 'discarded'));
+    card.querySelector('[data-select-variant]')?.addEventListener('click', () => { selectedVariantId = variant.id; renderVariants(); renderAssemblies(); });
+  }
+}
+function renderAssemblies() {
+  const list = byId('assemblies'); list.innerHTML = '';
+  const matches = DATA.assemblies.filter((item) => !selectedVariantId || item.variant_id === selectedVariantId);
+  byId('assemblies-title').textContent = `联合预览结果（${matches.length}）`;
+  if (!matches.length) { list.innerHTML = '<p class="hint">选择一个单部件变体并生成联合预览后，结果会显示在这里。</p>'; return; }
+  for (const assembly of matches) {
+    const card = document.createElement('article'); card.className = 'variant';
+    card.innerHTML = `<h3>${assembly.id}</h3><div class="views"><figure><img src="${assembly.front}" alt="正面"><figcaption>正面</figcaption></figure><figure><img src="${assembly.right}" alt="右侧"><figcaption>右侧</figcaption></figure><figure><img src="${assembly.back}" alt="背面"><figcaption>背面</figcaption></figure><figure><img src="${assembly.left}" alt="左侧"><figcaption>左侧</figcaption></figure></div><p class="meta">部件：${(assembly.components || []).join(' / ')}</p>`;
+    if (assembly.blend) { const link = document.createElement('a'); link.href = assembly.blend; link.target = '_blank'; link.textContent = '打开联合候选 Blend'; card.append(link); }
+    list.append(card);
   }
 }
 function reviewRecords() { try { return JSON.parse(localStorage.getItem(REVIEW_KEY) || '{}'); } catch { return {}; } }
@@ -181,10 +251,10 @@ function saveReview(variant, status) {
   byId('status').textContent = status === 'accepted_candidate' ? `已加入本机部件候选：${variant.id}` : `已销毁本机候选记录：${variant.id}（未删除源文件）`;
   renderVariants();
 }
-function refresh() { refreshRoles(); refreshReferences(); renderVariants(); }
+function refresh() { refreshRoles(); refreshReferences(); refreshAssemblySlots(); renderVariants(); renderAssemblies(); }
 byId('gender').addEventListener('change', (event) => { selectedGender = event.target.value; selectedRole = ''; selectedReference = ''; refresh(); });
-byId('role').addEventListener('change', (event) => { selectedRole = event.target.value; selectedReference = ''; refreshReferences(); renderVariants(); });
-byId('reference').addEventListener('change', (event) => { selectedReference = event.target.value; refreshReferences(); renderVariants(); });
+byId('role').addEventListener('change', (event) => { selectedRole = event.target.value; selectedReference = ''; selectedVariantId = ''; refreshReferences(); refreshAssemblySlots(); renderVariants(); renderAssemblies(); });
+byId('reference').addEventListener('change', (event) => { selectedReference = event.target.value; selectedVariantId = ''; refreshReferences(); refreshAssemblySlots(); renderVariants(); renderAssemblies(); });
 function currentRequest() {
   if (!selectedReference) { byId('status').textContent = '请先选择参考部件。'; return; }
   const reference = DATA.components.find((item) => item.object === selectedReference);
@@ -205,6 +275,15 @@ byId('generate-variant').addEventListener('click', async () => {
     byId('status').textContent = `生成失败：${error.message}`;
     button.disabled = false;
   }
+});
+byId('generate-assembly').addEventListener('click', async () => {
+  const variant = selectedVariant();
+  if (!variant) { byId('status').textContent = '请先选择一个已生成的单部件变体。'; return; }
+  const additional_component_ids = Object.values(assemblyState).filter(Boolean).filter((id) => id !== DATA.components.find((item) => item.object === variant.source_object)?.component_id);
+  if (selectedRole !== 'base_cap' && !additional_component_ids.some((id) => DATA.components.find((item) => item.component_id === id)?.role === 'base_cap')) { byId('status').textContent = '联合预览需要加入 base。'; return; }
+  const request = { schema: 'assetslab_hair_component_assembly_request_v1', variant_id: variant.id, additional_component_ids };
+  const button = byId('generate-assembly'); button.disabled = true; byId('status').textContent = 'Blender 正在后台生成联合预览，请稍候…';
+  try { const response = await fetch('/api/generate-hair-component-assembly', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) }); const result = await response.json(); if (!response.ok || !result.generated) throw new Error(result.error || '联合预览失败'); byId('status').textContent = '联合预览完成，正在刷新…'; window.location.href = result.page; } catch (error) { byId('status').textContent = `联合预览失败：${error.message}`; button.disabled = false; }
 });
 byId('download-request').addEventListener('click', () => {
   const request = currentRequest();
@@ -227,10 +306,11 @@ def main() -> int:
     args = parser.parse_args()
     components = load_pool(args.pool_catalog.resolve(), args.component_catalog.resolve())
     variants = scan_variants(args.variant_root.resolve(), args.output.parent)
+    assemblies = scan_assemblies(args.variant_root.resolve(), args.output.parent)
     if not components:
         raise RuntimeError("shared hair pool is empty")
-    build_page(args.output.resolve(), components, variants)
-    print(f"HAIR_COMPONENT_PAGE_PASS components={len(components)} variants={len(variants)} output={args.output.resolve()}")
+    build_page(args.output.resolve(), components, variants, assemblies)
+    print(f"HAIR_COMPONENT_PAGE_PASS components={len(components)} variants={len(variants)} assemblies={len(assemblies)} output={args.output.resolve()}")
     return 0
 
 
