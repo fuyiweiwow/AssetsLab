@@ -83,6 +83,7 @@ def main() -> int:
     main {{ max-width: 1060px; margin: auto; }}
     h1 {{ margin: 0 0 6px; font-size: clamp(1.55rem, 6vw, 2.5rem); }}
     .lead {{ margin: 0 0 22px; color: #d5b9ad; line-height: 1.5; }}
+    .workbench-link {{ margin: -8px 0 18px; }}
     .tabs {{ display: flex; gap: 8px; margin: 0 0 18px; }}
     .tab {{ border: 1px solid #765247; border-radius: 999px; padding: 8px 15px; background: #2a2024cc; color: #d5b9ad; cursor: pointer; font: inherit; }}
     .tab.active {{ background: #b86649; border-color: #e59a73; color: #fff4ec; }}
@@ -106,6 +107,7 @@ def main() -> int:
 <body><main>
   <h1>AssetsLab Hair Galleries</h1>
   <p class="lead">统一发型评审入口 · 先按性别筛选，再进入基础、推荐或实验 Gallery。</p>
+  <p class="workbench-link"><a href="workbench/index.html">打开发型随机化与组件装配工作台</a></p>
   <nav class="tabs" aria-label="按性别筛选">
     <button class="tab active" type="button" data-filter="all" aria-pressed="true">全部</button>
     <button class="tab" type="button" data-filter="female" aria-pressed="false">女性</button>
