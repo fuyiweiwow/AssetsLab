@@ -62,6 +62,16 @@
       "description": "男性独立刘海、侧发和后发组装结果，共 3 个候选；仍需人工确认接缝、耳朵遮挡和动画表现。"
     },
     {
+      "id": "male_base_components",
+      "gender": "male",
+      "title": "男性（base 组件装配实验）",
+      "path": "male_base_gallery/gallery.html",
+      "preview": "male_base_gallery/base_seed_02/pixel/front_pixel.png",
+      "category": "男性 / 组件装配",
+      "status": "实验",
+      "description": "强制包含 Colin_hair_base_01/02 后的组件装配审查；当前用于确认 base 覆盖范围和头皮接缝。"
+    },
+    {
       "id": "male_full",
       "gender": "male",
       "title": "男性（完整池）",

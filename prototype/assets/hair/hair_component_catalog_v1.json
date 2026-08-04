@@ -32,15 +32,15 @@
       "notes": "侧面覆盖和侧发变化；需检查耳朵遮挡及侧面头皮缝。"
     },
     {
-      "id": "female_back_shell_01",
+      "id": "female_base_cap",
       "gender": "female",
-      "role": "complete_back_shell",
+      "role": "base_cap",
       "source_blend": "prototype/assets/hair/Blender-Chloe_Hair.blend",
       "objects": ["Chloe_hair_back_01"],
       "status": "recommended",
       "can_replace_base": true,
       "compatible_with": ["female_front_bangs", "female_side", "female_back_attachment"],
-      "notes": "当前确认的完整后发/头顶壳，是女性组件随机化的默认底座。"
+      "notes": "女性源文件没有独立 base 对象；back_01 是当前确认的完整头顶/后脑底座，组件组合必须包含它。"
     },
     {
       "id": "female_back_attachment",
@@ -87,15 +87,15 @@
       "notes": "男性侧发组件；仍需检查耳朵轮廓和侧面接缝。"
     },
     {
-      "id": "male_back_shell",
+      "id": "male_back_section",
       "gender": "male",
-      "role": "complete_back_shell",
+      "role": "back_section",
       "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
       "objects": ["Colin_hair_back_01", "Colin_hair_back_02", "Colin_hair_back_03", "Colin_hair_back_04", "Colin_hair_back_05"],
       "status": "recommended",
-      "can_replace_base": true,
-      "compatible_with": ["male_front_bangs", "male_side"],
-      "notes": "当前男性后发基础池；back_06 已知不完整，不在推荐对象中。"
+      "can_replace_base": false,
+      "compatible_with": ["male_base_cap", "male_front_bangs", "male_side"],
+      "notes": "男性后脑发段；不能替代 base，back_06 已知不完整，不在推荐对象中。"
     },
     {
       "id": "male_back_experimental",
@@ -103,7 +103,7 @@
       "role": "experimental_back_shell",
       "source_blend": "prototype/assets/hair/male_source/Blend_Hair.blend",
       "objects": ["Colin_hair_back_06"],
-      "status": "experimental",
+      "status": "recommended",
       "can_replace_base": false,
       "compatible_with": [],
       "notes": "已知背面/覆盖不完整，保留作审查记录，不进入默认随机。"
@@ -116,8 +116,8 @@
       "objects": ["Colin_hair_base_01", "Colin_hair_base_02"],
       "status": "experimental",
       "can_replace_base": false,
-      "compatible_with": ["male_front_bangs", "male_side", "male_back_shell"],
-      "notes": "源文件中的基础帽/底层组件；使用前需要确认不会制造额头或侧面白缝。"
+      "compatible_with": ["male_front_bangs", "male_side", "male_back_section"],
+      "notes": "男性组件装配必选底层；先放置 base，再叠加前发、侧发和后脑发段。"
     }
   ]
 }

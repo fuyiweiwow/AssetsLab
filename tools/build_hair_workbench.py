@@ -27,9 +27,18 @@ def gender_for(objects: list[str]) -> str:
     return "unknown"
 
 
+def has_base(objects: list[str]) -> bool:
+    return "Chloe_hair_back_01" in objects or any(name.startswith("Colin_hair_base_") for name in objects)
+
+
 def is_assembled(objects: list[str]) -> bool:
+    if not has_base(objects):
+        return False
     roles = {name.split("_hair_", 1)[-1].split("_", 1)[0] for name in objects if "_hair_" in name}
-    return {"bangs", "side", "back"}.issubset(roles)
+    required = {"bangs", "side"}
+    if gender_for(objects) == "male":
+        required.add("back")
+    return required.issubset(roles)
 
 
 def gallery_links(root: Path, catalog_path: Path) -> list[tuple[Path, str]]:
@@ -72,6 +81,7 @@ def candidate_records(root: Path, output_dir: Path, catalog_path: Path) -> list[
                 "id": str(candidate.relative_to(root)).replace("\\", "/"),
                 "gender": gender,
                 "objects": objects,
+                "has_base": has_base(objects),
                 "assembled": is_assembled(objects),
                 "status": "实验" if "experimental" in candidate.parts or "debug" in candidate.parts else "候选",
                 "front": url_path(candidate / "front.png", output_dir),
@@ -159,9 +169,10 @@ def build_page(output: Path, candidates: list[dict[str, object]], components: di
     <h2>组件选择</h2>
     <p class="hint">只有已生成四视图的精确组合会显示预览；未命中的组合可先保存为待生成提案。</p>
     <div class="component-grid">
+      <label>必选 base<select id="base-select"></select></label>
       <label>前发 / 刘海<select id="front-select"></select></label>
       <label>侧发<select id="side-select"></select></label>
-      <label>完整后发壳<select id="back-select"></select></label>
+      <label>后脑发段（可选）<select id="back-select"></select></label>
       <label>后部附件<select id="attachment-select"></select></label>
     </div>
   </section>
@@ -221,22 +232,24 @@ function setSelect(select, options, emptyLabel) {{
 }}
 
 function refreshComponentSelectors() {{
+  const base = groupFor('base_cap');
   const front = groupFor('front_bangs');
   const side = groupFor('side_coverage');
-  const back = groupFor('complete_back_shell');
+  const back = groupFor('back_section');
   const attachments = componentGroups().filter((item) => item.role === 'back_attachment').flatMap((item) => item.objects);
+  setSelect(byId('base-select'), base ? base.objects : [], '没有必选 base');
   setSelect(byId('front-select'), front ? front.objects : [], '没有前发组件');
   setSelect(byId('side-select'), side ? side.objects : [], '没有侧发组件');
-  setSelect(byId('back-select'), back ? back.objects : [], '没有完整后发壳');
+  setSelect(byId('back-select'), back ? [''].concat(back.objects) : [''], '没有后脑发段');
   setSelect(byId('attachment-select'), [''].concat(attachments), '无附件');
 }}
 
 function selectedObjects() {{
-  return ['front-select', 'side-select', 'back-select', 'attachment-select'].map((id) => byId(id).value).filter(Boolean);
+  return ['base-select', 'front-select', 'side-select', 'back-select', 'attachment-select'].map((id) => byId(id).value).filter(Boolean);
 }}
 
 function chooseComplete() {{
-  const pool = candidates().filter((item) => item.assembled && !item.id.includes('/debug/'));
+  const pool = candidates().filter((item) => item.assembled && item.has_base && !item.id.includes('/debug/'));
   return pool[Math.floor(Math.random() * pool.length)] || null;
 }}
 
@@ -246,9 +259,10 @@ function chooseComponents() {{
     const group = groups.find((item) => item.role === role);
     return group ? group.objects[Math.floor(Math.random() * group.objects.length)] : '';
   }};
+  byId('base-select').value = choose('base_cap');
   byId('front-select').value = choose('front_bangs');
   byId('side-select').value = choose('side_coverage');
-  byId('back-select').value = choose('complete_back_shell');
+  byId('back-select').value = choose('back_section');
   const attachments = groups.filter((item) => item.role === 'back_attachment').flatMap((item) => item.objects);
   byId('attachment-select').value = attachments.length && Math.random() < .3 ? attachments[Math.floor(Math.random() * attachments.length)] : '';
   return findCandidate(selectedObjects());
@@ -334,7 +348,7 @@ for (const button of document.querySelectorAll('[data-gender]')) button.addEvent
 byId('randomize').addEventListener('click', runRandomize);
 byId('save').addEventListener('click', saveCurrent);
 byId('export').addEventListener('click', exportReviews);
-for (const id of ['front-select', 'side-select', 'back-select', 'attachment-select']) byId(id).addEventListener('change', () => {{
+for (const id of ['base-select', 'front-select', 'side-select', 'back-select', 'attachment-select']) byId(id).addEventListener('change', () => {{
   if (mode === 'components') show(findCandidate(selectedObjects()), selectedObjects());
 }});
 refreshComponentSelectors();
