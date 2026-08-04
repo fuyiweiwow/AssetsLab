@@ -138,9 +138,9 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .slot-modes button { padding: 4px 7px; font-size: .72rem; }
     .slot select { width: 100%; box-sizing: border-box; }
     .preview { display: grid; grid-template-columns: minmax(0, 1fr) 180px; gap: 10px; }
-    .views { display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px; }
-    figure { margin: 0; color: #d5b9ad; text-align: center; font-size: .72rem; }
-    figure img { display: block; width: 100%; max-height: 185px; aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; background: #151219; border-radius: 7px; }
+    .views { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; min-width: 0; overflow: hidden; }
+    figure { min-width: 0; margin: 0; color: #d5b9ad; text-align: center; font-size: .72rem; overflow: hidden; }
+    figure img { display: block; width: 100%; max-width: 100%; max-height: 185px; aspect-ratio: 1; object-fit: contain; image-rendering: pixelated; background: #151219; border-radius: 7px; }
     .details { padding: 10px; border-left: 1px solid #5d4140; }
     .details p { margin: 6px 0; }
     .object-list { color: #f0c2a5; word-break: break-word; }
@@ -154,8 +154,8 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .saved-item .objects { flex: 1 1 260px; color: #d5b9ad; word-break: break-word; }
     .hidden { display: none !important; }
     footer { margin-top: 14px; }
-    @media (max-width: 820px) { .workspace { grid-template-columns: 1fr; } .right-column { max-width: none; } }
-    @media (max-width: 700px) { .preview { grid-template-columns: 1fr; } .details { border-left: 0; border-top: 1px solid #5d4140; } .views { grid-template-columns: repeat(2, 1fr); } figure img { max-height: none; } }
+    @media (max-width: 820px) { .workspace { grid-template-columns: minmax(0, 1fr); } .right-column { max-width: none; } .preview { grid-template-columns: minmax(0, 1fr); } .details { border-left: 0; border-top: 1px solid #5d4140; } .views { grid-template-columns: repeat(2, minmax(0, 1fr)); } figure img { width: min(100%, 160px); max-height: 160px; margin-inline: auto; } }
+    @media (max-width: 480px) { body { padding: 10px; } .views { gap: 4px; } figure img { width: min(100%, 132px); max-height: 132px; } }
   </style>
 </head>
 <body><main>
