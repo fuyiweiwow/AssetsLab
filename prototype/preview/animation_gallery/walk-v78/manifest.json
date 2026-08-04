@@ -1,0 +1,53 @@
+{
+  "schema": "assetslab_mixamo_animation_gallery_candidate_v1",
+  "id": "walk-v78",
+  "label": "Walk · release baseline v78 · ear forward +0.025",
+  "action": "Walk",
+  "source_render_dir": "E:\\WorkProject\\AssetsLab\\prototype\\test_output\\chibi_eyes_ears_mixamo_walk_fourway_v78_earforward025_rearstride080_texture",
+  "source_manifest": {
+    "schema": "assetslab_animation_candidate_render_v1",
+    "blend": "E:\\WorkProject\\AssetsLab\\prototype\\test_output\\chibi_eyes_ears_mixamo_walk_bound_v78_v77_earforward025.blend",
+    "action": "Mixamo_Armature.001|mixamo.com|Layer0_on_Armature",
+    "frame_range": [
+      1,
+      71
+    ],
+    "sample_frames": [
+      1,
+      11,
+      21,
+      31,
+      41,
+      51,
+      61,
+      71
+    ],
+    "directions": [
+      "front",
+      "right",
+      "back",
+      "left"
+    ],
+    "resolution": 256,
+    "color_type": "TEXTURE"
+  },
+  "directions": {
+    "front": {
+      "render": "front.gif",
+      "pixel": "pixel/front.gif"
+    },
+    "right": {
+      "render": "right.gif",
+      "pixel": "pixel/right.gif"
+    },
+    "back": {
+      "render": "back.gif",
+      "pixel": "pixel/back.gif"
+    },
+    "left": {
+      "render": "left.gif",
+      "pixel": "pixel/left.gif"
+    }
+  },
+  "review_status": "WIP_candidate"
+}
