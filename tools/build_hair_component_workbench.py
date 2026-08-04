@@ -87,7 +87,7 @@ def build_page(output: Path, components: list[dict[str, object]], variants: list
     label { color: #d5b9ad; font-size: .82rem; }
     select, input, button { box-sizing: border-box; width: 100%; border: 1px solid #765247; border-radius: 9px; padding: 8px 10px; background: #201a21; color: #f7eee8; font: inherit; }
     button { cursor: pointer; } button.primary { background: #b86649; border-color: #e59a73; color: #fff4ec; }
-    .button-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+    .button-row { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
     .status { color: #f0c2a5; min-height: 1.25em; font-size: .8rem; }
     .reference { display: grid; gap: 6px; padding: 10px; border: 1px solid #5d4140; border-radius: 10px; }
     .reference strong { color: #ffc7a3; word-break: break-word; }
@@ -119,7 +119,7 @@ def build_page(output: Path, components: list[dict[str, object]], variants: list
         <div class="reference" id="reference-info"></div>
         <label>变体 Seed<input id="seed" type="number" value="1001" step="1"></label>
         <label>变体强度<select id="strength"><option value="0.08">轻微 8%</option><option value="0.12" selected>标准 12%</option><option value="0.18">明显 18%</option></select></label>
-        <div class="button-row"><button type="button" class="primary" id="random-seed">随机 Seed</button><button type="button" id="download-request">导出生成请求</button></div>
+        <div class="button-row"><button type="button" id="random-seed">随机 Seed</button><button type="button" class="primary" id="generate-variant">生成并预览</button><button type="button" id="download-request">导出请求</button></div>
         <p class="status" id="status"></p>
         <p class="hint">生成请求由页面导出；实际几何生成由 Blender 后台工具执行。正式随机池不会被直接改写。</p>
         <a href="../workbench/index.html">返回组合装配工作台</a>
@@ -185,11 +185,30 @@ function refresh() { refreshRoles(); refreshReferences(); renderVariants(); }
 byId('gender').addEventListener('change', (event) => { selectedGender = event.target.value; selectedRole = ''; selectedReference = ''; refresh(); });
 byId('role').addEventListener('change', (event) => { selectedRole = event.target.value; selectedReference = ''; refreshReferences(); renderVariants(); });
 byId('reference').addEventListener('change', (event) => { selectedReference = event.target.value; refreshReferences(); renderVariants(); });
-byId('random-seed').addEventListener('click', () => { byId('seed').value = Math.floor(Math.random() * 2147483647); byId('status').textContent = '已生成新的可复现 Seed，可导出请求交给后台生成。'; });
-byId('download-request').addEventListener('click', () => {
+function currentRequest() {
   if (!selectedReference) { byId('status').textContent = '请先选择参考部件。'; return; }
   const reference = DATA.components.find((item) => item.object === selectedReference);
-  const request = { schema: 'assetslab_hair_component_variant_request_v1', lifecycle: 'draft', gender: selectedGender, role: selectedRole, reference_component_id: reference.component_id, source_blend: reference.source_blend, hair_object: reference.object, source_anchor_object: selectedGender === 'female' ? 'Chloe_head_dummy' : 'Colin_head_dummy', variant_seed: Number(byId('seed').value), variant_strength: Number(byId('strength').value), created_at: new Date().toISOString() };
+  return { schema: 'assetslab_hair_component_variant_request_v1', lifecycle: 'draft', gender: selectedGender, role: selectedRole, reference_component_id: reference.component_id, source_blend: reference.source_blend, hair_object: reference.object, source_anchor_object: selectedGender === 'female' ? 'Chloe_head_dummy' : 'Colin_head_dummy', variant_seed: Number(byId('seed').value), variant_strength: Number(byId('strength').value), created_at: new Date().toISOString() };
+}
+byId('random-seed').addEventListener('click', () => { byId('seed').value = Math.floor(Math.random() * 2147483647); byId('status').textContent = '已生成新的可复现 Seed，可直接生成预览。'; });
+byId('generate-variant').addEventListener('click', async () => {
+  const request = currentRequest();
+  if (!request) return;
+  const button = byId('generate-variant'); button.disabled = true; byId('status').textContent = 'Blender 正在后台生成单部件变体，请稍候…';
+  try {
+    const response = await fetch('/api/generate-hair-component-variant', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(request) });
+    const result = await response.json();
+    if (!response.ok || !result.generated) throw new Error(result.error || '生成失败');
+    byId('status').textContent = result.cached ? '已命中已有候选，正在刷新预览…' : '生成完成，正在刷新预览…';
+    window.location.href = result.page;
+  } catch (error) {
+    byId('status').textContent = `生成失败：${error.message}`;
+    button.disabled = false;
+  }
+});
+byId('download-request').addEventListener('click', () => {
+  const request = currentRequest();
+  if (!request) return;
   const blob = new Blob([JSON.stringify(request, null, 2)], { type: 'application/json' }); const link = document.createElement('a'); link.href = URL.createObjectURL(blob); link.download = `hair_component_variant_${selectedGender}_${selectedRole}_${request.variant_seed}.json`; link.click(); URL.revokeObjectURL(link.href); byId('status').textContent = '已导出单部件生成请求。';
 });
 refresh();

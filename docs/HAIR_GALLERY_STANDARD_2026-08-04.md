@@ -134,6 +134,8 @@ python tools\build_hair_component_workbench.py `
   --output prototype\test_output\hair_component_variants_2026_08_04\workbench\index.html
 ```
 
+单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。该接口不会改写正式随机池，也不会打开 Blender GUI。
+
 ## 验收规则
 
 每个推荐候选至少检查正面、右侧面、后面和左侧面，并在 64×64 最近邻像素预览中复核。重点检查：
