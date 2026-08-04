@@ -1,19 +1,24 @@
-# Current AssetsLab Preview
+# AssetsLab 当前预览工具
 
-This preview was rewritten on 2026-07-31 to show only the current test base,
-the current four-direction runtime composition, the automatic movement GIF,
-the vertical candidate, and the isolated pixel-art style experiment.
+这里只保留当前眼睛校准、耳朵锚点校准和统一静态预览入口。旧的身体重建、骨骼分阶段和 Miku/Koban 页面已移除。
 
-Build the current assets and publish a Tailscale snapshot from the repository
-root:
+从仓库根目录启动静态预览服务器：
 
 ```powershell
-.\tools\capture_walk_gif.ps1 -RebuildHead -VerticalCandidate -VerticalOnly
-.\tools\serve_preview.ps1 -SnapshotName current_test_base
+.\tools\serve_preview.ps1 -Port 8000
 ```
 
-The snapshot is copied into `prototype/preview/snapshots/` and can be opened
-from the Tailscale URL printed by `serve_preview.ps1`.
+手机查看时使用脚本输出的 Tailscale 地址。发型统一入口由以下命令生成：
 
-The page intentionally excludes retired RGS proxies, old body candidates,
-Skeleton2D experiments, obsolete calibration pages, and previous GIFs.
+```powershell
+python .\tools\build_hair_gallery_index.py `
+  --root .\prototype\test_output\hair_candidates_2026_08_04 `
+  --catalog .\prototype\assets\hair\hair_gallery_catalog_v1.json
+```
+
+当前工具：
+
+- `chibi_eye_calibrator.html`：眼睛与眉毛头部锚点；
+- `ear_anchor_annotator.html`：耳朵连接点；
+- `calibrate.html`：通用静态预览入口；
+- `assets/chibi_eye_web_calibrator.glb`：校准器模型资源。

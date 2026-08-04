@@ -33,6 +33,11 @@ def cli_args() -> argparse.Namespace:
         action="store_true",
         help="move numbered bangs/side/back variants onto the source's assembled set-01 layout",
     )
+    parser.add_argument(
+        "--normalize-components-to-head",
+        action="store_true",
+        help="reassemble source-grid components around the companion source head",
+    )
     parser.add_argument("--texture-root", type=Path)
     parser.add_argument("--actor-blend", required=True, type=Path)
     parser.add_argument("--output-blend", required=True, type=Path)
@@ -155,10 +160,39 @@ def normalize_source_component_layout(
             bpy.data.objects.remove(reference, do_unlink=True)
 
 
+def normalize_components_to_head(
+    parts: list[bpy.types.Object],
+    source_anchor: bpy.types.Object,
+) -> None:
+    """Move catalog-grid components into a common source-head layout.
+
+    Some hair kits keep base, fringe, sideburn and back pieces in separate
+    presentation rows. Their individual source positions are not assembly
+    coordinates, so place each selected piece around the source head before
+    joining them. The small category offsets preserve a natural layered order.
+    """
+    anchor_center = _bounds_center(source_anchor)
+    for part in parts:
+        target = anchor_center.copy()
+        if "_base_" in part.name:
+            target.z -= 0.30
+        elif "_bangs_" in part.name:
+            target.y -= 0.08
+            target.z += 0.02
+        elif "_side_" in part.name:
+            target.y += 0.015
+            target.z -= 0.14
+        elif "_back_" in part.name:
+            target.z -= 0.01
+        part.location += target - _bounds_center(part)
+
+
 def append_hair_group(
     source_blend: Path,
     object_names: list[str],
     normalize_components: bool = False,
+    source_anchor: bpy.types.Object | None = None,
+    normalize_to_head: bool = False,
 ) -> bpy.types.Object:
     parts = [
         append_object(source_blend, name, name)
@@ -168,6 +202,10 @@ def append_hair_group(
         bake_source_transform(part)
     if normalize_components:
         normalize_source_component_layout(source_blend, parts)
+    if normalize_to_head:
+        if source_anchor is None:
+            raise RuntimeError("--normalize-components-to-head requires --source-anchor-object")
+        normalize_components_to_head(parts, source_anchor)
     bpy.ops.object.select_all(action="DESELECT")
     for part in parts:
         part.select_set(True)
@@ -639,6 +677,8 @@ def main() -> int:
         options.hair_source_blend,
         hair_names,
         options.normalize_source_component_layout,
+        source_anchor,
+        options.normalize_components_to_head,
     )
     repaired_images = repair_texture_paths(tile, options.texture_root.resolve() if options.texture_root else None)
     fit = fit_to_actor(tile, armature, body, options, source_anchor)

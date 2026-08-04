@@ -44,7 +44,13 @@ def build_pixel_assets(candidate: Path) -> dict[str, str]:
     }
 
 
-def build_page(root: Path, records: list[dict[str, object]]) -> None:
+def build_page(
+    root: Path,
+    records: list[dict[str, object]],
+    title: str,
+    lead: str,
+    output: Path,
+) -> None:
     cards: list[str] = []
     for record in records:
         candidate = root / str(record["directory"])
@@ -73,7 +79,7 @@ def build_page(root: Path, records: list[dict[str, object]]) -> None:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AssetsLab Chloe Hair Seeds</title>
+  <title>{html.escape(title)}</title>
   <style>
     :root {{ color-scheme: dark; font-family: ui-rounded, system-ui, sans-serif; background: #17151d; color: #f5ede8; }}
     body {{ margin: 0; padding: 18px; background: radial-gradient(circle at top, #493329, #17151d 58%); }}
@@ -94,17 +100,23 @@ def build_page(root: Path, records: list[dict[str, object]]) -> None:
   </style>
 </head>
 <body><main>
-  <h1>Chloe Hair Randomization Seeds</h1>
-  <p class="lead">Chloe low-poly 部件组合 · 64px 最近邻像素预览 · 点击图片可查看原图</p>
+  <h1>{html.escape(title)}</h1>
+  <p class="lead">{html.escape(lead)}</p>
   <section class="grid">{"".join(cards)}</section>
   <footer>Generated from {SCHEMA}</footer>
 </main></body></html>"""
-    (root / "gallery.html").write_text(page, encoding="utf-8")
+    output.write_text(page, encoding="utf-8")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--root", required=True, type=Path)
+    parser.add_argument("--title", default="Chloe Hair Randomization Seeds")
+    parser.add_argument(
+        "--lead",
+        default="Chloe low-poly 部件组合 · 64px 最近邻像素预览 · 点击图片可查看原图",
+    )
+    parser.add_argument("--output", type=Path, help="optional gallery HTML output path")
     parser.add_argument(
         "--candidate",
         action="append",
@@ -142,8 +154,9 @@ def main() -> int:
         )
     gallery_manifest = {"schema": SCHEMA, "records": records}
     (root / "gallery_manifest.json").write_text(json.dumps(gallery_manifest, indent=2), encoding="utf-8")
-    build_page(root, records)
-    print(f"HAIR_RANDOMIZATION_GALLERY_PASS cards={len(records)} output={root / 'gallery.html'}")
+    output = (args.output or (root / "gallery.html")).resolve()
+    build_page(root, records, args.title, args.lead, output)
+    print(f"HAIR_RANDOMIZATION_GALLERY_PASS cards={len(records)} output={output}")
     return 0
 
 

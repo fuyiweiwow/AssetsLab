@@ -1,12 +1,12 @@
 param(
     [Parameter(Mandatory = $false)]
-    [int]$Port = 8765,
+    [int]$Port = 8000,
 
     [Parameter(Mandatory = $false)]
     [string]$PythonPath,
 
     [Parameter(Mandatory = $false)]
-    [string]$SnapshotName
+    [string]$UnusedSnapshotName
 )
 
 $ErrorActionPreference = "Stop"
@@ -14,21 +14,11 @@ $assetsLabRoot = Split-Path -Parent $PSScriptRoot
 . (Join-Path $PSScriptRoot "resolve_python.ps1")
 $python = Resolve-PythonExecutable -RequestedPath $PythonPath -AssetsLabRoot $assetsLabRoot
 
-$previewRoot = Join-Path $assetsLabRoot "prototype\preview"
+$previewRoot = Join-Path $assetsLabRoot "prototype"
 $serverPython = Join-Path (Split-Path -Parent $python) "pythonw.exe"
 if (-not (Test-Path -LiteralPath $serverPython -PathType Leaf)) {
     $serverPython = $python
 }
-$publishArguments = @("tools\publish_preview.py")
-if (-not [string]::IsNullOrWhiteSpace($SnapshotName)) {
-    $publishArguments += @("--name", $SnapshotName)
-}
-$publishOutput = & $python @publishArguments
-$publishOutput
-
-$snapshotLine = $publishOutput | Select-String "PREVIEW_SNAPSHOT_PASS" | Select-Object -Last 1
-$snapshotNameValue = if ($snapshotLine) { ($snapshotLine.ToString() -split "name=", 2)[1].Trim() } else { "" }
-
 $existing = Get-NetTCPConnection -LocalPort $Port -State Listen -ErrorAction SilentlyContinue
 if ($existing) {
     Write-Output "PREVIEW_SERVER_ALREADY_RUNNING port=$Port"
@@ -57,13 +47,7 @@ if (-not [string]::IsNullOrWhiteSpace($tailscalePath)) {
 }
 
 $orderedAddresses = @($tailscaleAddresses + $addresses | Select-Object -Unique)
-$urls = foreach ($address in $orderedAddresses) {
-    if ([string]::IsNullOrWhiteSpace($snapshotNameValue)) {
-        "http://$address`:$Port/"
-    } else {
-        "http://$address`:$Port/snapshots/$snapshotNameValue/"
-    }
-}
+$urls = foreach ($address in $orderedAddresses) { "http://$address`:$Port/preview/" }
 $urlText = $urls -join [Environment]::NewLine
 $urlText | Set-Content -LiteralPath (Join-Path $assetsLabRoot "prototype\test_output\lan_preview_url.txt") -Encoding utf8
 Write-Output "PREVIEW_SERVER_ROOT=$previewRoot"

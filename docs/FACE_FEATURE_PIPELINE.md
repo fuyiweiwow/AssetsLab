@@ -1,114 +1,40 @@
-# 五官与随机五官管线记录
+# 五官、眉毛、耳朵与随机化管线
 
-更新时间：2026-08-02
+## 当前基线
 
-## 当前结论
+- 真实素体演员：`prototype/assets/characters/generated/chibi_eyes_ears_pixel_walk_source_v1.blend`
+- 眼睛/眉毛/耳朵像素层：`prototype/assets/characters/base_features_v1/`
+- 眼睛/耳朵随机化渲染入口：`tools/run_chibi_face_randomization_preview.ps1`
+- 随机化验证：`tools/validate_chibi_face_randomization.py`
+- 固定资源验证：`tools/validate_base_features.py`
 
-此前的 2D 五官叠加只作为注册逻辑实验，已降级为历史/测试资源，不代表最终角色外观。它暴露出的头部来源和位置问题已经确认，不能继续接入正式演员。
+五官必须挂到真实演员的 `CC_Base_Head`，并通过正面、右侧、背面、左侧四方向检查。鼻子和嘴巴不属于当前资源合同。耳朵作为独立层保留，随机化时必须维持已验证的耳朵锚点和方向策略。
 
-当前 `chibi_eyes_ears_walk_v1` 已将已验证的 3D 眼睛和耳朵烘焙进渲染输出；随机化五官仍是下一阶段的接入点：保持本页的注册和随机规则不变，再把 3D 渲染帧拆成头部/五官层或在导出阶段合成。
+## 可复现随机化
 
-当前正确路线是：在真实演员 `E:/comic/chibi_base_mesh_accurig_rigged_v1.fbx` 上生成 3D 眼睛、耳朵和未来装饰，使用同一套正交相机和灯光渲染，再进入像素化。诊断工具为：
-
-`tools/blender/render_accurig_3d_facial_feature_test.py`
-
-当前诊断输出：
-
-`prototype/test_output/accurig_3d_face_test_v1/`
-
-该输出只用于位置和比例观察，不会修改 FBX，也不会替换正式运行时资源。
-
-## 2026-08-03 随机化状态
-
-运行时仍使用固定的 `chibi_eyes_ears_walk_v1` 基线；首轮受约束 3D
-随机五官候选已开始验证，但尚未替换运行时资源。它以稳定
-`appearance_seed` 映射到眼睛比例/高度和眉形组合，耳朵保持已通过的
-固定挂接。测试记录、种子和手机对照预览见
-`docs/CHIBI_FACE_RANDOMIZATION_TEST_2026-08-03.md`。
-
-## 是否需要在 3D 演员上标定五官
-
-正式方案需要在 3D 演员上确定五官/装饰的空间位置，但不需要再做浏览器式的 2D 水平线标注。当前诊断器根据真实头部边界和 `CC_Base_Head` 骨骼创建临时 3D 特征；确认位置后再固定为可复用参数。
-
-以下情况需要在 3D 演员上调整或标定：
-
-- Blender 直接渲染独立的 3D 五官层；
-- 3D 眼镜、帽子、面具等装饰需要随头骨运动；
-- 从 3D 头部姿态自动生成不同方向的五官位置。
-
-建议只确定 4 类参数：脸部中心、眼睛基准线、左右耳根/装饰挂点、头部朝向基准。不需要标鼻尖或嘴角，因为它们不是当前资源系统的一部分。
-
-目前已有 8 组候选五官：
-
-- 眼睛形状：温和椭圆、圆眼、锐利、困倦、大眼高光、坚定、点状、弯月；
-- 耳朵形状：圆耳、精灵耳、耳饰和角度变化等；
-- 部分变体带腮红；
-- 鼻子和嘴巴明确不纳入当前系统；
-- 眉毛目前也不作为独立资源接入，避免为了“凑五官”引入不符合角色风格的素材。
-
-未来的帽子、眼镜、发饰、面具、徽章等内容不应塞进脸部随机变体，而应作为独立透明装饰层，使用与头部相同的注册锚点和 4 方向 x 8 帧命名规则。这样装饰可以单独开关、替换和随机化，不会改变脸部资源。
-
-预览工具会把头部、耳朵和脸部透明层合成为观察图：
+随机化通过 `appearance_seed` 选择样式，同一个 seed 必须得到同一组眼睛/眉毛/耳朵结果。生成 preview：
 
 ```powershell
-python tools\build_face_variant_preview.py `
-  --gender male `
-  --output prototype\test_output\face_variant_preview_v1
+.\tools\run_chibi_face_randomization_preview.ps1
 ```
 
-预览输出：
-
-`prototype/test_output/face_variant_preview_v1/face_variants_contact_sheet.png`
-
-## 运行时接口
-
-### 固定五官
-
-现有基础五官模式仍可使用：
-
-```text
---base-features
-```
-
-它加载 `base_features_v1` 的固定脸部和耳朵资源，用于检查头部注册位置。
-
-### 指定变体
-
-为了逐个观察和调试，可以直接指定变体：
-
-```text
---appearance-variant=3
-```
-
-代码也提供 `set_appearance_variant(id)`，可以在运行时切换 0 到 7 的变体，不需要重新加载身体帧。
-
-### 可复现随机
-
-默认使用 `appearance_seed` 通过稳定整数映射选择变体。这样“随机”具有可复现性：同一个 seed 永远得到同一张脸，适合生成资源、回放和测试。运行时可通过以下参数改变 seed：
-
-```text
---appearance-seed=20260802
-```
-
-男性当前只从不带腮红的 0、2、4、6 中选择；女性可以使用 0 到 7。这个限制是当前资源规则，不代表最终角色的性别设计。
-
-## 自动测试
-
-当前分支只保留固定五官基线，随机脸/耳变体暂缓。使用以下命令验证
-两种性别的 128 个五官组件帧：
+验证固定层：
 
 ```powershell
 python .\tools\validate_base_features.py
 ```
 
-运行时回归由 `tools/run_headless_tests.ps1` 负责，并默认加载
-`base_features_v1`。
+验证随机化 review 输出：
 
-## 下一步
+```powershell
+python .\tools\validate_chibi_face_randomization.py `
+  --root .\test_output\face_randomization_v2
+```
 
-下一步是建立独立的装饰层接口和预览工具，而不是补鼻子或嘴巴。建议顺序为：
+## 验收规则
 
-1. 定义装饰图层的透明 PNG、锚点和方向帧命名规则；
-2. 先接入一个不影响脸部的测试装饰，例如眼镜或发饰；
-3. 再决定装饰是否参与 seed 随机组合；
-4. 每个装饰先通过正面静态预览，再进入走路和像素资源生成。
+1. 五官和眉毛不脱离头部，也不因像素化出现黑色贴纸框；
+2. 侧面轮廓按发型规范执行 128px 诊断和最小像素补偿；
+3. 耳朵方向、左右关系和头部锚点保持稳定；
+4. 64×64 输出全部有可见像素，四方向和帧数完整；
+5. 生成结果属于 review 输出，未通过人工视觉确认前不覆盖正式运行时包。
