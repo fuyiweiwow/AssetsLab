@@ -43,6 +43,7 @@ http://desktop-dk81254.tailf01571.ts.net:8000/hair_candidates_2026_08_04/index.h
 - `tools/build_hair_randomization_gallery.py`：生成单个发型 gallery，支持 `--candidate` 精选候选和 `--output` 输出多个子页面。
 - `tools/build_hair_gallery_index.py`：根据 catalog 生成统一入口。
 - `tools/build_hair_workbench.py`：生成统一发型设计与随机池评审页面，支持每个槽位随机池随机/手选、保存设计并回链 Gallery。
+- `tools/generate_hair_pool_preview_cache.ps1`：按当前随机池静默生成可复用的组合预览缓存。
 - `prototype/assets/hair/hair_gallery_catalog_v1.json`：统一入口的可追踪登记表，新增 gallery 时只需增加一条记录。
 
 ## 侧视图像素补偿
@@ -100,6 +101,12 @@ python tools\build_hair_workbench.py `
   --pool-catalog prototype\assets\hair\hair_random_pool_v1.json `
   --gallery-catalog prototype\assets\hair\hair_gallery_catalog_v1.json `
   --output prototype\test_output\hair_candidates_2026_08_04\workbench\index.html
+```
+
+生成随机池组合预览缓存：
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\generate_hair_pool_preview_cache.ps1
 ```
 
 ## 验收规则

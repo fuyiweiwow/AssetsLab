@@ -55,6 +55,7 @@ def gallery_links(root: Path, catalog_path: Path) -> list[tuple[Path, str]]:
 def candidate_records(root: Path, output_dir: Path, catalog_path: Path) -> list[dict[str, object]]:
     links = gallery_links(root, catalog_path)
     records: list[dict[str, object]] = []
+    seen: set[tuple[str, tuple[str, ...]]] = set()
     for manifest_path in sorted(root.rglob("manifest.json")):
         manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
         if manifest.get("schema") != CANDIDATE_SCHEMA:
@@ -65,6 +66,10 @@ def candidate_records(root: Path, output_dir: Path, catalog_path: Path) -> list[
         gender = gender_for(objects)
         if gender == "unknown":
             continue
+        key = (gender, tuple(sorted(objects)))
+        if key in seen:
+            continue
+        seen.add(key)
         candidate = manifest_path.parent
         if not all((candidate / f"{direction}.png").is_file() for direction in ("front", "right", "back", "left")):
             continue
@@ -144,6 +149,7 @@ def build_page(output: Path, candidates: list[dict[str, object]], pool: list[dic
     .details { padding: 10px; border-left: 1px solid #5d4140; }
     .details p { margin: 6px 0; }
     .object-list { color: #f0c2a5; word-break: break-word; }
+    #preview-signature { overflow-wrap: anywhere; word-break: break-word; line-height: 1.35; }
     .status { display: inline-block; padding: 3px 8px; border-radius: 99px; background: #4c6072; font-size: .72rem; }
     .status.pending { background: #75613b; }
     .links { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
