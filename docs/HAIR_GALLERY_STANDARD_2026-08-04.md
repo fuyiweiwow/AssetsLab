@@ -43,6 +43,8 @@ http://desktop-dk81254.tailf01571.ts.net:8000/hair_candidates_2026_08_04/index.h
 - `tools/build_hair_randomization_gallery.py`：生成单个发型 gallery，支持 `--candidate` 精选候选和 `--output` 输出多个子页面。
 - `tools/build_hair_gallery_index.py`：根据 catalog 生成统一入口。
 - `tools/build_hair_workbench.py`：生成统一发型设计与随机池评审页面，支持每个槽位随机池随机/手选、保存设计并回链 Gallery。
+- `tools/blender/generate_hair_component_variant.py`：以一个参考部件为种子生成独立几何变体，不自动拼接其它部件。
+- `tools/build_hair_component_workbench.py`：生成单部件变体评审页面，与组合工作台共享正式部件池。
 - `tools/generate_hair_pool_preview_cache.ps1`：按当前随机池静默生成可复用的组合预览缓存。
 - `prototype/assets/hair/hair_gallery_catalog_v1.json`：统一入口的可追踪登记表，新增 gallery 时只需增加一条记录。
 
@@ -107,6 +109,29 @@ python tools\build_hair_workbench.py `
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\tools\generate_hair_pool_preview_cache.ps1
+```
+
+生成单部件变体示例：
+
+```powershell
+& .\blender-4.5.10-windows-x64\blender.exe -b --python tools\blender\generate_hair_component_variant.py -- `
+  --hair-source-blend prototype\assets\hair\Blender-Chloe_Hair.blend `
+  --hair-object Chloe_hair_bangs_02 `
+  --source-anchor-object Chloe_head_dummy `
+  --actor-blend prototype\assets\characters\generated\chibi_eyes_ears_pixel_walk_source_v1.blend `
+  --output-blend prototype\test_output\hair_component_variants_2026_08_04\variant_female_front_bangs_02_1001\actor.blend `
+  --output-dir prototype\test_output\hair_component_variants_2026_08_04\variant_female_front_bangs_02_1001 `
+  --variant-seed 1001
+```
+
+生成单部件评审页面：
+
+```powershell
+python tools\build_hair_component_workbench.py `
+  --component-catalog prototype\assets\hair\hair_component_catalog_v1.json `
+  --pool-catalog prototype\assets\hair\hair_random_pool_v1.json `
+  --variant-root prototype\test_output\hair_component_variants_2026_08_04 `
+  --output prototype\test_output\hair_component_variants_2026_08_04\workbench\index.html
 ```
 
 ## 验收规则
