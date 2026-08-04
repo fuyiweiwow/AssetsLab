@@ -44,7 +44,10 @@ http://desktop-dk81254.tailf01571.ts.net:8000/hair_candidates_2026_08_04/index.h
 - `tools/build_hair_gallery_index.py`：根据 catalog 生成统一入口。
 - `tools/build_hair_workbench.py`：生成统一发型设计与随机池评审页面，支持每个槽位随机池随机/手选、保存设计并回链 Gallery。
 - `tools/blender/generate_hair_component_variant.py`：以一个参考部件为种子生成独立几何变体，不自动拼接其它部件。
+- `tools/blender/generate_hair_component_preview.py`：为共享随机池中的单个正式部件生成并缓存独立四方向预览。
+- `tools/blender/generate_hair_component_assembly.py`：将单部件变体与其它池部件联合生成四方向预览和 GLB。
 - `tools/build_hair_component_workbench.py`：生成单部件变体评审页面，与组合工作台共享正式部件池。
+- `tools/score_hair_component_compatibility.py`：根据兼容矩阵、源文件一致性和缓存几何尺寸给出离线筛选分及各角色最佳匹配列表。
 - `tools/generate_hair_pool_preview_cache.ps1`：按当前随机池静默生成可复用的组合预览缓存。
 - `prototype/assets/hair/hair_gallery_catalog_v1.json`：统一入口的可追踪登记表，新增 gallery 时只需增加一条记录。
 
@@ -131,10 +134,13 @@ python tools\build_hair_component_workbench.py `
   --component-catalog prototype\assets\hair\hair_component_catalog_v1.json `
   --pool-catalog prototype\assets\hair\hair_random_pool_v1.json `
   --variant-root prototype\test_output\hair_component_variants_2026_08_04 `
+  --component-preview-root prototype\test_output\hair_component_previews_2026_08_04 `
   --output prototype\test_output\hair_component_variants_2026_08_04\workbench\index.html
 ```
 
-单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。选择 base、侧发、后发等其它池成员后，还可以生成联合预览。该接口不会改写正式随机池，也不会打开 Blender GUI。
+单部件工作台在 `tools\serve_preview.ps1` 启动的预览服务下支持“生成并预览”：页面提交参考部件和 Seed 后，服务端验证共享部件池，静默执行 Blender `-b`，生成四方向图并自动重建工作台。选择 base、侧发、后发等其它池成员后，还可以生成联合预览。联合预览会同时导出 `model.glb`，页面用只读 `model-viewer` 提供手机触摸旋转和缩放。该接口不会改写正式随机池，也不会打开 Blender GUI。
+
+每个变体卡片都可以执行匹配度评估。评分是离线筛选分，不替代最终联合四视图验收；评分结果会列出 base、侧发、后发等位置的最高分候选。尚未进入正式池的实验部件允许评估，但结果会携带实验警告。
 
 测试缓存可以按数量和总字节数控制。默认最多保留 40 个 `variant_*` / `assembly_*` 目录、总计 512 MiB；清理只作用于 `prototype\test_output\hair_component_variants_2026_08_04` 下的生成缓存，不删除源 Blend 或正式资源。需要更小的测试缓存时：
 

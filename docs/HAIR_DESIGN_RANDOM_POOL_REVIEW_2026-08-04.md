@@ -18,6 +18,8 @@
 - 单部件页面：`tools/build_hair_component_workbench.py`，只显示一个参考对象及其变体，不自动拼接其它部件。
 - 两个页面都读取 `prototype/assets/hair/hair_random_pool_v1.json`；变体输出使用独立的 `assetslab_hair_component_variant_v1` manifest。
 
+单部件变体支持离线可用度评分：评分按兼容矩阵、性别和源发型包一致性、base 必选规则以及已缓存的部件几何尺寸计算，并分别给出各个其它角色的最高分候选。评分用于筛选和排序，最终仍需联合四视图验收；实验部件可以评分，但必须标记实验警告。
+
 ## 2. 组件槽位
 
 所有组合首先满足兼容矩阵和 base 约束：

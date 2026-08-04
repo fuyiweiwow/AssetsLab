@@ -93,6 +93,18 @@ def main() -> int:
     output_dir = options.output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     renders = fit_hair.fit_tools.render_views(bpy.context.scene, output_dir, body, assembly)
+    model_glb = output_dir / "model.glb"
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in bpy.data.objects:
+        if obj.type in {"MESH", "ARMATURE"}:
+            obj.select_set(True)
+    bpy.context.view_layer.objects.active = assembly
+    bpy.ops.export_scene.gltf(
+        filepath=str(model_glb),
+        export_format="GLB",
+        use_selection=True,
+        export_animations=False,
+    )
     options.output_blend.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(options.output_blend.resolve()))
     output_manifest = {
@@ -106,6 +118,7 @@ def main() -> int:
         "actor_blend": str(options.actor_blend.resolve()),
         "fit": fit,
         "renders": renders,
+        "model_glb": str(model_glb),
         "status": "assembly_review_required",
     }
     (output_dir / "manifest.json").write_text(json.dumps(output_manifest, indent=2), encoding="utf-8")
