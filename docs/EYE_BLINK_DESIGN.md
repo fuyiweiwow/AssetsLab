@@ -44,8 +44,8 @@ open → half → closed → half → open
 - 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
 - image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
 - 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v10 已通过前、左、右、背四向的 `open/half/closed/half/open` 组合层切换验证；背面无眼睛，身体材质 review render 已关闭不必要的透明抖动。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v10/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+- 当前实验状态：v11 已通过前、左、右、背四向的 `open/half/closed/half/open` 组合层切换验证；身体帧与眼睛时间轴已分离，保持完整 1–71 步态采样；背面无眼睛，身体材质 review render 已关闭不必要的透明抖动。
+- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v11/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
 
 ## 标准一致性与缺陷记录
 
@@ -53,3 +53,10 @@ open → half → closed → half → open
 - **EYE-WINDOW-01（v7）**：标准贴图原本带透明 alpha，但处理脚本把已有 `alpha=0` 改成了不透明黑色；同时眼睛材质使用 hashed/dithered alpha，造成随帧变化的黑色矩形“小窗”。现已修复为保留源 alpha，并使用 `BLENDED/BLEND`。
 - **v8**：front open 直接基于标准 `eye_right.png` 归一化，closed 与左右侧组合层均由 image_gen 参考标准生成；已复查 open/closed 和背面状态。
 - **EYE-TRANSITION-01（v9）**：虽然加入了真实 `half` 组合贴图，但每侧仅保持 2 帧，30 fps 下仍显得过快。v10 将入场和出场各延长到 3 帧，并保留闭眼 2 帧；过渡状态仍由眼睛与眉毛一起生成。
+- **EYE-WALK-01（v10）**：gallery 为了展示眨眼选用了不连续的身体帧，跳过了原始 Walk 动作的步态相位，导致看起来像只剩半个走路循环。v11 增加 `--body-frames`，身体采样固定为 `[1,11,21,31,41,51,61,71]`，眼睛仍使用连续的 `[27..34]` 时间帧。
+
+## 中间帧工具评估
+
+- ToonCrafter、AnimateDiff 属于生成式动画/卡通插帧工具，适合离线概念验证，但会改变线稿、透明边缘和角色身份，不适合作为随机眼睛的运行时依赖。
+- FILM 或 RIFE 属于通用帧插值，能减少显式 `half` 状态，但对透明 2D 眼睛层和像素边缘需要逐帧人工验收；后续可作为离线 A/B，不替换当前确定性的 3D→2D 流程。
+- 当前保留 `open/half/closed` 三态的原因是可复现、可随机换 bundle、可单独替换 Face/Eyes 层；若工具试验通过，优先把它用于离线生成候选，再固化为少量状态贴图。

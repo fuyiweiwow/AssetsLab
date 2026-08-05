@@ -16,6 +16,12 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--blend", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--frames", type=int, nargs="+", default=[1, 30, 40])
+    parser.add_argument(
+        "--body-frames",
+        type=int,
+        nargs="+",
+        help="optional body-pose frames; must have the same count as --frames",
+    )
     parser.add_argument("--size", type=int, default=256)
     parser.add_argument("--gallery", action="store_true")
     return parser.parse_args(argv)
@@ -82,6 +88,18 @@ def normalize_review_materials() -> None:
                 material.surface_render_method = "BLENDED"
 
 
+def capture_pose(armature: bpy.types.Object) -> dict[str, object]:
+    return {bone.name: bone.matrix_basis.copy() for bone in armature.pose.bones}
+
+
+def restore_pose(armature: bpy.types.Object, pose: dict[str, object]) -> None:
+    for bone in armature.pose.bones:
+        matrix_basis = pose.get(bone.name)
+        if matrix_basis is not None:
+            bone.matrix_basis = matrix_basis
+    bpy.context.view_layer.update()
+
+
 def main() -> int:
     options = cli_args()
     bpy.ops.wm.open_mainfile(filepath=str(options.blend.resolve()))
@@ -91,6 +109,9 @@ def main() -> int:
     low, high = bounds(actor)
     center = (low + high) * 0.5
     scene = bpy.context.scene
+    armature = next(obj for obj in bpy.data.objects if obj.type == "ARMATURE")
+    if options.body_frames is not None and len(options.body_frames) != len(options.frames):
+        raise ValueError("--body-frames must have the same number of values as --frames")
     # The Actor V1 open eyes are imagegen-derived texture materials. Workbench
     # ignores their node-based alpha/color path, so the review must use Eevee.
     scene.render.engine = "BLENDER_EEVEE_NEXT"
@@ -116,7 +137,13 @@ def main() -> int:
         camera = make_camera(scene, center, location, max(4.0, high.z - low.z + 0.6))
         scene.camera = camera
         for index, frame in enumerate(options.frames):
-            scene.frame_set(frame)
+            if options.body_frames is None:
+                scene.frame_set(frame)
+            else:
+                scene.frame_set(options.body_frames[index])
+                body_pose = capture_pose(armature)
+                scene.frame_set(frame)
+                restore_pose(armature, body_pose)
             apply_direction_face_pass(view_name)
             filename = f"{view_name}_{index:02d}.png" if options.gallery else f"{view_name}_frame{frame:03d}.png"
             scene.render.filepath = str(output / filename)

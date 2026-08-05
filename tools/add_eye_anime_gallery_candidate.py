@@ -39,6 +39,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--gallery", type=Path, default=Path("prototype/preview/animation_gallery"))
     parser.add_argument("--candidate-id", default="eye-anime-v8")
     parser.add_argument("--label", default="Eye Anime v8 · 标准比例眉眼组合层")
+    parser.add_argument("--body-frames", type=int, nargs="+")
+    parser.add_argument("--eye-frames", type=int, nargs="+")
     return parser.parse_args()
 
 
@@ -75,6 +77,16 @@ def main() -> int:
         "review_status": "WIP_validated_render_reference",
         "pixel_art_status": "preview_only_nearest_neighbor",
     }
+    if options.body_frames is not None or options.eye_frames is not None:
+        if options.body_frames is None or options.eye_frames is None:
+            raise ValueError("--body-frames and --eye-frames must be supplied together")
+        if len(options.body_frames) != len(options.eye_frames):
+            raise ValueError("body and eye frame lists must have the same length")
+        gallery_manifest["gallery_sampling"] = {
+            "body_frames": options.body_frames,
+            "eye_frames": options.eye_frames,
+            "note": "Body walk phase and blink timeline are intentionally evaluated on separate frame lists.",
+        }
     (target / "manifest.json").write_text(
         json.dumps(gallery_manifest, indent=2, ensure_ascii=False), encoding="utf-8"
     )
