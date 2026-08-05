@@ -30,8 +30,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--closed-left-texture", type=Path, required=True)
     parser.add_argument("--closed-right-texture", type=Path, required=True)
-    parser.add_argument("--open-left-texture", type=Path)
-    parser.add_argument("--open-right-texture", type=Path)
+    parser.add_argument("--open-left-texture", type=Path, required=True)
+    parser.add_argument("--open-right-texture", type=Path, required=True)
     parser.add_argument("--half-left-texture", type=Path, required=True)
     parser.add_argument("--half-right-texture", type=Path, required=True)
     parser.add_argument("--side-left-texture", type=Path, required=True)
@@ -243,17 +243,10 @@ def main() -> int:
     lenses = [bpy.data.objects.get(name) for name in LENS_NAMES]
     if any(obj is None for obj in lenses):
         raise RuntimeError("Actor V1 eye package is incomplete")
-    if bool(options.open_left_texture) != bool(options.open_right_texture):
-        raise RuntimeError("open eye textures must be supplied as a left/right pair")
-    open_materials = None
-    if options.open_left_texture and options.open_right_texture:
-        open_materials = [
-            make_texture_material("EyeBlinkV1_Open_L", options.open_left_texture),
-            make_texture_material("EyeBlinkV1_Open_R", options.open_right_texture),
-        ]
-        for lens, material in zip(lenses, open_materials):
-            lens.data.materials.clear()
-            lens.data.materials.append(material)
+    open_materials = [
+        make_texture_material("EyeBlinkV1_Open_L", options.open_left_texture),
+        make_texture_material("EyeBlinkV1_Open_R", options.open_right_texture),
+    ]
     closed_materials = [
         make_texture_material("EyeBlinkV1_Closed_L", options.closed_left_texture),
         make_texture_material("EyeBlinkV1_Closed_R", options.closed_right_texture),
@@ -280,6 +273,10 @@ def main() -> int:
         collection = bpy.data.collections.new("Face_Eyes_Blink_V1")
         bpy.context.scene.collection.children.link(collection)
 
+    open_eyes = [
+        duplicate_state(obj, material, "Open")
+        for obj, material in zip(lenses, open_materials)
+    ]
     closed_eyes = [
         duplicate_state(obj, material, "Closed")
         for obj, material in zip(lenses, closed_materials)
@@ -329,7 +326,7 @@ def main() -> int:
     ]
     for obj in side_open_eyes + side_half_eyes + side_closed_eyes:
         obj["assetslab_view"] = "left" if "_L" in obj.name else "right"
-    for obj in half_eyes + closed_eyes:
+    for obj in open_eyes + half_eyes + closed_eyes:
         for parent in list(obj.users_collection):
             parent.objects.unlink(obj)
         collection.objects.link(obj)
@@ -351,8 +348,13 @@ def main() -> int:
         scene.frame_start,
         scene.frame_end,
     )
+    for obj in bpy.data.objects:
+        if obj.name.startswith("EyePackageV1_"):
+            obj.hide_render = True
+            obj.hide_viewport = True
+
     bake_blinks(
-        lenses + side_open_eyes,
+        open_eyes + side_open_eyes,
         half_eyes + side_half_eyes,
         closed_eyes + side_closed_eyes,
         schedule,
@@ -385,6 +387,7 @@ def main() -> int:
             "policy": "preserve_standard_bbox_and_eye_brow_spacing",
         },
         "blink_geometry": {
+            "open_texture_lenses": [obj.name for obj in open_eyes],
             "half_texture_lenses": [obj.name for obj in half_eyes],
             "closed_texture_lenses": [obj.name for obj in closed_eyes],
             "side_open_texture_planes": [obj.name for obj in side_open_eyes],
