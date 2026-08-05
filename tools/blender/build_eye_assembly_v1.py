@@ -37,7 +37,6 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--frame", type=int, default=1)
     parser.add_argument("--width-scale", type=float, default=0.68)
     parser.add_argument("--height-scale", type=float, default=0.68)
-    parser.add_argument("--spacing-scale", type=float, default=0.86)
     parser.add_argument("--clearance", type=float, default=0.008)
     parser.add_argument("--curvature", type=float, default=0.018)
     return parser.parse_args(argv)
@@ -188,13 +187,11 @@ def main() -> int:
         scene.collection.children.link(collection)
     left_material = make_texture_material("EyeAssemblyV1_ImageGen_L", options.left_texture)
     right_material = make_texture_material("EyeAssemblyV1_ImageGen_R", options.right_texture)
-    native_midpoint = (source_bounds["L"][0] + source_bounds["L"][1] + source_bounds["R"][0] + source_bounds["R"][1]) * 0.25
 
     surfaces = []
     for side, material in (("L", left_material), ("R", right_material)):
         low, high = source_bounds[side]
         eye_center = (low + high) * 0.5
-        eye_center.x = native_midpoint.x + (eye_center.x - native_midpoint.x) * options.spacing_scale
         eye_width = high.x - low.x
         eye_height = high.z - low.z
         width = eye_width * 1.42 * options.width_scale
@@ -257,7 +254,6 @@ def main() -> int:
         "placement": {
             "width_scale": options.width_scale,
             "height_scale": options.height_scale,
-            "spacing_scale": options.spacing_scale,
             "clearance": options.clearance,
             "curvature": options.curvature,
         },

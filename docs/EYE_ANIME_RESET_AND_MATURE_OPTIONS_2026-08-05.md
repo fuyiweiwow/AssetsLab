@@ -6,6 +6,10 @@
 
 删除旧 gallery 中全部眼睛实验，保留移动基线。新的实现不从 v22 或更早版本继续修补，而是从“单一 3D 面部结构、单一眨眼参数、统一四方向投影”重新开始。
 
+## 资源策略
+
+`prototype/assets/characters/actor_v1/eye_textures/eye_right.png` 与 `eye_left.png` 是 Actor V1 的权威比例、风格和眉眼关系基准。EyeAssembly 的结构实验应优先直接使用这两份资源；image_gen 只用于明确需要的新表情或变体，不能替代基准资源。当前 `EyeAssemblyV1` 中的 image_gen 资产只保留为临时结构测试输入，后续接入眨眼前应先切回 Actor 原生资源。
+
 ## 为什么重置
 
 旧流程把 image_gen 生成的眼睛贴图作为独立可见层，再尝试通过位置、父级、眼骨骼和侧面平面去补偿 3D 投影。这会把视觉内容、动画绑定和方向选择混在一起，导致正面叠层、侧面方向反转、眼睛悬浮以及身体帧被打乱。继续增加 open/half/closed 或 side PNG 只会扩大状态空间，不能解决根因。
@@ -32,7 +36,7 @@
 
 已完成静态 `EyeAssemblyV1`：使用 image_gen 生成的眉毛+眼睛组合参考，裁切为左右 RGBA 资产，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
 
-已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。后续复核发现初版尺寸偏大且表面浮空，已在不新增 image_gen 的前提下将测试倍率调整为 `0.68/0.68`、中心间距调整为 `0.86`，并加入头部表面 Shrinkwrap；当前版本已接入 gallery，但仍不是眨眼或最终资源。
+已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。后续复核发现初版尺寸偏大且表面浮空，已在不新增 image_gen 的前提下将测试倍率调整为 `0.68/0.68`，并加入头部表面 Shrinkwrap；当前版本已接入 gallery，但仍不是眨眼或最终资源。
 
 ## 暂不做
 

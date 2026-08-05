@@ -18,7 +18,6 @@
   "placement": {
     "width_scale": 0.68,
     "height_scale": 0.68,
-    "spacing_scale": 0.86,
     "clearance": 0.008,
     "curvature": 0.018
   },
