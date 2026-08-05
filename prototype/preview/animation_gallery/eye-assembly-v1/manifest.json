@@ -1,0 +1,31 @@
+{
+  "schema": "assetslab_eye_assembly_v1",
+  "source_blend": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\characters\\actor_v1\\chibi_actor_mixamo_walk_v1.blend",
+  "textures": {
+    "L": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops\\imagegen_eye_assembly_L.png",
+    "R": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops\\imagegen_eye_assembly_R.png"
+  },
+  "parent_bone": "CC_Base_Head",
+  "objects": [
+    "EyeAssemblyV1_Front_L",
+    "EyeAssemblyV1_Front_R"
+  ],
+  "frame": 1,
+  "static_only": true,
+  "side_policy": "same_3d_assembly_projection",
+  "back_policy": "transparent_no_eye_geometry",
+  "blink_amount": 0.0,
+  "placement": {
+    "width_scale": 1.0,
+    "height_scale": 1.0,
+    "clearance": 0.018,
+    "curvature": 0.018
+  },
+  "directions": [
+    "front",
+    "threequarter",
+    "right",
+    "back"
+  ],
+  "status": "static_multiview_review_only"
+}
