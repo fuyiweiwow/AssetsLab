@@ -55,6 +55,11 @@ Actor V1 是离线生成基线，不等于已经接入 Godot 的最终运行时�
 4. **发型/服装 bundle**：先完成四视图和 64×64 像素验收，再将通过的组合固化为可按 seed 选择的整体 bundle。
 5. 对角线方向和运行时 3D 角色暂不进入当前阶段。
 
+## 开发待办
+
+- [ ] **eye_anime：移动眨眼与眼睛层**。从 Actor V1 中拆出可替换的 `Face/Eyes` 层，建立 `open/half/closed` 状态、稳定 seed 选择和 headless 序列验证；不修改身体 8 帧合同。
+- [ ] **pixelization：像素化质量 A/B**。比较 Blender 原生 Pixelate/Closest/Box、免费像素化插件和可选 2DFactory；固定相机、锚点、调色板、透明 pass 和 manifest 后再决定是否引入外部工具或 MCP。
+
 ## 当前入口文档
 
 - [当前保留流程](docs/ACTIVE_ASSET_WORKFLOW.md)

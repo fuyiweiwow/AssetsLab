@@ -53,6 +53,11 @@ Actor V1 是离线生成基线；`chibi_eyes_ears_walk_v1` 是已通过 Godot �
 
 眨眼不是头部或身体动画。只有在眼睛能独立导出为方向化 Face 层后，才允许增加 open/half/closed 眼睛状态，并在 Godot 中只替换 Face 层。详细方案见 [EYE_BLINK_DESIGN.md](EYE_BLINK_DESIGN.md)。
 
+## 开发待办
+
+- [ ] `eye_anime`：拆分 Actor V1 眼睛层，生成可复用的眼睛状态和四方向候选，完成移动眨眼 headless 小实验。
+- [ ] `pixelization`：建立 Blender 原生像素化、免费插件和可选 2DFactory 的统一 A/B 输出与验收报告；MCP 只作为批处理编排层候选。
+
 ## 清理规则
 
 - `prototype/test_output/` 只保留当前需要人工查看的输出，历史结果从源文件重建。
