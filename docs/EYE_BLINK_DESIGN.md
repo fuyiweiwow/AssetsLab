@@ -1,74 +1,54 @@
-# 移动中的眨眼设计记录
+# 移动时眼睛动画设计记录
 
 更新时间：2026-08-05
 
-## 结论
+## 当前结论
 
-应该做，但应作为独立的小型表现层实验，不应修改当前 4 方向 × 8 帧的身体动画合同。
+旧的 eye-anime gallery 实验已经全部撤下。它们反复引入正面叠层、错误的侧面眼睛、面部抖动和身体步态不完整等问题，因此不再把 v6–v22 视为可复用的实现基线。
 
-当前开发分支：`eye_anime`。本分支第一项先在 Actor V1 的 3D 场景中建立可替换的 Face/Eyes 层，再把 open/closed 状态烘焙到 3D→2D 渲染流程；随机眼睛候选会在离线渲染前按 seed 选择，不在运行时临时生成或绘制像素。
+`eye_anime` 分支暂时只保留移动动画基线和研究结论，不发布新的眼睛候选。下一轮必须先验证眼睛的 3D 结构、头部跟随和四方向投影，再进入 2D 烘焙与 gallery。
 
-眨眼对大头角色的表情收益高，且只需要切换完整的 Face/Eyes 组合层。眉毛和眼睛必须由 image_gen 一起生成，避免 open/closed 切换时眉眼错位；再由 Blender 离线渲染为 2D 参考。背面没有眼睛几何，因此背面保持透明，不生成背面眼睛贴图。
+## 重新采用的原则
 
-## 推荐实现
+1. 眼睛属于头部的 3D 面部结构，不能作为固定在世界坐标上的独立平面。
+2. 正面、三分之四和侧面应由同一套 3D 眼睛/眼睑结构投影得到；背面不生成眼睛。
+3. 眨眼控制只驱动一个连续参数或一组稳定的形态键，不再通过多个独立贴图层叠加来模拟开合。
+4. 身体动画合同保持不变：四方向、完整 8 帧步态采样，眼睛实验不得改变身体姿态或采样相位。
+5. image_gen 只用于生成经过人工确认的眉毛与眼睛视觉资产参考，不能代替 3D 锚点、拓扑和面部跟随关系。
 
-- 3D 渲染阶段准备 `open`、`half`、`closed` 三种状态；三种状态均使用 image_gen 生成的“眼睛+眉毛”组合贴图。`half` 入场和出场各保持 3 帧，避免 open/closed 之间瞬间跳变。
-- 眨眼只改变 Blender 的 `Face/Eyes` 层，不改变 `Head`、身体帧、脚底基线或锚点；导出后的 Godot 只加载烘焙 2D 结果。
-- 眨眼帧索引独立于行走帧索引；角色移动时仍连续播放身体 8 帧循环。
-- 使用稳定的角色 seed 生成眨眼间隔，避免录制、回放和测试时出现不可复现差异。
-- 默认间隔约 2.5–5 秒，半睁入场 3 帧、闭眼 2 帧、半睁出场 3 帧（30 fps 下完整过渡约 267 ms）；攻击、受伤、对话等特殊状态以后可以覆盖普通眨眼。
+## 推荐的成熟路线
 
-推荐序列：
+### A. Blender 原生面部结构
 
-```text
-open → half → closed → half → open
-```
+先在 Actor V1 的头部上建立一套浅层的日系动漫眼睛/眼睑几何，并让它们统一挂在 `CC_Base_Head` 的面部结构下。眼睑使用相对 Shape Keys，例如 `Open`、`Half`、`Closed`；不额外把已有 shrinkwrap 镜片重复绑定到眼骨骼。
 
-第一阶段使用 3D 相机自动覆盖正面、右侧、左侧和背面验证；背面不生成眼睛，保持透明 Face 层。侧面使用 image_gen 生成的组合层进行离线参考渲染，不作为运行时 3D 方向贴图。
+Blender 官方文档把 Shape Keys 作为面部动画的常用方法，并支持相对形态键的组合与插值；这比逐帧替换独立 PNG 更适合保持眉眼关系和头部跟随。参考：[Blender Shape Keys 官方手册](https://docs.blender.org/manual/en/latest/animation/shape_keys/introduction.html)。
 
-## 验收标准
+### B. 视线与眨眼分离
 
-1. 眨眼不造成头部、耳朵或发型跳动；
-2. 行走帧不重置，方向切换不丢失眨眼状态；
-3. 同一个 seed 的间隔和帧序列一致；
-4. 1× 和游戏实际显示尺寸下都能看出闭眼，而不是随机噪点；
-5. headless Blender 测试可以输出一次固定 seed 的眨眼序列，并且同 seed 重建 manifest 一致。
+眨眼使用眼睑形态键；视线偏移才考虑 UV Warp 或眼球控制器。UV Warp 可以由对象或骨骼驱动 UV 的移动、旋转和缩放，但它不是解决侧面投影或眼睑几何的办法。参考：[Blender UV Warp 官方手册](https://docs.blender.org/manual/en/latest/modeling/modifiers/modify/uv_warp.html)。
 
-## 暂不做的方案
+### C. 参数和随机调度
 
-当前不把浅曲面贴图直接当作最终 2D 资产，也不把侧面平面作为运行时方案。第一版先使用独立的眼睛+眉毛组合层完成离线 3D→2D 参考；如果需要 `half`，再单独验证 Shape Key 或最终透明眼睛 pass，不让它影响已稳定的头部绑定。
+运行时只保留一个可复现的 `blink_amount` 参数，离线渲染时由固定 seed 生成眨眼间隔；`open → half → closed → half → open` 只是参数曲线，不是五套互相漂移的图层。Live2D 的官方 EyeBlink 方案也采用左右眼开合参数、控制器和可调随机间隔，可作为参数设计参考，但不引入 Live2D 运行时依赖。参考：[Live2D EyeBlink 官方教程](https://docs.live2d.com/en/cubism-sdk-tutorials/eyeblink/)。
 
-## 当前实现
+### D. 最后才进入 Godot
 
-- Blender 构建脚本：`tools/blender/build_eye_blink_experiment.py`
-- 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
-- image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
-- 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v20/v22 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；眼睛可见性先按眼睛帧缓存，再清除原生可见性动作并手动按方向应用，避免 depsgraph 复活旧对象。正面保持 Actor 标准眉眼尺寸；左右独立眼层绑定到 `CC_Base_L_Eye` / `CC_Base_R_Eye`，通过面部骨骼链继承头部和面部动画；侧面 profile 平面保持刚性并放大有效可视区域，避免 shrinkwrap 把眼睛压成细缝。body pass 严格使用完整 8 帧身体采样，gallery 采样显式包含最大睁眼帧，背面无眼睛。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v22/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+Blender 完成四方向 3D→2D 烘焙后，Godot 只负责播放已经验证的 SpriteFrames；不在 Godot 中再移动或拼装眼睛贴图。参考：[Godot AnimatedSprite2D 官方文档](https://docs.godotengine.org/en/4.6/classes/class_animatedsprite2d.html)。
 
-## 标准一致性与缺陷记录
+## 重新开始的验收闸门
 
-- **EYE-SCALE-01（v6）**：新生成的组合层没有锁定 Actor 标准眼睛的外框和眉眼间距，导致 3D review 中眼睛显得像另一套角色。标准参数记录为：运行时画布 `64×64`；正面角色 alpha bbox `[18,7,46,57]`；标准 `eye_right.png` 内容 bbox `[13,12,488,597]`。后续组合层必须保留这个 bbox 和眉眼相对位置。
-- **EYE-WINDOW-01（v7）**：标准贴图原本带透明 alpha，但处理脚本把已有 `alpha=0` 改成了不透明黑色；同时眼睛材质使用 hashed/dithered alpha，造成随帧变化的黑色矩形“小窗”。现已修复为保留源 alpha，并使用 `BLENDED/BLEND`。
-- **v8**：front open 直接基于标准 `eye_right.png` 归一化，closed 与左右侧组合层均由 image_gen 参考标准生成；已复查 open/closed 和背面状态。
-- **EYE-TRANSITION-01（v9）**：虽然加入了真实 `half` 组合贴图，但每侧仅保持 2 帧，30 fps 下仍显得过快。v10 将入场和出场各延长到 3 帧，并保留闭眼 2 帧；过渡状态仍由眼睛与眉毛一起生成。
-- **EYE-WALK-01（v10）**：gallery 为了展示眨眼选用了不连续的身体帧，跳过了原始 Walk 动作的步态相位，导致看起来像只剩半个走路循环。v11 增加 `--body-frames`，身体采样固定为 `[1,11,21,31,41,51,61,71]`，眼睛仍使用连续的 `[27..34]` 时间帧。
-- **EYE-LAYER-01（v12）**：即使 v11 将身体帧和眼睛时间帧分离，仍在同一 Blender 场景中恢复姿态，可能影响 walk review。v12 将身体和眼睛分别渲染，再用 RGBA 离线合成，避免眼睛动画参与身体渲染。
-- **EYE-NATIVE-01（v12）**：独立眼睛层仍混入原生 `EyePackageV1_*` 的开合动画，导致原生眼睛与新状态层重叠。v13 在 `eyes` pass 中强制隐藏原生对象，只保留 `EyeBlinkV1_*`。
-- **EYE-OPEN-01（v13）**：v13 隐藏原生对象后，独立层缺少自己的最大睁眼几何；v14 新增 `EyeBlinkV1_OpenTexture_L/R`，三态本身不依赖原生动画。
-- **EYE-OPEN-02（v14）**：最大睁眼素材虽然已存在，但 gallery 仍采样 `[27..34]`，从半睁帧开始，造成“没有最大眼睛帧”的观感；v15 固定采样 `[24,26,27,29,30,32,34,35]`，首尾均为最大睁眼。
-- **EYE-SIDE-01（v14）**：方向 pass 只在 `eyes` 层隐藏原生对象，full 渲染仍可能保留 `EyePackageV1_AlmondFrame_*`，导致侧面独立眼层与旧眼框重叠；v15 在所有独立眨眼渲染层统一禁用完整 `EyePackageV1_*`。
-- **EYE-SIDE-02（v15）**：仅设置 `hide_render` 仍不足以阻止带关键帧的眼睛对象在 depsgraph 中复活；v18 先缓存 `EyeBlinkV1_*` 在目标眼睛帧的状态，再清除可见性动作并手动应用方向筛选。
-- **EYE-SIDE-03（v15）**：侧眼平面位置仍落在鼻侧，且左右法线与相机方向相反；v18 将平面移到侧面眼窝位置，右侧使用 `-X`、左侧使用 `+X` 法线，并使用贴图自发光材质保持 image_gen 颜色。
-- **EYE-WALK-02（v15）**：body pass 仍先跳到 eye frame 再恢复骨骼姿态，造成走路周期看起来不完整；v18 在 body pass 直接使用 `[1,11,21,31,41,51,61,71]`，只有 eyes/full pass 才进行身体姿态锁定。
-- **EYE-BIND-01（v18，已被 v20 扩展）**：眼睛对象必须保持 `parent_type=BONE`，不能只保存世界坐标。v18 先以 `CC_Base_Head` 验证头部跟随；v20 将合同扩展为左右眼分别绑定眼骨骼，以覆盖面部动画。
-- **EYE-BIND-02（v20）**：仅绑定 `CC_Base_Head` 只能继承头部移动，不能继承独立的面部/眼球动画。正面左右眼、侧面左右 profile 层现在分别绑定 `CC_Base_L_Eye` / `CC_Base_R_Eye`，通过 `CC_Base_FacialBone -> CC_Base_Head` 继承上层运动；脚本同时验证每个独立层的 parent bone。
-- **EYE-SIDE-04（v20）**：侧面 image_gen 画布透明留白较多，且对 profile 平面使用 shrinkwrap 会把平面投影变形为细缝。侧面层改为刚性骨骼绑定，平面尺寸固定为 `0.68×0.64`，只用 bone transform 跟随面部动画。
+1. 静态正面：最大睁眼比例与 Actor 标准一致，眉眼相对位置稳定。
+2. 头部动作：眼睛随头部和面部动画移动，不出现悬浮、抖动或重复层。
+3. 侧面：同一 3D 结构自然投影出正确方向和可见度；没有通过错误的侧面 PNG 平面“补眼睛”。
+4. 动画：身体四方向均保留完整 8 帧步态，眼睛控制不能改变身体采样。
+5. 眨眼：至少有最大睁眼、半睁、闭眼三个可检查状态，过渡连续且同 seed 可复现。
+6. 透明度：所有眼睑/眼睛 pass 保留 alpha，不使用会产生黑色小窗或马赛克的错误混合方式。
+7. 只有通过以上检查，才新建一个 gallery 候选；失败的中间结果不再长期堆积在 gallery。
 
-## 中间帧工具评估
+## 当前工程状态
 
-- ToonCrafter、AnimateDiff 属于生成式动画/卡通插帧工具，适合离线概念验证，但会改变线稿、透明边缘和角色身份，不适合作为随机眼睛的运行时依赖。
-- FILM 或 RIFE 属于通用帧插值，能减少显式 `half` 状态，但对透明 2D 眼睛层和像素边缘需要逐帧人工验收；后续可作为离线 A/B，不替换当前确定性的 3D→2D 流程。
-- 当前保留 `open/half/closed` 三态的原因是可复现、可随机换 bundle、可单独替换 Face/Eyes 层；若工具试验通过，优先把它用于离线生成候选，再固化为少量状态贴图。
-- v20 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。
+- 移动基线：`prototype/preview/animation_gallery/walk-v78/`
+- 原始角色基线：`prototype/preview/animation_gallery/actor-v1/`
+- 旧 eye-anime gallery：已删除，可从 Git 历史恢复，但不再作为当前实现引用。
+- 现有 Blender 脚本：保留为研究/回退材料；下一步应拆出“单一 3D 眼睛结构 + Shape Keys”实验，而不是继续扩展旧的贴图层方案。
