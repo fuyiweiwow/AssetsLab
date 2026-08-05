@@ -15,7 +15,7 @@ import sys
 from pathlib import Path
 
 import bpy
-from mathutils import Vector
+from mathutils import Matrix, Vector
 
 
 HEAD_BONE = "CC_Base_Head"
@@ -30,6 +30,12 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--manifest", type=Path, required=True)
     parser.add_argument("--closed-left-texture", type=Path, required=True)
     parser.add_argument("--closed-right-texture", type=Path, required=True)
+    parser.add_argument("--open-left-texture", type=Path)
+    parser.add_argument("--open-right-texture", type=Path)
+    parser.add_argument("--side-left-texture", type=Path, required=True)
+    parser.add_argument("--side-right-texture", type=Path, required=True)
+    parser.add_argument("--side-closed-left-texture", type=Path, required=True)
+    parser.add_argument("--side-closed-right-texture", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260805)
     parser.add_argument("--interval-min", type=float, default=2.5)
     parser.add_argument("--interval-max", type=float, default=5.0)
@@ -99,6 +105,47 @@ def make_texture_material(name: str, texture_path: Path) -> bpy.types.Material:
     links.new(texture.outputs["Alpha"], shader.inputs["Alpha"])
     links.new(shader.outputs["BSDF"], output.inputs["Surface"])
     return material
+
+
+def create_side_plane(
+    name: str,
+    location: Vector,
+    normal_sign: float,
+    material: bpy.types.Material,
+    armature: bpy.types.Object,
+) -> bpy.types.Object:
+    width = 0.31
+    height = 0.29
+    vertices = [
+        (-width * 0.5, -height * 0.5, 0.0),
+        (width * 0.5, -height * 0.5, 0.0),
+        (width * 0.5, height * 0.5, 0.0),
+        (-width * 0.5, height * 0.5, 0.0),
+    ]
+    mesh = bpy.data.meshes.new(name + "Mesh")
+    mesh.from_pydata(vertices, [], [(0, 1, 2, 3)])
+    mesh.uv_layers.new(name="UVMap")
+    for polygon in mesh.polygons:
+        for loop_index in polygon.loop_indices:
+            vertex = mesh.loops[loop_index].vertex_index
+            mesh.uv_layers[0].data[loop_index].uv = ((1.0, 0.0), (0.0, 0.0), (0.0, 1.0), (1.0, 1.0))[vertex]
+    mesh.materials.append(material)
+    obj = bpy.data.objects.new(name, mesh)
+    bpy.context.collection.objects.link(obj)
+
+    # Local X follows head Y, local Y follows head Z, and local Z faces +/-X.
+    basis = Matrix(((0.0, 0.0, normal_sign), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))).to_4x4()
+    desired_world = Matrix.Translation(location) @ basis
+    bone_world = armature.matrix_world @ armature.pose.bones[HEAD_BONE].matrix
+    obj.parent = armature
+    obj.parent_type = "BONE"
+    obj.parent_bone = HEAD_BONE
+    obj.matrix_parent_inverse = Matrix.Identity(4)
+    obj.matrix_basis = bone_world.inverted() @ desired_world
+    obj["assetslab_layer"] = "Face/Eyes"
+    obj["assetslab_role"] = "eye_blink_3d_side_texture"
+    obj["assetslab_side_normal"] = normal_sign
+    return obj
 
 
 def bake_schedule(
@@ -179,9 +226,28 @@ def main() -> int:
     lenses = [bpy.data.objects.get(name) for name in LENS_NAMES]
     if any(obj is None for obj in lenses):
         raise RuntimeError("Actor V1 eye package is incomplete")
+    if bool(options.open_left_texture) != bool(options.open_right_texture):
+        raise RuntimeError("open eye textures must be supplied as a left/right pair")
+    open_materials = None
+    if options.open_left_texture and options.open_right_texture:
+        open_materials = [
+            make_texture_material("EyeBlinkV1_Open_L", options.open_left_texture),
+            make_texture_material("EyeBlinkV1_Open_R", options.open_right_texture),
+        ]
+        for lens, material in zip(lenses, open_materials):
+            lens.data.materials.clear()
+            lens.data.materials.append(material)
     closed_materials = [
         make_texture_material("EyeBlinkV1_Closed_L", options.closed_left_texture),
         make_texture_material("EyeBlinkV1_Closed_R", options.closed_right_texture),
+    ]
+    side_open_materials = [
+        make_texture_material("EyeBlinkV1_SideOpen_L", options.side_left_texture),
+        make_texture_material("EyeBlinkV1_SideOpen_R", options.side_right_texture),
+    ]
+    side_closed_materials = [
+        make_texture_material("EyeBlinkV1_SideClosed_L", options.side_closed_left_texture),
+        make_texture_material("EyeBlinkV1_SideClosed_R", options.side_closed_right_texture),
     ]
 
     collection = bpy.data.collections.get("Face_Eyes_Blink_V1")
@@ -193,7 +259,39 @@ def main() -> int:
         duplicate_lid(obj, material)
         for obj, material in zip(lenses, closed_materials)
     ]
+    side_open_eyes = [
+        create_side_plane(
+            name,
+            location,
+            normal_sign,
+            material,
+            armature,
+        )
+        for name, location, normal_sign, material in (
+            ("EyeBlinkV1_SideOpen_L", Vector((-0.66, -0.67, 2.07)), -1.0, side_open_materials[0]),
+            ("EyeBlinkV1_SideOpen_R", Vector((0.66, -0.67, 2.07)), 1.0, side_open_materials[1]),
+        )
+    ]
+    side_closed_eyes = [
+        create_side_plane(
+            name,
+            location,
+            normal_sign,
+            material,
+            armature,
+        )
+        for name, location, normal_sign, material in (
+            ("EyeBlinkV1_SideClosed_L", Vector((-0.665, -0.67, 2.07)), -1.0, side_closed_materials[0]),
+            ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.67, 2.07)), 1.0, side_closed_materials[1]),
+        )
+    ]
+    for obj in side_open_eyes + side_closed_eyes:
+        obj["assetslab_view"] = "left" if "_L" in obj.name else "right"
     for obj in closed_eyes:
+        for parent in list(obj.users_collection):
+            parent.objects.unlink(obj)
+        collection.objects.link(obj)
+    for obj in side_open_eyes + side_closed_eyes:
         for parent in list(obj.users_collection):
             parent.objects.unlink(obj)
         collection.objects.link(obj)
@@ -212,8 +310,8 @@ def main() -> int:
         scene.frame_end,
     )
     bake_blinks(
-        lenses,
-        closed_eyes,
+        lenses + side_open_eyes,
+        closed_eyes + side_closed_eyes,
         schedule,
         scene.frame_start,
         scene.frame_end,
@@ -238,12 +336,27 @@ def main() -> int:
         "source_open_eye_materials": ["EyePackageV1_MikuLeft", "EyePackageV1_MikuRight"],
         "blink_geometry": {
             "closed_texture_lenses": [obj.name for obj in closed_eyes],
+            "side_open_texture_planes": [obj.name for obj in side_open_eyes],
+            "side_closed_texture_planes": [obj.name for obj in side_closed_eyes],
             "parent_bone": HEAD_BONE,
             "back_policy": "transparent_no_eye_geometry",
         },
         "imagegen_closed_eye_textures": [
             str(options.closed_left_texture.resolve()),
             str(options.closed_right_texture.resolve()),
+        ],
+        "imagegen_open_eye_textures": (
+            [str(options.open_left_texture.resolve()), str(options.open_right_texture.resolve())]
+            if options.open_left_texture and options.open_right_texture
+            else None
+        ),
+        "imagegen_side_eye_textures": [
+            str(options.side_left_texture.resolve()),
+            str(options.side_right_texture.resolve()),
+        ],
+        "imagegen_side_closed_eye_textures": [
+            str(options.side_closed_left_texture.resolve()),
+            str(options.side_closed_right_texture.resolve()),
         ],
         "timeline": {
             "fps": scene.render.fps,

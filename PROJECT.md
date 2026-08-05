@@ -57,7 +57,7 @@ Actor V1 是离线生成基线，不等于已经接入 Godot 的最终运行时�
 
 ## 开发待办
 
-- [~] **eye_anime：移动眨眼与眼睛层**。已在派生 Actor V1 Blend 中建立可替换的 `Face/Eyes` 3D 层，接入 image_gen 的 open/closed 状态、稳定 seed 烘焙和 headless 验证；下一步补 `half` 形变并纳入正式 3D→2D 输出，不修改身体 8 帧合同。
+- [~] **eye_anime：移动眨眼与眼睛层**。已在派生 Actor V1 Blend 中建立可替换的 `Face/Eyes` 组合层，眉毛与眼睛由 image_gen 一起生成，接入 open/closed 状态、稳定 seed 烘焙、四向 headless 验证和 movement gallery；下一步验证 `half` 形变与正式透明 2D eye pass，不修改身体 8 帧合同。
 - [ ] **pixelization：像素化质量 A/B**。比较 Blender 原生 Pixelate/Closest/Box、免费像素化插件和可选 2DFactory；固定相机、锚点、调色板、透明 pass 和 manifest 后再决定是否引入外部工具或 MCP。
 
 ## 当前入口文档
