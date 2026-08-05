@@ -61,9 +61,11 @@ def apply_direction_face_pass(view_name: str, layer: str) -> None:
     for obj in bpy.data.objects:
         if not obj.name.startswith(("EyePackageV1_Lens_", "EyePackageV1_AlmondFrame_", "EyeBlinkV1_")):
             continue
-        if layer == "eyes" and obj.name.startswith("EyePackageV1_"):
-            # The original EyePackage carries the native eye open/close
-            # animation. Independent eye renders must use only EyeBlinkV1.
+        if obj.name.startswith("EyePackageV1_"):
+            # The original EyePackage contains the native eye animation and
+            # almond frames. The independent EyeBlinkV1 experiment owns the
+            # complete eye layer; leaving either native object visible causes
+            # a duplicate eye/eyelid in side and full renders.
             obj.hide_render = True
             obj.hide_viewport = True
             continue

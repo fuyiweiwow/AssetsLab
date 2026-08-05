@@ -44,8 +44,8 @@ open → half → closed → half → open
 - 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
 - image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
 - 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v14 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；身体层不含眼睛，眼睛层为透明 RGBA，合成后再进入 gallery。前、左、右、背四向均已通过检查，背面无眼睛。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v14/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+- 当前实验状态：v15 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；身体层不含眼睛，眼睛层为透明 RGBA，合成后再进入 gallery。gallery 采样显式包含最大睁眼帧，full/eyes pass 均不允许原生眼框回灌；前、左、右、背四向均已通过检查，背面无眼睛。
+- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v15/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
 
 ## 标准一致性与缺陷记录
 
@@ -56,11 +56,13 @@ open → half → closed → half → open
 - **EYE-WALK-01（v10）**：gallery 为了展示眨眼选用了不连续的身体帧，跳过了原始 Walk 动作的步态相位，导致看起来像只剩半个走路循环。v11 增加 `--body-frames`，身体采样固定为 `[1,11,21,31,41,51,61,71]`，眼睛仍使用连续的 `[27..34]` 时间帧。
 - **EYE-LAYER-01（v12）**：即使 v11 将身体帧和眼睛时间帧分离，仍在同一 Blender 场景中恢复姿态，可能影响 walk review。v12 将身体和眼睛分别渲染，再用 RGBA 离线合成，避免眼睛动画参与身体渲染。
 - **EYE-NATIVE-01（v12）**：独立眼睛层仍混入原生 `EyePackageV1_*` 的开合动画，导致原生眼睛与新状态层重叠。v13 在 `eyes` pass 中强制隐藏原生对象，只保留 `EyeBlinkV1_*`。
-- **EYE-OPEN-01（v13）**：v13 隐藏原生对象后，独立层缺少自己的最大睁眼几何；v14 新增 `EyeBlinkV1_OpenTexture_L/R`，现在三态均不依赖原生动画。
+- **EYE-OPEN-01（v13）**：v13 隐藏原生对象后，独立层缺少自己的最大睁眼几何；v14 新增 `EyeBlinkV1_OpenTexture_L/R`，三态本身不依赖原生动画。
+- **EYE-OPEN-02（v14）**：最大睁眼素材虽然已存在，但 gallery 仍采样 `[27..34]`，从半睁帧开始，造成“没有最大眼睛帧”的观感；v15 固定采样 `[24,26,27,29,30,32,34,35]`，首尾均为最大睁眼。
+- **EYE-SIDE-01（v14）**：方向 pass 只在 `eyes` 层隐藏原生对象，full 渲染仍可能保留 `EyePackageV1_AlmondFrame_*`，导致侧面独立眼层与旧眼框重叠；v15 在所有独立眨眼渲染层统一禁用完整 `EyePackageV1_*`。
 
 ## 中间帧工具评估
 
 - ToonCrafter、AnimateDiff 属于生成式动画/卡通插帧工具，适合离线概念验证，但会改变线稿、透明边缘和角色身份，不适合作为随机眼睛的运行时依赖。
 - FILM 或 RIFE 属于通用帧插值，能减少显式 `half` 状态，但对透明 2D 眼睛层和像素边缘需要逐帧人工验收；后续可作为离线 A/B，不替换当前确定性的 3D→2D 流程。
 - 当前保留 `open/half/closed` 三态的原因是可复现、可随机换 bundle、可单独替换 Face/Eyes 层；若工具试验通过，优先把它用于离线生成候选，再固化为少量状态贴图。
-- v13 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`eyes` pass 不再渲染原生 EyePackage 动画。
+- v15 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。
