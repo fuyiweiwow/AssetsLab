@@ -35,9 +35,9 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--save-blend", type=Path, required=True)
     parser.add_argument("--frame", type=int, default=1)
-    parser.add_argument("--width-scale", type=float, default=1.0)
-    parser.add_argument("--height-scale", type=float, default=1.0)
-    parser.add_argument("--clearance", type=float, default=0.018)
+    parser.add_argument("--width-scale", type=float, default=0.68)
+    parser.add_argument("--height-scale", type=float, default=0.68)
+    parser.add_argument("--clearance", type=float, default=0.008)
     parser.add_argument("--curvature", type=float, default=0.018)
     return parser.parse_args(argv)
 
@@ -95,6 +95,17 @@ def parent_to_head(obj: bpy.types.Object, armature: bpy.types.Object) -> None:
     obj.matrix_world = world
 
 
+def add_surface_fit(obj: bpy.types.Object, actor_mesh: bpy.types.Object, offset: float = 0.002) -> None:
+    shrink = obj.modifiers.new("EyeAssemblyV1_FitToHeadSurface", "SHRINKWRAP")
+    shrink.target = actor_mesh
+    shrink.wrap_method = "PROJECT"
+    shrink.wrap_mode = "ON_SURFACE"
+    shrink.use_project_y = True
+    shrink.use_positive_direction = True
+    shrink.use_negative_direction = False
+    shrink.offset = offset
+
+
 def create_curved_surface(
     name: str,
     center: Vector,
@@ -103,6 +114,7 @@ def create_curved_surface(
     curvature: float,
     material: bpy.types.Material,
     armature: bpy.types.Object,
+    actor_mesh: bpy.types.Object,
 ) -> bpy.types.Object:
     cols, rows = 24, 18
     vertices = []
@@ -141,6 +153,7 @@ def create_curved_surface(
     obj["assetslab_role"] = "eye_assembly_v1_front_texture_surface"
     obj["assetslab_parent_bone"] = HEAD_BONE
     obj["assetslab_side_policy"] = "same_3d_assembly_projection"
+    add_surface_fit(obj, actor_mesh)
     parent_to_head(obj, armature)
     return obj
 
@@ -170,7 +183,7 @@ def main() -> int:
     source_bounds = {"L": eye_world_bounds(left_source), "R": eye_world_bounds(right_source)}
     remove_old_eye_objects()
     collection = bpy.data.collections.get("EyeAssemblyV1") or bpy.data.collections.new("EyeAssemblyV1")
-    if collection not in scene.collection.children:
+    if collection.name not in scene.collection.children:
         scene.collection.children.link(collection)
     left_material = make_texture_material("EyeAssemblyV1_ImageGen_L", options.left_texture)
     right_material = make_texture_material("EyeAssemblyV1_ImageGen_R", options.right_texture)
@@ -187,7 +200,7 @@ def main() -> int:
         # assembly center upward so the actual eye remains on the native anchor.
         group_center = Vector((eye_center.x, low.y - options.clearance, eye_center.z + height * 0.10))
         surface = create_curved_surface(
-            f"EyeAssemblyV1_Front_{side}", group_center, width, height, options.curvature, material, armature
+            f"EyeAssemblyV1_Front_{side}", group_center, width, height, options.curvature, material, armature, actor_mesh
         )
         surface["assetslab_native_eye_anchor"] = list(eye_center)
         surface["assetslab_texture"] = str((options.left_texture if side == "L" else options.right_texture).resolve())

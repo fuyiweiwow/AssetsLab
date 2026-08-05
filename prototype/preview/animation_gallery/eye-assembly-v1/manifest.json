@@ -16,9 +16,9 @@
   "back_policy": "transparent_no_eye_geometry",
   "blink_amount": 0.0,
   "placement": {
-    "width_scale": 1.0,
-    "height_scale": 1.0,
-    "clearance": 0.018,
+    "width_scale": 0.68,
+    "height_scale": 0.68,
+    "clearance": 0.008,
     "curvature": 0.018
   },
   "directions": [
