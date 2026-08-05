@@ -8,8 +8,14 @@ This prototype is intentionally UI-free. It is a command-line validated gameplay
 - eight-frame walk animation;
 - collision against arena walls;
 - one bomb with a short fuse and blast feedback;
-- QQTang-style oversized-head neutral base as the current runtime skin: shared torso, arms, lower-body, feet, plus male/female head layers.
-- deterministic front-facing ear and eye/blush layers selected by an appearance seed.
+- QQTang-style oversized-head neutral base as the current technical runtime skin: shared torso, arms, lower-body, feet, plus male/female head layers.
+- deterministic face/ear layers selected by an appearance seed.
+
+The sole retained offline 3D actor baseline is `../assets/characters/actor_v1/`.
+It is not yet wired into this prototype. The runtime package below remains the
+older technical package until the Actor V1 3D-to-2D review and replacement gate
+passes. See `../PROJECT.md` and `../docs/ACTIVE_ASSET_WORKFLOW.md` for the
+current project status.
 
 Body source rule: new horizontal walk work starts from the recommended neutral
 base `../walk-base-4way-male-4frame-sheet.png`. The current eight-frame review
@@ -29,8 +35,9 @@ four-direction clothed style experiment from the external pixel-art skill is
 also preview-only and is stored under
 `assets/characters/generated/skill_pixel_art_experiment_v1/`.
 
-The new skeleton-first walk workflow is independent of the older body
-candidates. Its current first gate is a front-view static skeleton. Run:
+The skeleton-first walk workflow is retained as a completed, independently
+validated reference. Its stage captures are historical gates, not the current
+active step. To reproduce one stage, run:
 
 ```powershell
 .\tools\capture_front_skeleton_stage.ps1
@@ -40,7 +47,7 @@ This uses the Godot console executable with `--headless`, writes
 `test_output/skeleton_pipeline/front_base.png`, and must pass before the
 eight-frame leg loop is started.
 
-The current active step is the leg-only front-view loop. Run:
+The front-view leg-loop stage can be reproduced with:
 
 ```powershell
 .\tools\capture_front_leg_cycle_stage.ps1

@@ -1,5 +1,7 @@
 # Chibi Eyes and Ears Pixel Runtime Test
 
+> 历史技术基线测试（2026-08-03）。结果只适用于 `chibi_eyes_ears_walk_v1`，不代表当前 Actor V1 的最终像素质量。
+
 ## Validated asset
 
 - Source actor: `prototype/assets/characters/generated/chibi_eyes_ears_pixel_walk_source_v1.blend`

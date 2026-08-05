@@ -118,16 +118,11 @@ The manual-line result also confirmed severe deformation in the arms and legs,
 not only the head. This means the main failure is a mismatched external
 skeleton and bind pose, not merely an incomplete head boundary annotation.
 
-The tool research and official references are recorded in
-`CHIBI_RIG_TOOL_RESEARCH.md`. AccuRIG is selected as the next test because it
-is a standalone guided auto-rigging tool with explicit support for exaggerated
-heads, atypical limbs, joint masking, and FBX export. Rigify remains a Blender
-fallback after the GUI crash is resolved. Mixamo is lower priority because its
-official requirements warn that strongly deformed proportions may fail.
-
-The next candidate will therefore be generated from an AccuRIG-created target
-skeleton, followed by true animation retargeting. More 2D horizontal region
-lines will not be used as a substitute for that skeleton test.
+The old tool research and operator guide described a rejected binding route and
+machine-local paths, so they were removed from the active tree. This downloaded
+mesh evaluation remains historical failure evidence only. The current 3D
+baseline is `prototype/assets/characters/actor_v1/`; do not start another
+AccuRIG candidate from this document.
 
 The clean external-rigging upload package has been prepared at:
 

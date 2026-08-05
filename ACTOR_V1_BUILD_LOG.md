@@ -236,4 +236,4 @@ the body binding still needs manual refinement. This is now the preferred
 annotated candidate for the next binding experiment; it is not runtime-ready.
 ## 清理说明（2026-08-02）
 
-KIIRA 外部模型及其 Q2/Q3 试拍脚本已从工作树移除。这里保留的内容仅作为历史决策记录；不要再按照其中的 KIIRA 路线执行。当前基线改为真实演员的运行时四方向像素资源包，详见 `docs/PROJECT_STATUS_2026-08-02.md`。
+KIIRA 外部模型及其 Q2/Q3 试拍脚本已从工作树移除。这里保留的内容仅作为历史决策记录；不要再按照其中的 KIIRA 路线执行。当前 3D 基线是 `prototype/assets/characters/actor_v1/`，当前 Godot 技术运行时仍是 `prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`。两者之间的 3D→2D→Godot 闭环尚未完成，详见 `PROJECT.md` 和 `docs/ACTIVE_ASSET_WORKFLOW.md`。

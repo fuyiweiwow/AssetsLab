@@ -1,44 +1,60 @@
 # AssetsLab 当前保留流程
 
-本文档是当前项目的唯一简化开发入口。旧的 Miku、Koban、失败骨骼动作、旧身体重建和历史贴图实验不属于当前流程。
+本文档是当前项目的开发入口。日期型实验文档只用于审计，不代表当前资产、当前命令或当前运行时路径。
 
 ## 当前核心资产
 
-- 素体演员与骨骼：`prototype/assets/characters/generated/chibi_eyes_ears_pixel_walk_source_v1.blend`
-- AccuRIG 标定交换文件：`prototype/assets/characters/generated/chibi_base_mesh_accurig_input_v3/`、`chibi_base_mesh_accurig_calibrated_v1.fbx`
-- 眼睛/眉毛/耳朵随机化运行时层：`prototype/assets/characters/base_features_v1/`
-- 当前耳朵候选与锚点：`cartoon_ear_candidate_v3.blend`、`chibi_ear_anchor_calibration_v1.json`
-- 当前像素运行时包：`prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
-- 当前发型源：`prototype/assets/hair/Blender-Chloe_Hair.blend`、`prototype/assets/hair/male_source/Blend_Hair.blend`
-- 发型组件分类和兼容规则：`prototype/assets/hair/hair_component_catalog_v1.json`、`docs/HAIR_COMPONENT_RANDOMIZATION_2026-08-04.md`
-- 当前发型随机池：`prototype/assets/hair/hair_random_pool_v1.json`
-- 发型设计/随机池/评审页面设计：`docs/HAIR_DESIGN_RANDOM_POOL_REVIEW_2026-08-04.md`
+- 3D 演员基线：`prototype/assets/characters/actor_v1/`
+- 3D 发布场景：`prototype/assets/characters/actor_v1/chibi_actor_mixamo_walk_v1.blend`
+- 当前 Godot 技术运行时：`prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`
+- 头部/五官注册参考：`prototype/assets/characters/rebuild_atlas_v1_runtime/male/`
+- 发型源：`prototype/assets/hair/Blender-Chloe_Hair.blend`、`prototype/assets/hair/male_source/Blend_Hair.blend`
+- 发型 catalog：`prototype/assets/hair/hair_component_catalog_v1.json`
+- 发型随机池：`prototype/assets/hair/hair_random_pool_v1.json`
+- 运动与图层顺序合同：`prototype/assets/characters/limb_puzzle.json`
 
-`female_more` 与 Chloe 源几何重复，不作为独立资源保留。男性源中的全部刘海和女性 Chloe 的全部后发先进入审查 gallery，只有通过四视图和像素验收的候选才能进入推荐池。
+Actor V1 是离线生成基线；`chibi_eyes_ears_walk_v1` 是已通过 Godot 技术测试的旧包。两者不能混称，后续必须先完成 Actor V1 的 3D→2D→Godot 闭环，再决定是否替换旧包。
+
+## 锁定的输出合同
+
+- 4 个方向：front/right/back/left。
+- 每个方向 8 帧。
+- 每帧 64×64、透明、最近邻。
+- 所有图层使用同一注册框、脚底 y=60 和共享帧索引。
+- 3D 参考至少输出 beauty、silhouette、part-ID、depth/order；最终像素层必须人工检查轮廓、调色板、接缝和帧间跳动。
 
 ## 最简验证流程
 
-1. 用 Blender 后台把演员、眼睛、眉毛和耳朵挂载到 `CC_Base_Head`，不打开 Blender GUI。
-2. 用 `tools/run_chibi_face_randomization_preview.ps1` 生成固定种子的人脸/耳朵随机化预览。
-3. 用 `tools/validate_chibi_face_randomization.py` 检查 4 方向、像素尺寸、种子稳定性和耳朵锚点策略。
-4. 用 `tools/blender/fit_blend_hair_candidate.py` 生成发型四视图。
-5. 用 `tools/build_hair_randomization_gallery.py` 生成候选页，再用 `tools/build_hair_gallery_index.py` 生成统一入口；入口使用男女 Tab 筛选，避免为性别增加独立页面 UI。
-6. 用 `tools/process_accurig_walk_pixels.py` 和 `tools/validate_pixel_runtime_package.py` 完成 3D 到像素运行时包的转换与检查。
-7. 用 `tools/run_pixel_asset_end_to_end.ps1` 运行 Godot 的无 GUI 端到端验证。
+1. 用 Blender 4.5+ 检查 `actor_v1/chibi_actor_mixamo_walk_v1.blend` 的动作、耳朵连接和已知脚部限制。
+2. 以固定四向相机和 8 帧合同渲染 Actor V1 的透明参考及辅助 pass；不要直接把 3D 渲染当作最终像素图。
+3. 用现有 `tools/process_accurig_walk_pixels.py` 或新的等价处理器生成 64×64 review 资源。
+4. 用 `tools/validate_pixel_runtime_package.py` 检查 manifest、方向、帧数、尺寸、透明度和图层一致性。
+5. 接入 Godot 后运行：
 
-## 当前 Gallery
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\tools\run_pixel_asset_end_to_end.ps1
+   ```
 
-统一入口：
+   该命令当前仍验证旧的 `chibi_eyes_ears_walk_v1` 技术包，直到 Actor V1 有明确的新 runtime 路径。
+6. 人工复核需要发布 `prototype/test_output/` 中的 gallery；使用 Tailscale 地址，不依赖 Blender/Godot GUI。
 
-```text
-prototype/test_output/hair_candidates_2026_08_04/index.html
-```
+## 发型流程
 
-服务手机查看时必须使用 Tailscale 地址，不使用 Blender/Godot GUI 或本地临时附件。
+发型只在离线阶段生成候选：
+
+1. 先选必选 `base_cap`；
+2. 再组合后发、侧发、刘海和附件；
+3. 生成四视图、64×64 像素预览并检查耳朵关系、露白、穿插和后脑覆盖；
+4. 通过验收的组合固化为整体 bundle；运行时按 seed 选择 bundle，不运行 Blender。
+
+组合工作台：`tools/build_hair_workbench.py`；单部件工作台：`tools/build_hair_component_workbench.py`。
+
+## 眨眼流程
+
+眨眼不是头部或身体动画。只有在眼睛能独立导出为方向化 Face 层后，才允许增加 open/half/closed 眼睛状态，并在 Godot 中只替换 Face 层。详细方案见 [EYE_BLINK_DESIGN.md](EYE_BLINK_DESIGN.md)。
 
 ## 清理规则
 
-- `prototype/test_output/` 只保留当前需要人工查看的输出，历史输出可以删除并从源文件重建。
-- 旧实验素材和文档不作为当前开发依赖；删除前先用 `rg` 检查引用。
-- 不删除核心演员 Blend、骨骼标定文件、当前眼睛/眉毛/耳朵随机化资源、当前发型源和像素化工具。
-- 任何未通过四视图、侧视像素补偿或接缝检查的发型只能放在实验池。
+- `prototype/test_output/` 只保留当前需要人工查看的输出，历史结果从源文件重建。
+- 不删除 Actor V1、动作源、眼睛贴图、耳朵源、发型源、catalog、随机池和像素化工具。
+- 历史实验文档如果仍用于记录失败原因，必须标明“历史候选”；如果文档仍声称旧资源是当前入口，应更新或删除。

@@ -1,5 +1,7 @@
 # Chibi Face Randomization Test (2026-08-03)
 
+> 历史五官随机化候选测试（2026-08-03）。当前 Actor V1 的眼睛贴图已随 Blend 发布；只有完成独立 Face 层导出后，本文候选才可能重新评估。
+
 ## Scope
 
 This is the first constrained 3D face-style generator for the verified

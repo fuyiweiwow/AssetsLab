@@ -1,5 +1,7 @@
 # 动作绑定与 Mixamo 重定向记录
 
+> 历史动作绑定记录。2026-08-05 的发布基线以 `docs/ACTOR_V1_RELEASE_2026-08-05.md` 和 `prototype/assets/characters/actor_v1/release_manifest.json` 为准。
+
 ## 当前结论
 
 本项目的眼睛、眉毛和耳朵位置标定与动作来源无关，不需要因为改用 Mixamo 而重新标定。它们当前都挂在演员骨架的 `Armature / CC_Base_Head` 上；只要新的动作最终驱动同一套演员骨架，三类五官会继续跟随头部。

@@ -1,14 +1,14 @@
 # 五官与随机五官管线记录
 
-更新时间：2026-08-04
+更新时间：2026-08-05
 
 ## 当前结论
 
 此前的 2D 五官叠加只作为注册逻辑实验，已降级为历史/测试资源，不代表最终角色外观。它暴露出的头部来源和位置问题已经确认，不能继续接入正式演员。
 
-当前 `chibi_eyes_ears_walk_v1` 已将已验证的 3D 眼睛和耳朵烘焙进渲染输出；随机化五官仍是下一阶段的接入点：保持本页的注册和随机规则不变，再把 3D 渲染帧拆成头部/五官层或在导出阶段合成。
+当前唯一保留的 3D 演员基线是 `prototype/assets/characters/actor_v1/`，其中眼睛贴图已打包进 Blend，Miku 源耳朵已绑定到 `CC_Base_Head`。`chibi_eyes_ears_walk_v1` 仍只是 Godot 技术运行时包。随机化五官和眨眼都必须等 Actor V1 完成独立 Face 层导出后再接入，不能把 Blend 内嵌眼睛直接当作可替换的运行时图层。
 
-当前正确路线是：在真实演员 `E:/comic/chibi_base_mesh_accurig_rigged_v1.fbx` 上生成 3D 眼睛、耳朵和未来装饰，使用同一套正交相机和灯光渲染，再进入像素化。诊断工具为：
+当前正确路线是：以 `prototype/assets/characters/actor_v1/chibi_actor_mixamo_walk_v1.blend` 为真实演员基线，使用固定四向相机和灯光渲染，再把头部、Face 和未来装饰拆成可复用的透明层。旧的外部 FBX 路径不再作为当前入口。可复用的诊断工具为：
 
 `tools/blender/render_accurig_3d_facial_feature_test.py`
 

@@ -1,5 +1,7 @@
 # 当前角色候选复审记录
 
+> 历史审计记录（2026-08-02）。本文不再定义当前演员路线；当前唯一保留的 3D 基线是 `prototype/assets/characters/actor_v1/`，当前技术运行时是 `prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`。
+
 更新时间：2026-08-02
 
 ## 当前外观基准
@@ -99,7 +101,7 @@ PIXEL_ASSET_END_TO_END_PASS package=1 godot=1 integration=1
 1. 以 `front-character-anchor.png` 制作候选筛选板，先只看正面剪影和服装块面。
 2. 对新的候选执行 Blender 静态审计；不通过正面门槛的候选不进入绑定。
 3. 通过后再做骨骼标注、绑定和单部件运动测试。
-4. 绑定稳定后复用现有 `chibi_eyes_ears_walk_v1` 的渲染、像素化和 Godot 验证管线。
+4. 新候选若重新开启，必须先通过当前 Actor V1 的相机、锚点和像素验收合同；不得直接复用本文的旧路径。
 ## 清理说明（2026-08-02）
 
 KIIRA 候选及其试拍脚本已移除，不再作为项目资源来源。保留本文件中的审计结论用于追溯；后续候选必须先通过 `front-character-anchor.png` 的正面轮廓验收，再进入绑定和渲染测试。

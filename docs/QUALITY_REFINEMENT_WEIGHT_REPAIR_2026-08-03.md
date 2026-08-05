@@ -1,5 +1,7 @@
 # 2026-08-03 动作失败修正：演员网格权重
 
+> 历史权重修复记录。本文输出不再是当前运行或生成入口，当前 3D 基线为 `prototype/assets/characters/actor_v1/`。
+
 ## 失败证据
 
 Walk/Run 的 Mixamo 动作曲线已经写入演员 `Armature`，但 GIF 中手臂接近 T-Pose、大腿几乎不变形。检查失败版本：

@@ -180,31 +180,30 @@
 - 当前无骨骼模型实验渲染工具：`tools/blender/create_chibi_base_walk.py`
 - 当前实验像素化工具：`tools/process_chibi_base_walk_pixels.py`
 - FBX 动作审计工具：`tools/blender/audit_fbx_animation_source.py`
-- 正面试拍 GIF：`tools/make_kiira_front_test_gif.ps1`
+- 早期正面试拍 GIF 工具已移除；历史输出不再是当前执行入口。
 - 原始 chibi 网格演员试拍：`tools/blender/render_original_chibi_actor_test.py`
 
-## 当前执行状态
+## 当前执行状态（2026-08-05）
 
 | 步骤 | 状态 | 说明 |
 | --- | --- | --- |
-| 0 资产和生成演员审计 | 已完成 | 当前外部网格无骨骼；KIIRA 同系列 Walk.fbx 已确认可导入 |
-| 1 选择现成动作 | 已完成 | 已找到并下载 KIIRA 同系列 `Walk.fbx`，动作帧为 1-41 |
-| 2 导入并绑定 | 已完成 | Walk.fbx 有 7 个身体部件、24 根骨骼；与仓库 KIIRA 骨骼名称一致 |
-| 3 重定向到八帧合同 | 试拍完成 | 已生成无五官 KIIRA 正面八帧，动作采样自 1-41 帧 |
-| 4 原始 chibi 素体演员 | 技术试拍完成，生产绑定未通过 | v5 可驱动并输出 8 帧；固定 G0 测试显示原始单体网格与 KIIRA 骨骼区域不匹配 |
-| 5 生成正确比例的中性素体 | 待选择演员路线 | 在 KIIRA 稳定演员、手工区域绑定原网格、或项目 guide rig 新建素体之间做决定 |
-| 6 演员素体四方向 | 暂缓 | 生产演员通过 front G0/G1 后再扩展 right/back/left |
-| 7 三维五官方案 | 延期 | 素体验收后再启用 `generate_3d_face_variant_plan.py` |
-| 8 人工像素清理 | 未开始 | 素体比例和动作通过后开始 |
-| 9 Godot 集成 | 未开始 | 等待像素清理和分层通过 |
+| 0 资产、许可和动作审计 | 已完成 | Actor V1 包含 AccuRIG 输入、Mixamo Walk/Run、眼睛贴图和 Miku 耳朵源 |
+| 1 演员绑定和动作调整 | 已完成 | 发布场景为 `prototype/assets/characters/actor_v1/chibi_actor_mixamo_walk_v1.blend` |
+| 2 耳朵、手臂、手指和腿部修正 | 已完成 | v78 为当前唯一保留 3D Walk 基线；侧视后摆脚仍是已知限制 |
+| 3 四方向 Walk 参考 | 已完成 | 已通过当前发布记录中的四向渲染复核 |
+| 4 固定相机和 64×64 注册转换 | 下一道门 | 需要输出 beauty、silhouette、part-ID、depth/order 和 manifest |
+| 5 人工像素清理和分层 | 未开始 | 3D 参考不能直接成为最终像素图 |
+| 6 Godot 新 runtime 接入 | 未开始 | 先保留旧 `chibi_eyes_ears_walk_v1` 技术包，独立验证新包 |
+| 7 Face/眨眼/发型/服装 | 延后 | 等新中性像素身体和头部锚点验收后再接入 |
 
 ## 已完成的关键执行记录
 
-`ACTOR_V1_BUILD_LOG.md` 记录了原始网格、Walk.fbx 和 KIIRA 骨架的审计，
-刚性绑定策略，构建命令，输出路径和验收结果。当前生成物为：
+`ACTOR_V1_BUILD_LOG.md` 记录了早期原始网格、Walk.fbx 和绑定试验；最新发布
+信息以 `docs/ACTOR_V1_RELEASE_2026-08-05.md` 和
+`prototype/assets/characters/actor_v1/release_manifest.json` 为准。当前生成物为：
 
-- `prototype/assets/characters/generated/original_chibi_actor_test_v5/`：3D 演员和 8 帧 256x256 front 试拍；
-- `prototype/assets/characters/generated/original_chibi_actor_pixel_v1/`：256 到 64 最近邻像素化的 review-only 试拍。
+- `prototype/assets/characters/actor_v1/chibi_actor_mixamo_walk_v1.blend`：当前 3D Walk 基线；
+- `prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`：当前 Godot 技术运行时，尚未替换为 Actor V1 像素结果。
 
 本次构建脚本 `tools/blender/render_original_chibi_actor_test.py` 已支持直接
 读取当前双层 ZIP，并在保存演员前移除 FBX 自带的源网格。
@@ -336,6 +335,6 @@ Mixamo 依赖 Web 服务，当前环境和地区可用性不稳定，也无法�
 4. 将观察结果告诉我：`通过`，或描述具体问题。
 
 如果正面动作通过，不需要用户继续操作。我会自动完成八帧采样、四方向相机、256 到 64 降采样和帧验证。
-## 当前状态说明（2026-08-02）
+## 当前状态说明（2026-08-05）
 
-本文早期章节中的 KIIRA 模型、Q2/Q3 绑定和试拍命令已经废弃，相关外部模型与脚本已从工作树移除。它们只用于解释历史尝试，不是当前执行入口。当前执行入口是 `tools/run_pixel_asset_end_to_end.ps1`，当前运行时基线是 `prototype/assets/characters/runtime/chibi_accurig_walk_test_v1/`。
+本文早期章节中的 KIIRA 模型、Q2/Q3 绑定和试拍命令已经废弃，相关内容只用于解释历史尝试，不是当前执行入口。当前唯一保留的 3D 演员基线是 `prototype/assets/characters/actor_v1/`；当前 Godot 技术运行时仍是 `prototype/assets/characters/runtime/chibi_eyes_ears_walk_v1/`。两者之间的 3D→2D→Godot 闭环尚未完成，不能把旧运行时测试结果表述为 Actor V1 已通过。
