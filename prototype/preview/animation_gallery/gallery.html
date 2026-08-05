@@ -43,6 +43,24 @@ figcaption { padding-top:6px; color:var(--muted); font-size:13px; }
 </section>
 <!-- ASSETSLAB_EYE_ASSEMBLY_V2_BLINK_WALK_NATIVE -->
 <section class="panel"><h2>EyeAssemblyV2 actor-based deterministic blink walk</h2><p class="warning">WIP：open 使用 Actor 原生资源，half/closed 使用基于 Actor 参考的 image_gen 状态；此处验证完整 8 帧身体采样和一次确定性眨眼，不代表最终像素画，也未加入随机调度。</p><h3>四向 3D 渲染</h3><div class="grid"><figure><img src="eye-assembly-v2-blink-walk-native/front.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk front render"><figcaption>front · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/right.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk right render"><figcaption>right · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/back.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk back render"><figcaption>back · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/left.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk left render"><figcaption>left · 256px 3D渲染参考 GIF</figcaption></figure></div><h3>四向 64px 预览</h3><div class="grid"><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/front.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk front preview"><figcaption>front · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/right.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk right preview"><figcaption>right · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/back.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk back preview"><figcaption>back · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/left.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk left preview"><figcaption>left · 64px 最近邻预览（非最终像素资产）</figcaption></figure></div></section>
+<section class="panel">
+<h2>Pixelization A/B v1 · 3D render to 64px</h2>
+<p class="warning">Review only: both candidates use the same Actor V1 deterministic blink walk render, four directions and eight body frames. A is the current nearest-neighbor baseline; B uses a shared 32-color palette and two-stage reduction. Neither is final runtime input.</p>
+<h3>A · current nearest-neighbor baseline</h3>
+<div class="grid">
+<figure><img class="pixel" src="pixelization-ab-v1/nearest_front.gif" alt="Pixelization A nearest front"><figcaption>front · A nearest</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/nearest_right.gif" alt="Pixelization A nearest right"><figcaption>right · A nearest</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/nearest_back.gif" alt="Pixelization A nearest back"><figcaption>back · A nearest</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/nearest_left.gif" alt="Pixelization A nearest left"><figcaption>left · A nearest</figcaption></figure>
+</div>
+<h3>B · global 32-color palette candidate</h3>
+<div class="grid">
+<figure><img class="pixel" src="pixelization-ab-v1/palette32_front.gif" alt="Pixelization B palette front"><figcaption>front · B palette32</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/palette32_right.gif" alt="Pixelization B palette right"><figcaption>right · B palette32</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/palette32_back.gif" alt="Pixelization B palette back"><figcaption>back · B palette32</figcaption></figure>
+<figure><img class="pixel" src="pixelization-ab-v1/palette32_left.gif" alt="Pixelization B palette left"><figcaption>left · B palette32</figcaption></figure>
+</div>
+</section>
 </main>
 </body>
 </html>
