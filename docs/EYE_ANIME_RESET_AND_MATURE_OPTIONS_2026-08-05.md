@@ -8,11 +8,11 @@
 
 ## 资源策略
 
-`prototype/assets/characters/actor_v1/eye_textures/eye_right.png` 与 `eye_left.png` 是 Actor V1 的权威比例、风格和眉眼关系基准。EyeAssembly 的结构实验应优先直接使用这两份资源；image_gen 只用于明确需要的新表情或变体，不能替代基准资源。当前 `EyeAssemblyV1` 中的 image_gen 资产只保留为临时结构测试输入，后续接入眨眼前应先切回 Actor 原生资源。
+`prototype/assets/characters/actor_v1/eye_textures/eye_right.png` 与 `eye_left.png` 是 Actor V1 的权威比例、风格和眉眼关系基准。open 状态直接使用这两份资源；由于 Actor 没有 half/closed 原生状态，image_gen 仅为这两个必要状态生成同风格变体，并以 Actor 资源约束比例、眉毛、睫毛、虹膜和间距，不能替代 open 基准。
 
 ## 为什么重置
 
-旧流程把 image_gen 生成的眼睛贴图作为独立可见层，再尝试通过位置、父级、眼骨骼和侧面平面去补偿 3D 投影。这会把视觉内容、动画绑定和方向选择混在一起，导致正面叠层、侧面方向反转、眼睛悬浮以及身体帧被打乱。继续增加 open/half/closed 或 side PNG 只会扩大状态空间，不能解决根因。
+旧流程把不同来源的眼睛贴图作为独立可见层，再尝试通过位置、父级、眼骨骼和侧面平面去补偿 3D 投影。这会把视觉内容、动画绑定和方向选择混在一起，导致正面叠层、侧面方向反转、眼睛悬浮以及身体帧被打乱。当前实验只允许同一套头部父级 3D 表面切换状态材质，禁止增加独立侧面 PNG。
 
 ## 成熟做法对照
 
@@ -27,8 +27,8 @@
 
 1. 复制 Actor V1 头部，建立一个 `EyeAssemblyV1` 集合；所有眼球、眼睑、眉毛和材质都从头部局部空间出发。
 2. 首先只做静态 `Open`，检查 front/right/back/left；back 必须没有眼睛，right/left 必须由同一几何自然投影。
-3. 在眼睑几何上建立相对 Shape Keys：`Open=0`、`Half=0.5`、`Closed=1`。保留稳定拓扑，禁止同时启用旧的原生 EyePackage 和新层。
-4. 用一个 `blink_amount` driver/action 控制形态键，先做确定性的单次眨眼，再接入固定 seed 的随机间隔。
+3. 在同一套 3D 表面上验证 `Open/Half/Closed` 状态材质；之前的皮肤色眼睑几何会破坏 Actor 原生睫毛和透明度，已明确放弃。
+4. 用一个 `blink_amount` driver/action 控制状态过渡，先做确定性的单次眨眼，再接入固定 seed 的随机间隔。
 5. 每次只增加一个变量；body pass 永远使用移动基线的完整 8 帧，不在眼睛实验中改变身体姿态采样。
 6. 只有静态四方向、头部跟随、单次眨眼和完整步态全部通过后，才生成新的 gallery 目录。
 
@@ -36,7 +36,7 @@
 
 已完成静态 `EyeAssemblyV1`：使用 image_gen 生成的眉毛+眼睛组合参考，裁切为左右 RGBA 资产，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
 
-已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。后续复核发现初版尺寸偏大且表面浮空，已在不新增 image_gen 的前提下将测试倍率调整为 `0.68/0.68`，并加入头部表面 Shrinkwrap；当前 gallery 已切换为 Actor 原生眼睛纹理，仍不是眨眼或最终资源。
+已验证：正面最大睁眼、half、closed、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。测试倍率为 `0.68/0.68`，并使用头部表面 Shrinkwrap；open 仍是 Actor 原生眼睛纹理，half/closed 是基于 Actor 约束生成的必要状态资源。当前 gallery 已加入独立状态对照，仍不是完整眨眼或最终资源。
 
 ## 暂不做
 

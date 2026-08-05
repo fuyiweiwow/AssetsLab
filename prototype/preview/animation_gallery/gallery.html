@@ -22,7 +22,7 @@ figcaption { padding-top:6px; color:var(--muted); font-size:13px; }
 <body>
 <main>
 <h1>AssetsLab Movement Gallery</h1>
-<p>当前页面只保留移动动画基线。旧的眼睛/眨眼实验已全部移除，新的眼睛方案将在架构验证通过后重新建立。</p>
+<p>页面保留移动动画基线，并展示经过明确标注的眼睛结构候选。眼睛状态图只用于离线架构验证，尚未接入完整步态或随机调度。</p>
 <section class="panel">
 <h2>Walk release baseline v78</h2>
 <p class="warning">移动基线用于确认四方向、完整步态周期和身体采样合同；它不是眼睛实验候选。</p>
@@ -43,13 +43,29 @@ figcaption { padding-top:6px; color:var(--muted); font-size:13px; }
 </section>
 <section class="panel">
 <h2>EyeAssemblyV1 actor-native four-view test</h2>
-<p class="warning">Test candidate only: this uses Actor V1's native eye textures on the new 3D assembly. It is not a blink animation and is not a final pixel asset.</p>
+<p class="warning">Test candidate only: this uses Actor V1's native open textures on the new 3D assembly. It is not a final pixel asset.</p>
 <h3>Single 3D assembly projection</h3>
 <div class="grid">
 <figure><img src="eye-assembly-v1/front.png" alt="EyeAssemblyV1 front static render"><figcaption>front · static 3D render</figcaption></figure>
 <figure><img src="eye-assembly-v1/threequarter.png" alt="EyeAssemblyV1 three-quarter static render"><figcaption>three-quarter · same assembly</figcaption></figure>
 <figure><img src="eye-assembly-v1/right.png" alt="EyeAssemblyV1 right static render"><figcaption>right · natural edge projection</figcaption></figure>
 <figure><img src="eye-assembly-v1/back.png" alt="EyeAssemblyV1 back static render"><figcaption>back · no eye geometry</figcaption></figure>
+</div>
+</section>
+<section class="panel">
+<h2>EyeAssemblyV2 actor-based blink states</h2>
+<p class="warning">State texture test only: open uses Actor native textures; half and closed were generated with image_gen from the Actor reference and projected through the same head-parented 3D surfaces. No random scheduling or walk integration yet.</p>
+<h3>Front state sequence</h3>
+<div class="grid">
+<figure><img src="eye-assembly-v2-blink-native/open.png" alt="EyeAssemblyV2 open state front render"><figcaption>open · Actor native maximum-open state</figcaption></figure>
+<figure><img src="eye-assembly-v2-blink-native/half.png" alt="EyeAssemblyV2 half state front render"><figcaption>half · intermediate state</figcaption></figure>
+<figure><img src="eye-assembly-v2-blink-native/closed.png" alt="EyeAssemblyV2 closed state front render"><figcaption>closed · generated closed-lash state</figcaption></figure>
+</div>
+<h3>Three-quarter projection check</h3>
+<div class="grid">
+<figure><img src="eye-assembly-v2-blink-native/open_threequarter.png" alt="EyeAssemblyV2 open state three-quarter render"><figcaption>open · three-quarter</figcaption></figure>
+<figure><img src="eye-assembly-v2-blink-native/half_threequarter.png" alt="EyeAssemblyV2 half state three-quarter render"><figcaption>half · three-quarter</figcaption></figure>
+<figure><img src="eye-assembly-v2-blink-native/closed_threequarter.png" alt="EyeAssemblyV2 closed state three-quarter render"><figcaption>closed · three-quarter</figcaption></figure>
 </div>
 </section>
 </main>

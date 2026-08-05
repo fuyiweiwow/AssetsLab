@@ -32,6 +32,10 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--source-blend", type=Path, required=True)
     parser.add_argument("--left-texture", type=Path, required=True)
     parser.add_argument("--right-texture", type=Path, required=True)
+    parser.add_argument("--half-left-texture", type=Path)
+    parser.add_argument("--half-right-texture", type=Path)
+    parser.add_argument("--closed-left-texture", type=Path)
+    parser.add_argument("--closed-right-texture", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--save-blend", type=Path, required=True)
     parser.add_argument("--frame", type=int, default=1)
@@ -40,6 +44,18 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--clearance", type=float, default=0.008)
     parser.add_argument("--curvature", type=float, default=0.018)
     return parser.parse_args(argv)
+
+
+def validate_blink_texture_args(options: argparse.Namespace) -> bool:
+    values = (
+        options.half_left_texture,
+        options.half_right_texture,
+        options.closed_left_texture,
+        options.closed_right_texture,
+    )
+    if any(value is not None for value in values) and not all(value is not None for value in values):
+        raise RuntimeError("half/closed blink textures must be supplied for both eyes")
+    return all(value is not None for value in values)
 
 
 def remove_old_eye_objects() -> None:
@@ -85,6 +101,17 @@ def make_texture_material(name: str, texture_path: Path) -> bpy.types.Material:
     links.new(texture.outputs["Alpha"], shader.inputs["Alpha"])
     links.new(shader.outputs["BSDF"], output.inputs["Surface"])
     return material
+
+
+def set_surface_material(surface: bpy.types.Object, material: bpy.types.Material) -> None:
+    slot_index = next(
+        (index for index, slot in enumerate(surface.material_slots) if slot.material == material),
+        None,
+    )
+    if slot_index is None:
+        surface.data.materials.append(material)
+        slot_index = len(surface.material_slots) - 1
+    surface.active_material_index = slot_index
 
 
 def parent_to_head(obj: bpy.types.Object, armature: bpy.types.Object) -> None:
@@ -164,6 +191,7 @@ def eye_world_bounds(obj: bpy.types.Object) -> tuple[Vector, Vector]:
 
 def main() -> int:
     options = cli_args()
+    has_blink_states = validate_blink_texture_args(options)
     output = options.output.resolve()
     output.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.open_mainfile(filepath=str(options.source_blend.resolve()))
@@ -185,11 +213,24 @@ def main() -> int:
     collection = bpy.data.collections.get("EyeAssemblyV1") or bpy.data.collections.new("EyeAssemblyV1")
     if collection.name not in scene.collection.children:
         scene.collection.children.link(collection)
-    left_material = make_texture_material("EyeAssemblyV1_ImageGen_L", options.left_texture)
-    right_material = make_texture_material("EyeAssemblyV1_ImageGen_R", options.right_texture)
+    state_texture_paths = {
+        "open": {"L": options.left_texture, "R": options.right_texture},
+    }
+    if has_blink_states:
+        state_texture_paths["half"] = {"L": options.half_left_texture, "R": options.half_right_texture}
+        state_texture_paths["closed"] = {"L": options.closed_left_texture, "R": options.closed_right_texture}
+    state_materials = {
+        state: {
+            side: make_texture_material(f"EyeAssemblyV1_{state.title()}_{side}", path)
+            for side, path in paths.items()
+        }
+        for state, paths in state_texture_paths.items()
+    }
 
     surfaces = []
-    for side, material in (("L", left_material), ("R", right_material)):
+    surfaces_by_side = {}
+    for side in ("L", "R"):
+        material = state_materials["open"][side]
         low, high = source_bounds[side]
         eye_center = (low + high) * 0.5
         eye_width = high.x - low.x
@@ -209,6 +250,7 @@ def main() -> int:
             if linked_collection != collection:
                 linked_collection.objects.unlink(surface)
         surfaces.append(surface)
+        surfaces_by_side[side] = surface
 
     scene["assetslab_eye_assembly_id"] = "EyeAssemblyV1"
     scene["assetslab_eye_assembly_stage"] = "static_multiview_review_only"
@@ -216,6 +258,7 @@ def main() -> int:
     scene["assetslab_eye_assembly_side_policy"] = "same_3d_assembly_projection"
     scene["assetslab_eye_assembly_back_policy"] = "transparent_no_eye_geometry"
     scene["assetslab_eye_assembly_blink_amount"] = 0.0
+    scene["assetslab_eye_assembly_blink_states"] = ["Open", "Half", "Closed"] if has_blink_states else ["Open"]
 
     low, high = bounds(actor_mesh)
     actor_center = (low + high) * 0.5
@@ -239,15 +282,41 @@ def main() -> int:
         bpy.ops.render.render(write_still=True)
         bpy.data.objects.remove(camera, do_unlink=True)
 
+    state_outputs = {}
+    if has_blink_states:
+        for state in ("open", "half", "closed"):
+            for side, surface in surfaces_by_side.items():
+                set_surface_material(surface, state_materials[state][side])
+            state_dir = output / "states" / state
+            state_dir.mkdir(parents=True, exist_ok=True)
+            state_outputs[state] = []
+            for direction, location in {
+                "front": (0.0, -12.0, eye_target.z),
+                "threequarter": (8.5, -8.5, eye_target.z),
+            }.items():
+                camera = make_camera(scene, eye_target, f"{state}_{direction}", location, 1.55)
+                scene.camera = camera
+                state_path = state_dir / f"{direction}.png"
+                scene.render.filepath = str(state_path)
+                bpy.ops.render.render(write_still=True)
+                bpy.data.objects.remove(camera, do_unlink=True)
+                state_outputs[state].append(str(state_path.relative_to(output)))
+        for side, surface in surfaces_by_side.items():
+            set_surface_material(surface, state_materials["open"][side])
+
     bpy.ops.wm.save_as_mainfile(filepath=str(options.save_blend.resolve()))
     manifest = {
         "schema": "assetslab_eye_assembly_v1",
         "source_blend": str(options.source_blend.resolve()),
-        "textures": {"L": str(options.left_texture.resolve()), "R": str(options.right_texture.resolve())},
+        "textures": {
+            state: {side: str(path.resolve()) for side, path in paths.items()}
+            for state, paths in state_texture_paths.items()
+        },
         "parent_bone": HEAD_BONE,
         "objects": [obj.name for obj in surfaces],
         "frame": options.frame,
-        "static_only": True,
+        "static_only": not has_blink_states,
+        "blink_texture_states": has_blink_states,
         "side_policy": "same_3d_assembly_projection",
         "back_policy": "transparent_no_eye_geometry",
         "blink_amount": 0.0,
@@ -258,6 +327,7 @@ def main() -> int:
             "curvature": options.curvature,
         },
         "directions": list(camera_specs),
+        "state_outputs": state_outputs,
         "status": "static_multiview_review_only",
     }
     (output / "manifest.json").write_text(json.dumps(manifest, indent=2), encoding="utf-8")

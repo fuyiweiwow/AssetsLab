@@ -45,6 +45,19 @@ def main() -> int:
         raise RuntimeError("unexpected EyeAssemblyV1 stage")
     if scene.get("assetslab_eye_assembly_parent_bone") != HEAD_BONE:
         raise RuntimeError("unexpected EyeAssemblyV1 parent contract")
+    blink_states = scene.get("assetslab_eye_assembly_blink_states", ["Open"])
+    expected_states = ["Open", "Half", "Closed"]
+    if blink_states == expected_states:
+        for state in expected_states:
+            for side in ("L", "R"):
+                material_name = f"EyeAssemblyV1_{state}_{side}"
+                material = bpy.data.materials.get(material_name)
+                if material is None:
+                    raise RuntimeError(f"missing blink state material: {material_name}")
+                if not any(node.type == "TEX_IMAGE" and node.image for node in material.node_tree.nodes):
+                    raise RuntimeError(f"blink state material has no image texture: {material_name}")
+    elif blink_states != ["Open"]:
+        raise RuntimeError(f"unexpected blink state contract: {blink_states}")
     if scene.frame_end < 71:
         raise RuntimeError(f"body animation frame range was shortened: {scene.frame_end}")
 

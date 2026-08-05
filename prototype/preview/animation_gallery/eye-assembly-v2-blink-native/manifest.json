@@ -1,0 +1,56 @@
+{
+  "schema": "assetslab_eye_assembly_v1",
+  "source_blend": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\characters\\actor_v1\\chibi_actor_mixamo_walk_v1.blend",
+  "textures": {
+    "open": {
+      "L": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\characters\\actor_v1\\eye_textures\\eye_left.png",
+      "R": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\characters\\actor_v1\\eye_textures\\eye_right.png"
+    },
+    "half": {
+      "L": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops_half\\imagegen_eye_assembly_L.png",
+      "R": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops_half\\imagegen_eye_assembly_R.png"
+    },
+    "closed": {
+      "L": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops_closed\\imagegen_eye_assembly_L.png",
+      "R": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops_closed\\imagegen_eye_assembly_R.png"
+    }
+  },
+  "parent_bone": "CC_Base_Head",
+  "objects": [
+    "EyeAssemblyV1_Front_L",
+    "EyeAssemblyV1_Front_R"
+  ],
+  "frame": 1,
+  "static_only": false,
+  "blink_texture_states": true,
+  "side_policy": "same_3d_assembly_projection",
+  "back_policy": "transparent_no_eye_geometry",
+  "blink_amount": 0.0,
+  "placement": {
+    "width_scale": 0.68,
+    "height_scale": 0.68,
+    "clearance": 0.008,
+    "curvature": 0.018
+  },
+  "directions": [
+    "front",
+    "threequarter",
+    "right",
+    "back"
+  ],
+  "state_outputs": {
+    "open": [
+      "states\\open\\front.png",
+      "states\\open\\threequarter.png"
+    ],
+    "half": [
+      "states\\half\\front.png",
+      "states\\half\\threequarter.png"
+    ],
+    "closed": [
+      "states\\closed\\front.png",
+      "states\\closed\\threequarter.png"
+    ]
+  },
+  "status": "static_multiview_review_only"
+}
