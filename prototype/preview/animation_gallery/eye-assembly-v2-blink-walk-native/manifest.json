@@ -1,0 +1,357 @@
+{
+  "schema": "assetslab_eye_anime_gallery_candidate_v1",
+  "id": "eye-assembly-v2-blink-walk-native",
+  "label": "EyeAssemblyV2 actor-based deterministic blink walk",
+  "action": "Walk + deterministic blink",
+  "source_manifest": {
+    "schema": "assetslab_eye_assembly_blink_walk_v1",
+    "blend": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\test_output\\eye_assembly_v2_blink_native\\eye_assembly_v2_blink_native.blend",
+    "action": "Mixamo_Armature.001|mixamo.com|Layer0_on_Armature",
+    "source_frame_range": [
+      1,
+      71
+    ],
+    "body_sample_frames": [
+      1,
+      11,
+      21,
+      31,
+      41,
+      51,
+      61,
+      71
+    ],
+    "eye_state_by_frame": [
+      "open",
+      "half",
+      "closed",
+      "half",
+      "open",
+      "open",
+      "open",
+      "open"
+    ],
+    "blink_amount_by_frame": [
+      0.0,
+      0.5,
+      1.0,
+      0.5,
+      0.0,
+      0.0,
+      0.0,
+      0.0
+    ],
+    "directions": [
+      "front",
+      "right",
+      "back",
+      "left"
+    ],
+    "resolution": 256,
+    "frame_count_per_direction": 8,
+    "body_sampling_contract": "unchanged_source_action_sample_8_frames",
+    "blink_contract": "deterministic_single_blink_no_random_scheduler",
+    "frames": [
+      {
+        "direction": "front",
+        "frame": 0,
+        "source_frame": 1,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "front_00.png"
+      },
+      {
+        "direction": "front",
+        "frame": 1,
+        "source_frame": 11,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "front_01.png"
+      },
+      {
+        "direction": "front",
+        "frame": 2,
+        "source_frame": 21,
+        "eye_state": "closed",
+        "blink_amount": 1.0,
+        "path": "front_02.png"
+      },
+      {
+        "direction": "front",
+        "frame": 3,
+        "source_frame": 31,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "front_03.png"
+      },
+      {
+        "direction": "front",
+        "frame": 4,
+        "source_frame": 41,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "front_04.png"
+      },
+      {
+        "direction": "front",
+        "frame": 5,
+        "source_frame": 51,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "front_05.png"
+      },
+      {
+        "direction": "front",
+        "frame": 6,
+        "source_frame": 61,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "front_06.png"
+      },
+      {
+        "direction": "front",
+        "frame": 7,
+        "source_frame": 71,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "front_07.png"
+      },
+      {
+        "direction": "right",
+        "frame": 0,
+        "source_frame": 1,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "right_00.png"
+      },
+      {
+        "direction": "right",
+        "frame": 1,
+        "source_frame": 11,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "right_01.png"
+      },
+      {
+        "direction": "right",
+        "frame": 2,
+        "source_frame": 21,
+        "eye_state": "closed",
+        "blink_amount": 1.0,
+        "path": "right_02.png"
+      },
+      {
+        "direction": "right",
+        "frame": 3,
+        "source_frame": 31,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "right_03.png"
+      },
+      {
+        "direction": "right",
+        "frame": 4,
+        "source_frame": 41,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "right_04.png"
+      },
+      {
+        "direction": "right",
+        "frame": 5,
+        "source_frame": 51,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "right_05.png"
+      },
+      {
+        "direction": "right",
+        "frame": 6,
+        "source_frame": 61,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "right_06.png"
+      },
+      {
+        "direction": "right",
+        "frame": 7,
+        "source_frame": 71,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "right_07.png"
+      },
+      {
+        "direction": "back",
+        "frame": 0,
+        "source_frame": 1,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "back_00.png"
+      },
+      {
+        "direction": "back",
+        "frame": 1,
+        "source_frame": 11,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "back_01.png"
+      },
+      {
+        "direction": "back",
+        "frame": 2,
+        "source_frame": 21,
+        "eye_state": "closed",
+        "blink_amount": 1.0,
+        "path": "back_02.png"
+      },
+      {
+        "direction": "back",
+        "frame": 3,
+        "source_frame": 31,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "back_03.png"
+      },
+      {
+        "direction": "back",
+        "frame": 4,
+        "source_frame": 41,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "back_04.png"
+      },
+      {
+        "direction": "back",
+        "frame": 5,
+        "source_frame": 51,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "back_05.png"
+      },
+      {
+        "direction": "back",
+        "frame": 6,
+        "source_frame": 61,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "back_06.png"
+      },
+      {
+        "direction": "back",
+        "frame": 7,
+        "source_frame": 71,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "back_07.png"
+      },
+      {
+        "direction": "left",
+        "frame": 0,
+        "source_frame": 1,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "left_00.png"
+      },
+      {
+        "direction": "left",
+        "frame": 1,
+        "source_frame": 11,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "left_01.png"
+      },
+      {
+        "direction": "left",
+        "frame": 2,
+        "source_frame": 21,
+        "eye_state": "closed",
+        "blink_amount": 1.0,
+        "path": "left_02.png"
+      },
+      {
+        "direction": "left",
+        "frame": 3,
+        "source_frame": 31,
+        "eye_state": "half",
+        "blink_amount": 0.5,
+        "path": "left_03.png"
+      },
+      {
+        "direction": "left",
+        "frame": 4,
+        "source_frame": 41,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "left_04.png"
+      },
+      {
+        "direction": "left",
+        "frame": 5,
+        "source_frame": 51,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "left_05.png"
+      },
+      {
+        "direction": "left",
+        "frame": 6,
+        "source_frame": 61,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "left_06.png"
+      },
+      {
+        "direction": "left",
+        "frame": 7,
+        "source_frame": 71,
+        "eye_state": "open",
+        "blink_amount": 0.0,
+        "path": "left_07.png"
+      }
+    ],
+    "status": "deterministic_blink_walk_review_only"
+  },
+  "directions": {
+    "front": {
+      "render": "front.gif",
+      "pixel": "pixel/front.gif"
+    },
+    "right": {
+      "render": "right.gif",
+      "pixel": "pixel/right.gif"
+    },
+    "back": {
+      "render": "back.gif",
+      "pixel": "pixel/back.gif"
+    },
+    "left": {
+      "render": "left.gif",
+      "pixel": "pixel/left.gif"
+    }
+  },
+  "review_status": "WIP_validated_render_reference",
+  "pixel_art_status": "preview_only_nearest_neighbor",
+  "gallery_sampling": {
+    "body_frames": [
+      1,
+      11,
+      21,
+      31,
+      41,
+      51,
+      61,
+      71
+    ],
+    "eye_frames": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7
+    ],
+    "note": "Body walk phase and blink timeline are intentionally evaluated on separate frame lists."
+  }
+}

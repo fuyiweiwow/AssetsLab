@@ -1,8 +1,9 @@
 """Build the first single-assembly 3D eye structure on Actor V1.
 
-This stage is intentionally static: one generated eyebrow+eye texture per eye
-is carried by a shallow curved facial surface parented to CC_Base_Head. It
-does not create side planes, blink layers, random states, or gallery output.
+This stage creates one eyebrow+eye texture surface per eye, parented to
+CC_Base_Head. Open is Actor-native; optional half/closed state materials are
+available for a separate deterministic blink render. It does not create side
+planes, random states, or gallery output.
 """
 
 from __future__ import annotations
