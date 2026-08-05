@@ -55,9 +55,8 @@ Blender 完成四方向 3D→2D 烘焙后，Godot 只负责播放已经验证的
 - 第一阶段 image_gen 资产：`prototype/assets/generated/eye_assembly_v1/`，眉毛与眼睛由同一张 Q 版日系参考生成，再经过 chroma-key 去背景和左右裁切；没有本地绘制像素。
 - 资源基准：`prototype/assets/characters/actor_v1/eye_textures/eye_right.png` 与 `eye_left.png` 继续作为 open 状态的权威比例和风格基准。
 - 因 Actor 没有原生 half/closed 状态，已按 Actor 原生眉毛、睫毛、虹膜和间距约束，用 image_gen 生成这两个必要状态；它们只作为状态过渡测试资源，不得反向修改 open 基准。
-- 第一阶段验证输出：`prototype/test_output/eye_assembly_v1/`。它通过 Actor V1 Blend 的 `CC_Base_Head` 父级挂载，正面/三分之四/右侧/背面均已渲染；当前作为静态测试候选接入 gallery，不代表最终资源。
-- 当前 gallery 测试候选已更新为较小尺寸：相对 Actor 原生眼睛宽高倍率为 `0.68/0.68`，并在同一头部父级下使用 `EyeAssemblyV1_FitToHeadSurface` Shrinkwrap 贴合头部表面；这只是测试参数，最终尺寸仍以 Actor 标准复核为准。
-- 当前状态测试输出：`prototype/test_output/eye_assembly_v2_blink_native/`，gallery 对照位于 `prototype/preview/animation_gallery/eye-assembly-v2-blink-native/`。
+- 当前实现使用相对 Actor 原生眼睛宽高倍率 `0.68/0.68`，并在同一头部父级下使用 `EyeAssemblyV1_FitToHeadSurface` Shrinkwrap 贴合头部表面；这些是当前测试参数，最终尺寸仍以 Actor 标准复核为准。
+- 当前 gallery 只保留已选定的确定性眨眼步态候选：`prototype/preview/animation_gallery/eye-assembly-v2-blink-walk-native/`。
 - 当前已验证 `Open/Half/Closed` 三个状态、正面与三分之四投影、透明度和头部跟随。
 - 当前确定性眨眼输出：`prototype/test_output/eye_assembly_v2_blink_walk_native/`，身体仍采样 `1,11,21,31,41,51,61,71`，眼睛状态为 `open → half → closed → half → open` 后保持 open；gallery 对照位于 `prototype/preview/animation_gallery/eye-assembly-v2-blink-walk-native/`。
 - 下一步才是固定 seed 的随机间隔；在此之前先人工确认四向 GIF 中没有侧面重叠、身体缺帧或状态切换跳变。

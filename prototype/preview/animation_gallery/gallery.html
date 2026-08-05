@@ -41,33 +41,6 @@ figcaption { padding-top:6px; color:var(--muted); font-size:13px; }
 <figure><img class="pixel" src="walk-v78/pixel/left.gif" alt="Walk release baseline v78 left pixel preview"><figcaption>left · 64px preview</figcaption></figure>
 </div>
 </section>
-<section class="panel">
-<h2>EyeAssemblyV1 actor-native four-view test</h2>
-<p class="warning">Test candidate only: this uses Actor V1's native open textures on the new 3D assembly. It is not a final pixel asset.</p>
-<h3>Single 3D assembly projection</h3>
-<div class="grid">
-<figure><img src="eye-assembly-v1/front.png" alt="EyeAssemblyV1 front static render"><figcaption>front · static 3D render</figcaption></figure>
-<figure><img src="eye-assembly-v1/threequarter.png" alt="EyeAssemblyV1 three-quarter static render"><figcaption>three-quarter · same assembly</figcaption></figure>
-<figure><img src="eye-assembly-v1/right.png" alt="EyeAssemblyV1 right static render"><figcaption>right · natural edge projection</figcaption></figure>
-<figure><img src="eye-assembly-v1/back.png" alt="EyeAssemblyV1 back static render"><figcaption>back · no eye geometry</figcaption></figure>
-</div>
-</section>
-<section class="panel">
-<h2>EyeAssemblyV2 actor-based blink states</h2>
-<p class="warning">State texture test only: open uses Actor native textures; half and closed were generated with image_gen from the Actor reference and projected through the same head-parented 3D surfaces. No random scheduling or walk integration yet.</p>
-<h3>Front state sequence</h3>
-<div class="grid">
-<figure><img src="eye-assembly-v2-blink-native/open.png" alt="EyeAssemblyV2 open state front render"><figcaption>open · Actor native maximum-open state</figcaption></figure>
-<figure><img src="eye-assembly-v2-blink-native/half.png" alt="EyeAssemblyV2 half state front render"><figcaption>half · intermediate state</figcaption></figure>
-<figure><img src="eye-assembly-v2-blink-native/closed.png" alt="EyeAssemblyV2 closed state front render"><figcaption>closed · generated closed-lash state</figcaption></figure>
-</div>
-<h3>Three-quarter projection check</h3>
-<div class="grid">
-<figure><img src="eye-assembly-v2-blink-native/open_threequarter.png" alt="EyeAssemblyV2 open state three-quarter render"><figcaption>open · three-quarter</figcaption></figure>
-<figure><img src="eye-assembly-v2-blink-native/half_threequarter.png" alt="EyeAssemblyV2 half state three-quarter render"><figcaption>half · three-quarter</figcaption></figure>
-<figure><img src="eye-assembly-v2-blink-native/closed_threequarter.png" alt="EyeAssemblyV2 closed state three-quarter render"><figcaption>closed · three-quarter</figcaption></figure>
-</div>
-</section>
 <!-- ASSETSLAB_EYE_ASSEMBLY_V2_BLINK_WALK_NATIVE -->
 <section class="panel"><h2>EyeAssemblyV2 actor-based deterministic blink walk</h2><p class="warning">WIP：open 使用 Actor 原生资源，half/closed 使用基于 Actor 参考的 image_gen 状态；此处验证完整 8 帧身体采样和一次确定性眨眼，不代表最终像素画，也未加入随机调度。</p><h3>四向 3D 渲染</h3><div class="grid"><figure><img src="eye-assembly-v2-blink-walk-native/front.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk front render"><figcaption>front · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/right.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk right render"><figcaption>right · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/back.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk back render"><figcaption>back · 256px 3D渲染参考 GIF</figcaption></figure><figure><img src="eye-assembly-v2-blink-walk-native/left.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk left render"><figcaption>left · 256px 3D渲染参考 GIF</figcaption></figure></div><h3>四向 64px 预览</h3><div class="grid"><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/front.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk front preview"><figcaption>front · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/right.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk right preview"><figcaption>right · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/back.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk back preview"><figcaption>back · 64px 最近邻预览（非最终像素资产）</figcaption></figure><figure><img class="pixel" src="eye-assembly-v2-blink-walk-native/pixel/left.gif" alt="EyeAssemblyV2 actor-based deterministic blink walk left preview"><figcaption>left · 64px 最近邻预览（非最终像素资产）</figcaption></figure></div></section>
 </main>

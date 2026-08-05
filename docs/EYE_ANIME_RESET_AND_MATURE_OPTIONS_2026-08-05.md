@@ -34,9 +34,9 @@
 
 ## 第一阶段结果
 
-已完成静态 `EyeAssemblyV1`：使用 image_gen 生成的眉毛+眼睛组合参考，裁切为左右 RGBA 资产，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
+已完成 `EyeAssemblyV1`：open 使用 Actor 原生眼睛，half/closed 使用基于 Actor 参考的 image_gen 状态资源，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
 
-已验证：正面最大睁眼、half、closed、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。测试倍率为 `0.68/0.68`，并使用头部表面 Shrinkwrap；open 仍是 Actor 原生眼睛纹理，half/closed 是基于 Actor 约束生成的必要状态资源。随后已在不改变身体采样的前提下完成一次确定性眨眼，身体采样为 `1,11,21,31,41,51,61,71`，眼睛状态为 `open → half → closed → half → open` 后保持 open。
+已验证：正面最大睁眼、half、closed、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。测试倍率为 `0.68/0.68`，并使用头部表面 Shrinkwrap；随后已在不改变身体采样的前提下完成一次确定性眨眼，身体采样为 `1,11,21,31,41,51,61,71`，眼睛状态为 `open → half → closed → half → open` 后保持 open。当前只保留四向确定性眨眼步态 gallery。
 
 ## 暂不做
 
