@@ -61,6 +61,31 @@ figcaption { padding-top:6px; color:var(--muted); font-size:13px; }
 <figure><img class="pixel" src="pixelization-ab-v1/palette32_left.gif" alt="Pixelization B palette left"><figcaption>left · B palette32</figcaption></figure>
 </div>
 </section>
+<section class="panel">
+<h2>Lighting A/B v1 · current scene vs soft flat</h2>
+<p class="warning">Review only: both profiles use the same Actor V1 blend, action samples, blink schedule, camera and 64px post-process. The soft-flat profile removes duplicated source lights, aims two large area lights at the actor center, disables fill shadows and adds weak environment light.</p>
+<h3>Raw 256px render</h3>
+<div class="grid">
+<figure><img src="lighting-ab-v1/current_source_scene/raw_front.gif" alt="Current source scene front lighting"><figcaption>current · front</figcaption></figure>
+<figure><img src="lighting-ab-v1/soft_flat_v1/raw_front.gif" alt="Soft flat front lighting"><figcaption>soft_flat_v1 · front</figcaption></figure>
+<figure><img src="lighting-ab-v1/current_source_scene/raw_right.gif" alt="Current source scene right lighting"><figcaption>current · right</figcaption></figure>
+<figure><img src="lighting-ab-v1/soft_flat_v1/raw_right.gif" alt="Soft flat right lighting"><figcaption>soft_flat_v1 · right</figcaption></figure>
+</div>
+<h3>64px nearest-neighbor candidate</h3>
+<div class="grid">
+<figure><img class="pixel" src="lighting-ab-v1/current_source_scene/nearest/front.gif" alt="Current source scene nearest front"><figcaption>current · front</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/soft_flat_v1/nearest/front.gif" alt="Soft flat nearest front"><figcaption>soft_flat_v1 · front</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/current_source_scene/nearest/right.gif" alt="Current source scene nearest right"><figcaption>current · right</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/soft_flat_v1/nearest/right.gif" alt="Soft flat nearest right"><figcaption>soft_flat_v1 · right</figcaption></figure>
+</div>
+<h3>64px global 32-color candidate</h3>
+<div class="grid">
+<figure><img class="pixel" src="lighting-ab-v1/current_source_scene/palette32/front.gif" alt="Current source scene palette front"><figcaption>current · front</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/soft_flat_v1/palette32/front.gif" alt="Soft flat palette front"><figcaption>soft_flat_v1 · front</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/current_source_scene/palette32/right.gif" alt="Current source scene palette right"><figcaption>current · right</figcaption></figure>
+<figure><img class="pixel" src="lighting-ab-v1/soft_flat_v1/palette32/right.gif" alt="Soft flat palette right"><figcaption>soft_flat_v1 · right</figcaption></figure>
+</div>
+</section>
 </main>
 </body>
 </html>

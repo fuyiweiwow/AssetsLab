@@ -39,6 +39,7 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--blend", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--resolution", type=int, default=256)
+    parser.add_argument("--lighting-profile", choices=("current", "soft_flat"), default="current")
     return parser.parse_args(argv)
 
 
@@ -78,6 +79,59 @@ def set_eye_state(state: str) -> None:
             polygon.material_index = slot_index
 
 
+def _look_at(obj: bpy.types.Object, target: Vector) -> None:
+    direction = target - obj.location
+    if direction.length <= 1e-6:
+        return
+    obj.rotation_euler = direction.to_track_quat("-Z", "Y").to_euler()
+
+
+def configure_lighting(scene: bpy.types.Scene, target: Vector, profile: str) -> None:
+    """Apply a named render-only lighting profile without saving the source blend."""
+
+    if profile == "current":
+        scene["assetslab_lighting_profile"] = "current_source_scene"
+        return
+
+    for obj in list(bpy.data.objects):
+        if obj.type == "LIGHT":
+            bpy.data.objects.remove(obj, do_unlink=True)
+
+    world = scene.world or bpy.data.worlds.new("AssetsLabSoftFlatWorld")
+    scene.world = world
+    world.use_nodes = True
+    background = world.node_tree.nodes.get("Background")
+    if background is not None:
+        background.inputs["Color"].default_value = (0.14, 0.16, 0.20, 1.0)
+        background.inputs["Strength"].default_value = 0.42
+    world.color = (0.14, 0.16, 0.20)
+
+    def add_area(name: str, location: tuple[float, float, float], energy: float, size: float, use_shadow: bool) -> None:
+        data = bpy.data.lights.new(name, type="AREA")
+        data.energy = energy
+        data.shape = "DISK"
+        data.size = size
+        if hasattr(data, "use_shadow"):
+            data.use_shadow = use_shadow
+        light = bpy.data.objects.new(name, data)
+        scene.collection.objects.link(light)
+        light.location = location
+        _look_at(light, target)
+
+    # Large sources keep the actor readable while preserving only a gentle key.
+    add_area("AssetsLabSoftFlatKey", (target.x - 4.5, target.y - 6.0, target.z + 7.5), 430.0, 6.5, True)
+    add_area("AssetsLabSoftFlatFill", (target.x + 5.0, target.y - 3.5, target.z + 4.5), 300.0, 8.0, False)
+
+    try:
+        scene.view_settings.view_transform = "Standard"
+        scene.view_settings.look = "None"
+    except (AttributeError, TypeError, ValueError):
+        pass
+    scene.view_settings.exposure = 0.0
+    scene.view_settings.gamma = 1.0
+    scene["assetslab_lighting_profile"] = "soft_flat_v1"
+
+
 def main() -> int:
     options = cli_args()
     bpy.ops.wm.open_mainfile(filepath=str(options.blend.resolve()))
@@ -107,6 +161,7 @@ def main() -> int:
     output.mkdir(parents=True, exist_ok=True)
     low, high = visible_bounds()
     center = (low + high) * 0.5
+    configure_lighting(scene, center, options.lighting_profile)
     ortho_scale = max(high.z - low.z, high.x - low.x, high.y - low.y) * 1.16
     if ortho_scale <= 0.0:
         raise RuntimeError("invalid actor bounds")
@@ -146,6 +201,7 @@ def main() -> int:
         "blink_amount_by_frame": list(BLINK_AMOUNTS),
         "directions": list(DIRECTIONS),
         "resolution": options.resolution,
+        "lighting_profile": scene.get("assetslab_lighting_profile", options.lighting_profile),
         "frame_count_per_direction": 8,
         "body_sampling_contract": "unchanged_source_action_sample_8_frames",
         "blink_contract": "deterministic_single_blink_no_random_scheduler",
