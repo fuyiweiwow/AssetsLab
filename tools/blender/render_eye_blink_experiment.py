@@ -54,7 +54,9 @@ def apply_direction_face_pass(view_name: str) -> None:
     for obj in bpy.data.objects:
         if not obj.name.startswith(("EyePackageV1_Lens_", "EyePackageV1_AlmondFrame_", "EyeBlinkV1_")):
             continue
-        if obj.name.startswith("EyePackageV1_Lens_") or "ClosedTexture" in obj.name:
+        if obj.name.startswith("EyePackageV1_Lens_") or (
+            "Texture" in obj.name and "Side" not in obj.name
+        ):
             role = "front"
         elif obj.name.endswith("_L"):
             role = "left"

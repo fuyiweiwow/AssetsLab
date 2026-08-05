@@ -32,15 +32,19 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--closed-right-texture", type=Path, required=True)
     parser.add_argument("--open-left-texture", type=Path)
     parser.add_argument("--open-right-texture", type=Path)
+    parser.add_argument("--half-left-texture", type=Path, required=True)
+    parser.add_argument("--half-right-texture", type=Path, required=True)
     parser.add_argument("--side-left-texture", type=Path, required=True)
     parser.add_argument("--side-right-texture", type=Path, required=True)
+    parser.add_argument("--side-half-left-texture", type=Path, required=True)
+    parser.add_argument("--side-half-right-texture", type=Path, required=True)
     parser.add_argument("--side-closed-left-texture", type=Path, required=True)
     parser.add_argument("--side-closed-right-texture", type=Path, required=True)
     parser.add_argument("--seed", type=int, default=20260805)
     parser.add_argument("--interval-min", type=float, default=2.5)
     parser.add_argument("--interval-max", type=float, default=5.0)
     parser.add_argument("--closed-frames", type=int, default=2)
-    parser.add_argument("--half-frames", type=int, default=1)
+    parser.add_argument("--half-frames", type=int, default=3)
     parser.add_argument("--preview-frames", type=int, default=0)
     return parser.parse_args(argv)
 
@@ -60,10 +64,12 @@ def key_state(obj: bpy.types.Object, frame: int, visible: bool, scale_z: float) 
     obj.keyframe_insert(data_path="hide_viewport", frame=frame)
 
 
-def duplicate_lid(source: bpy.types.Object, material: bpy.types.Material) -> bpy.types.Object:
+def duplicate_state(
+    source: bpy.types.Object, material: bpy.types.Material, state: str
+) -> bpy.types.Object:
     lid = source.copy()
     lid.data = source.data.copy()
-    lid.name = source.name.replace("EyePackageV1_Lens_", "EyeBlinkV1_ClosedTexture_")
+    lid.name = source.name.replace("EyePackageV1_Lens_", f"EyeBlinkV1_{state}Texture_")
     lid.data.name = lid.name + "Mesh"
     lid.data.materials.clear()
     lid.data.materials.append(material)
@@ -77,7 +83,7 @@ def duplicate_lid(source: bpy.types.Object, material: bpy.types.Material) -> bpy
     offset_local = source.matrix_world.to_3x3().inverted() @ Vector((0.0, -0.090, 0.0))
     lid.location += offset_local
     lid["assetslab_layer"] = "Face/Eyes"
-    lid["assetslab_role"] = "eye_blink_3d_closed_texture"
+    lid["assetslab_role"] = f"eye_blink_3d_{state.lower()}_texture"
     lid["assetslab_source"] = source.name
     return lid
 
@@ -187,6 +193,7 @@ def bake_schedule(
 
 def bake_blinks(
     open_eyes: list[bpy.types.Object],
+    half_eyes: list[bpy.types.Object],
     closed_eyes: list[bpy.types.Object],
     schedule: list[dict[str, int | float]],
     start_frame: int,
@@ -194,23 +201,31 @@ def bake_blinks(
     half_frames: int,
     closed_frames: int,
 ) -> None:
-    for open_eye, closed_eye in zip(open_eyes, closed_eyes):
+    for open_eye, half_eye, closed_eye in zip(open_eyes, half_eyes, closed_eyes):
         key_state(open_eye, start_frame, True, 1.0)
+        key_state(half_eye, start_frame, False, 1.0)
         key_state(closed_eye, start_frame, False, 1.0)
         for event in schedule:
             blink_start = int(event["start_frame"])
             closed_start = blink_start + half_frames
-            closed_end = closed_start + closed_frames
-            # The first 3D pass keeps the half timing in the deterministic
-            # schedule, while the actual visual switch uses the imagegen
-            # open/closed texture states.
+            half_out_start = closed_start + closed_frames
+            open_start = half_out_start + half_frames
+            # Use actual imagegen half-open textures for both sides of the
+            # transition; the schedule and the visual state now agree.
             key_state(open_eye, blink_start, False, 1.0)
-            key_state(closed_eye, blink_start, True, 1.0)
-            key_state(open_eye, closed_end + half_frames, True, 1.0)
-            key_state(closed_eye, closed_end + half_frames, False, 1.0)
+            key_state(half_eye, blink_start, True, 1.0)
+            key_state(closed_eye, blink_start, False, 1.0)
+            key_state(half_eye, closed_start, False, 1.0)
+            key_state(closed_eye, closed_start, True, 1.0)
+            key_state(closed_eye, half_out_start, False, 1.0)
+            key_state(half_eye, half_out_start, True, 1.0)
+            key_state(half_eye, open_start, False, 1.0)
+            key_state(open_eye, open_start, True, 1.0)
         key_state(open_eye, end_frame, True, 1.0)
+        key_state(half_eye, end_frame, False, 1.0)
         key_state(closed_eye, end_frame, False, 1.0)
         set_constant_interpolation(open_eye)
+        set_constant_interpolation(half_eye)
         set_constant_interpolation(closed_eye)
 
 
@@ -243,6 +258,10 @@ def main() -> int:
         make_texture_material("EyeBlinkV1_Closed_L", options.closed_left_texture),
         make_texture_material("EyeBlinkV1_Closed_R", options.closed_right_texture),
     ]
+    half_materials = [
+        make_texture_material("EyeBlinkV1_Half_L", options.half_left_texture),
+        make_texture_material("EyeBlinkV1_Half_R", options.half_right_texture),
+    ]
     side_open_materials = [
         make_texture_material("EyeBlinkV1_SideOpen_L", options.side_left_texture),
         make_texture_material("EyeBlinkV1_SideOpen_R", options.side_right_texture),
@@ -251,6 +270,10 @@ def main() -> int:
         make_texture_material("EyeBlinkV1_SideClosed_L", options.side_closed_left_texture),
         make_texture_material("EyeBlinkV1_SideClosed_R", options.side_closed_right_texture),
     ]
+    side_half_materials = [
+        make_texture_material("EyeBlinkV1_SideHalf_L", options.side_half_left_texture),
+        make_texture_material("EyeBlinkV1_SideHalf_R", options.side_half_right_texture),
+    ]
 
     collection = bpy.data.collections.get("Face_Eyes_Blink_V1")
     if collection is None:
@@ -258,8 +281,12 @@ def main() -> int:
         bpy.context.scene.collection.children.link(collection)
 
     closed_eyes = [
-        duplicate_lid(obj, material)
+        duplicate_state(obj, material, "Closed")
         for obj, material in zip(lenses, closed_materials)
+    ]
+    half_eyes = [
+        duplicate_state(obj, material, "Half")
+        for obj, material in zip(lenses, half_materials)
     ]
     side_open_eyes = [
         create_side_plane(
@@ -287,13 +314,26 @@ def main() -> int:
             ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.67, 2.07)), 1.0, side_closed_materials[1]),
         )
     ]
-    for obj in side_open_eyes + side_closed_eyes:
+    side_half_eyes = [
+        create_side_plane(
+            name,
+            location,
+            normal_sign,
+            material,
+            armature,
+        )
+        for name, location, normal_sign, material in (
+            ("EyeBlinkV1_SideHalf_L", Vector((-0.662, -0.67, 2.07)), -1.0, side_half_materials[0]),
+            ("EyeBlinkV1_SideHalf_R", Vector((0.662, -0.67, 2.07)), 1.0, side_half_materials[1]),
+        )
+    ]
+    for obj in side_open_eyes + side_half_eyes + side_closed_eyes:
         obj["assetslab_view"] = "left" if "_L" in obj.name else "right"
-    for obj in closed_eyes:
+    for obj in half_eyes + closed_eyes:
         for parent in list(obj.users_collection):
             parent.objects.unlink(obj)
         collection.objects.link(obj)
-    for obj in side_open_eyes + side_closed_eyes:
+    for obj in side_open_eyes + side_half_eyes + side_closed_eyes:
         for parent in list(obj.users_collection):
             parent.objects.unlink(obj)
         collection.objects.link(obj)
@@ -313,6 +353,7 @@ def main() -> int:
     )
     bake_blinks(
         lenses + side_open_eyes,
+        half_eyes + side_half_eyes,
         closed_eyes + side_closed_eyes,
         schedule,
         scene.frame_start,
@@ -344,8 +385,10 @@ def main() -> int:
             "policy": "preserve_standard_bbox_and_eye_brow_spacing",
         },
         "blink_geometry": {
+            "half_texture_lenses": [obj.name for obj in half_eyes],
             "closed_texture_lenses": [obj.name for obj in closed_eyes],
             "side_open_texture_planes": [obj.name for obj in side_open_eyes],
+            "side_half_texture_planes": [obj.name for obj in side_half_eyes],
             "side_closed_texture_planes": [obj.name for obj in side_closed_eyes],
             "parent_bone": HEAD_BONE,
             "back_policy": "transparent_no_eye_geometry",
@@ -366,6 +409,14 @@ def main() -> int:
         "imagegen_side_closed_eye_textures": [
             str(options.side_closed_left_texture.resolve()),
             str(options.side_closed_right_texture.resolve()),
+        ],
+        "imagegen_half_eye_textures": [
+            str(options.half_left_texture.resolve()),
+            str(options.half_right_texture.resolve()),
+        ],
+        "imagegen_side_half_eye_textures": [
+            str(options.side_half_left_texture.resolve()),
+            str(options.side_half_right_texture.resolve()),
         ],
         "timeline": {
             "fps": scene.render.fps,
