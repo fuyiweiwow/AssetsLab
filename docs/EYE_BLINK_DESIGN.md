@@ -54,5 +54,5 @@ Blender 完成四方向 3D→2D 烘焙后，Godot 只负责播放已经验证的
 - 第一阶段已建立 `EyeAssemblyV1` 静态结构：`tools/blender/build_eye_assembly_v1.py`。
 - 第一阶段 image_gen 资产：`prototype/assets/generated/eye_assembly_v1/`，眉毛与眼睛由同一张 Q 版日系参考生成，再经过 chroma-key 去背景和左右裁切；没有本地绘制像素。
 - 第一阶段验证输出：`prototype/test_output/eye_assembly_v1/`。它通过 Actor V1 Blend 的 `CC_Base_Head` 父级挂载，正面/三分之四/右侧/背面均已渲染；当前作为静态测试候选接入 gallery，不代表最终资源。
-- 当前 gallery 测试候选已更新为较小尺寸：相对 Actor 原生眼睛宽高倍率为 `0.68/0.68`，并在同一头部父级下使用 `EyeAssemblyV1_FitToHeadSurface` Shrinkwrap 贴合头部表面；这只是测试参数，最终尺寸仍以 Actor 标准复核为准。
+- 当前 gallery 测试候选已更新为较小尺寸：相对 Actor 原生眼睛宽高倍率为 `0.68/0.68`，中心间距倍率为 `0.86`，并在同一头部父级下使用 `EyeAssemblyV1_FitToHeadSurface` Shrinkwrap 贴合头部表面；这只是测试参数，最终尺寸仍以 Actor 标准复核为准。
 - 当前仍未开始眨眼：下一阶段才在这套静态表面上建立稳定拓扑和 `Open/Half/Closed` Shape Keys。
