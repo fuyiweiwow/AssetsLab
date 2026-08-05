@@ -36,7 +36,7 @@
 
 已完成静态 `EyeAssemblyV1`：使用 image_gen 生成的眉毛+眼睛组合参考，裁切为左右 RGBA 资产，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
 
-已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。后续复核发现初版尺寸偏大且表面浮空，已在不新增 image_gen 的前提下将测试倍率调整为 `0.68/0.68`，并加入头部表面 Shrinkwrap；当前版本已接入 gallery，但仍不是眨眼或最终资源。
+已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。后续复核发现初版尺寸偏大且表面浮空，已在不新增 image_gen 的前提下将测试倍率调整为 `0.68/0.68`，并加入头部表面 Shrinkwrap；当前 gallery 已切换为 Actor 原生眼睛纹理，仍不是眨眼或最终资源。
 
 ## 暂不做
 
