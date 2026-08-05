@@ -44,8 +44,8 @@ open → half → closed → half → open
 - 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
 - image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
 - 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v15 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；身体层不含眼睛，眼睛层为透明 RGBA，合成后再进入 gallery。gallery 采样显式包含最大睁眼帧，full/eyes pass 均不允许原生眼框回灌；前、左、右、背四向均已通过检查，背面无眼睛。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v15/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+- 当前实验状态：v18 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；眼睛可见性先按眼睛帧缓存，再清除原生可见性动作并手动按方向应用，避免 depsgraph 复活旧对象；侧眼平面已按左右相机修正法线和眼窝位置，body pass 严格使用完整 8 帧身体采样。gallery 采样显式包含最大睁眼帧，前、左、右、背四向均已通过检查，背面无眼睛。
+- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v18/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
 
 ## 标准一致性与缺陷记录
 
@@ -59,10 +59,14 @@ open → half → closed → half → open
 - **EYE-OPEN-01（v13）**：v13 隐藏原生对象后，独立层缺少自己的最大睁眼几何；v14 新增 `EyeBlinkV1_OpenTexture_L/R`，三态本身不依赖原生动画。
 - **EYE-OPEN-02（v14）**：最大睁眼素材虽然已存在，但 gallery 仍采样 `[27..34]`，从半睁帧开始，造成“没有最大眼睛帧”的观感；v15 固定采样 `[24,26,27,29,30,32,34,35]`，首尾均为最大睁眼。
 - **EYE-SIDE-01（v14）**：方向 pass 只在 `eyes` 层隐藏原生对象，full 渲染仍可能保留 `EyePackageV1_AlmondFrame_*`，导致侧面独立眼层与旧眼框重叠；v15 在所有独立眨眼渲染层统一禁用完整 `EyePackageV1_*`。
+- **EYE-SIDE-02（v15）**：仅设置 `hide_render` 仍不足以阻止带关键帧的眼睛对象在 depsgraph 中复活；v18 先缓存 `EyeBlinkV1_*` 在目标眼睛帧的状态，再清除可见性动作并手动应用方向筛选。
+- **EYE-SIDE-03（v15）**：侧眼平面位置仍落在鼻侧，且左右法线与相机方向相反；v18 将平面移到侧面眼窝位置，右侧使用 `-X`、左侧使用 `+X` 法线，并使用贴图自发光材质保持 image_gen 颜色。
+- **EYE-WALK-02（v15）**：body pass 仍先跳到 eye frame 再恢复骨骼姿态，造成走路周期看起来不完整；v18 在 body pass 直接使用 `[1,11,21,31,41,51,61,71]`，只有 eyes/full pass 才进行身体姿态锁定。
+- **EYE-BIND-01（v18）**：眼睛对象必须保持 `parent_type=BONE`、`parent_bone=CC_Base_Head`，不能只保存世界坐标。v18 已对所有 `EyeBlinkV1_*` 的父级和多身体帧世界包围盒做回归检查；眼层屏幕位置随头部姿态连续变化后，才允许进入合成 gallery。
 
 ## 中间帧工具评估
 
 - ToonCrafter、AnimateDiff 属于生成式动画/卡通插帧工具，适合离线概念验证，但会改变线稿、透明边缘和角色身份，不适合作为随机眼睛的运行时依赖。
 - FILM 或 RIFE 属于通用帧插值，能减少显式 `half` 状态，但对透明 2D 眼睛层和像素边缘需要逐帧人工验收；后续可作为离线 A/B，不替换当前确定性的 3D→2D 流程。
 - 当前保留 `open/half/closed` 三态的原因是可复现、可随机换 bundle、可单独替换 Face/Eyes 层；若工具试验通过，优先把它用于离线生成候选，再固化为少量状态贴图。
-- v15 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。
+- v18 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。

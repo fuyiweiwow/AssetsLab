@@ -47,7 +47,11 @@ def make_camera(scene: bpy.types.Scene, target: Vector, location: Vector, scale:
     return camera
 
 
-def apply_direction_face_pass(view_name: str, layer: str) -> None:
+def apply_direction_face_pass(
+    view_name: str,
+    layer: str,
+    blink_visibility: dict[int, dict[str, bool]] | None = None,
+) -> None:
     allowed: set[str]
     if view_name in ("front", "threequarter"):
         allowed = {"front"}
@@ -66,6 +70,11 @@ def apply_direction_face_pass(view_name: str, layer: str) -> None:
             # almond frames. The independent EyeBlinkV1 experiment owns the
             # complete eye layer; leaving either native object visible causes
             # a duplicate eye/eyelid in side and full renders.
+            if obj.animation_data is not None:
+                # hide_render is animated on the source eye package. Clear
+                # that action or Blender can restore the old eye during the
+                # depsgraph evaluation immediately before rendering.
+                obj.animation_data_clear()
             obj.hide_render = True
             obj.hide_viewport = True
             continue
@@ -83,7 +92,12 @@ def apply_direction_face_pass(view_name: str, layer: str) -> None:
             role = "right"
         else:
             role = "none"
-        if role not in allowed:
+        if obj.name.startswith("EyeBlinkV1_") and blink_visibility is not None:
+            state = blink_visibility.get(bpy.context.scene.frame_current, {}).get(obj.name, False)
+            visible = state and role in allowed
+            obj.hide_render = not visible
+            obj.hide_viewport = not visible
+        elif role not in allowed:
             obj.hide_render = True
             obj.hide_viewport = True
 
@@ -97,6 +111,14 @@ def apply_layer_pass(layer: str) -> None:
             # The eye objects have animated hide_render properties. Clear
             # those local actions for the body pass so Blender cannot restore
             # an eye between the visibility pass and the actual render.
+            if obj.animation_data is not None:
+                obj.animation_data_clear()
+            obj.hide_render = True
+            obj.hide_viewport = True
+        elif layer == "eyes" and obj.name.startswith("EyePackageV1_"):
+            # Native EyePackage visibility is also animated. It must be
+            # cleared in the eyes pass, otherwise direction filtering alone
+            # is overwritten by the depsgraph at render time.
             if obj.animation_data is not None:
                 obj.animation_data_clear()
             obj.hide_render = True
@@ -131,6 +153,20 @@ def restore_pose(armature: bpy.types.Object, pose: dict[str, object]) -> None:
     bpy.context.view_layer.update()
 
 
+def capture_blink_visibility(frames: list[int]) -> dict[int, dict[str, bool]]:
+    """Evaluate eye actions once, then let the renderer own visibility."""
+    visibility: dict[int, dict[str, bool]] = {}
+    scene = bpy.context.scene
+    eye_objects = [obj for obj in bpy.data.objects if obj.name.startswith("EyeBlinkV1_")]
+    for frame in sorted(set(frames)):
+        scene.frame_set(frame)
+        visibility[frame] = {obj.name: not obj.hide_render for obj in eye_objects}
+    for obj in eye_objects:
+        if obj.animation_data is not None:
+            obj.animation_data_clear()
+    return visibility
+
+
 def main() -> int:
     options = cli_args()
     bpy.ops.wm.open_mainfile(filepath=str(options.blend.resolve()))
@@ -143,6 +179,7 @@ def main() -> int:
     armature = next(obj for obj in bpy.data.objects if obj.type == "ARMATURE")
     if options.body_frames is not None and len(options.body_frames) != len(options.frames):
         raise ValueError("--body-frames must have the same number of values as --frames")
+    blink_visibility = capture_blink_visibility(options.frames)
     # The Actor V1 open eyes are imagegen-derived texture materials. Workbench
     # ignores their node-based alpha/color path, so the review must use Eevee.
     scene.render.engine = "BLENDER_EEVEE_NEXT"
@@ -171,11 +208,12 @@ def main() -> int:
                 scene.frame_set(frame)
             else:
                 scene.frame_set(options.body_frames[index])
-                body_pose = capture_pose(armature)
-                scene.frame_set(frame)
-                restore_pose(armature, body_pose)
+                if options.layer != "body":
+                    body_pose = capture_pose(armature)
+                    scene.frame_set(frame)
+                    restore_pose(armature, body_pose)
             apply_layer_pass(options.layer)
-            apply_direction_face_pass(view_name, options.layer)
+            apply_direction_face_pass(view_name, options.layer, blink_visibility)
             filename = f"{view_name}_{index:02d}.png" if options.gallery else f"{view_name}_frame{frame:03d}.png"
             scene.render.filepath = str(output / filename)
             bpy.ops.render.render(write_still=True)

@@ -88,7 +88,9 @@ def duplicate_state(
     return lid
 
 
-def make_texture_material(name: str, texture_path: Path) -> bpy.types.Material:
+def make_texture_material(
+    name: str, texture_path: Path, *, unlit: bool = False
+) -> bpy.types.Material:
     material = bpy.data.materials.new(name)
     material.use_nodes = True
     if hasattr(material, "surface_render_method"):
@@ -111,6 +113,10 @@ def make_texture_material(name: str, texture_path: Path) -> bpy.types.Material:
         shader.inputs["Specular IOR Level"].default_value = 0.12
     links.new(texture.outputs["Color"], shader.inputs["Base Color"])
     links.new(texture.outputs["Alpha"], shader.inputs["Alpha"])
+    if unlit and "Emission Color" in shader.inputs:
+        links.new(texture.outputs["Color"], shader.inputs["Emission Color"])
+        if "Emission Strength" in shader.inputs:
+            shader.inputs["Emission Strength"].default_value = 1.0
     links.new(shader.outputs["BSDF"], output.inputs["Surface"])
     return material
 
@@ -256,16 +262,16 @@ def main() -> int:
         make_texture_material("EyeBlinkV1_Half_R", options.half_right_texture),
     ]
     side_open_materials = [
-        make_texture_material("EyeBlinkV1_SideOpen_L", options.side_left_texture),
-        make_texture_material("EyeBlinkV1_SideOpen_R", options.side_right_texture),
+        make_texture_material("EyeBlinkV1_SideOpen_L", options.side_left_texture, unlit=True),
+        make_texture_material("EyeBlinkV1_SideOpen_R", options.side_right_texture, unlit=True),
     ]
     side_closed_materials = [
-        make_texture_material("EyeBlinkV1_SideClosed_L", options.side_closed_left_texture),
-        make_texture_material("EyeBlinkV1_SideClosed_R", options.side_closed_right_texture),
+        make_texture_material("EyeBlinkV1_SideClosed_L", options.side_closed_left_texture, unlit=True),
+        make_texture_material("EyeBlinkV1_SideClosed_R", options.side_closed_right_texture, unlit=True),
     ]
     side_half_materials = [
-        make_texture_material("EyeBlinkV1_SideHalf_L", options.side_half_left_texture),
-        make_texture_material("EyeBlinkV1_SideHalf_R", options.side_half_right_texture),
+        make_texture_material("EyeBlinkV1_SideHalf_L", options.side_half_left_texture, unlit=True),
+        make_texture_material("EyeBlinkV1_SideHalf_R", options.side_half_right_texture, unlit=True),
     ]
 
     collection = bpy.data.collections.get("Face_Eyes_Blink_V1")
@@ -294,8 +300,8 @@ def main() -> int:
             armature,
         )
         for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideOpen_L", Vector((-0.66, -0.67, 2.07)), -1.0, side_open_materials[0]),
-            ("EyeBlinkV1_SideOpen_R", Vector((0.66, -0.67, 2.07)), 1.0, side_open_materials[1]),
+            ("EyeBlinkV1_SideOpen_L", Vector((-0.66, -0.07, 2.07)), 1.0, side_open_materials[0]),
+            ("EyeBlinkV1_SideOpen_R", Vector((0.66, -0.07, 2.07)), -1.0, side_open_materials[1]),
         )
     ]
     side_closed_eyes = [
@@ -307,8 +313,8 @@ def main() -> int:
             armature,
         )
         for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideClosed_L", Vector((-0.665, -0.67, 2.07)), -1.0, side_closed_materials[0]),
-            ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.67, 2.07)), 1.0, side_closed_materials[1]),
+            ("EyeBlinkV1_SideClosed_L", Vector((-0.665, -0.07, 2.07)), 1.0, side_closed_materials[0]),
+            ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.07, 2.07)), -1.0, side_closed_materials[1]),
         )
     ]
     side_half_eyes = [
@@ -320,8 +326,8 @@ def main() -> int:
             armature,
         )
         for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideHalf_L", Vector((-0.662, -0.67, 2.07)), -1.0, side_half_materials[0]),
-            ("EyeBlinkV1_SideHalf_R", Vector((0.662, -0.67, 2.07)), 1.0, side_half_materials[1]),
+            ("EyeBlinkV1_SideHalf_L", Vector((-0.662, -0.07, 2.07)), 1.0, side_half_materials[0]),
+            ("EyeBlinkV1_SideHalf_R", Vector((0.662, -0.07, 2.07)), -1.0, side_half_materials[1]),
         )
     ]
     for obj in side_open_eyes + side_half_eyes + side_closed_eyes:
