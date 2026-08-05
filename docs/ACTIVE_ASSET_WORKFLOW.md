@@ -55,7 +55,7 @@ Actor V1 是离线生成基线；`chibi_eyes_ears_walk_v1` 是已通过 Godot �
 
 ## 开发待办
 
-- [ ] `eye_anime`：拆分 Actor V1 眼睛层，生成可复用的眼睛状态和四方向候选，完成移动眨眼 headless 小实验。
+- [~] `eye_anime`：已在派生 Actor V1 Blend 中建立 `Face/Eyes` 3D 层，使用 image_gen open/closed 贴图和固定 seed 烘焙移动眨眼；下一步补 `half` 形变并接入正式 3D→2D 输出合同。背面保持无眼睛透明层。
 - [ ] `pixelization`：建立 Blender 原生像素化、免费插件和可选 2DFactory 的统一 A/B 输出与验收报告；MCP 只作为批处理编排层候选。
 
 ## 清理规则
