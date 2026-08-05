@@ -11,9 +11,6 @@ from PIL import Image
 
 
 DIRECTIONS = ("front", "right", "back", "left")
-MARKER = "<!-- ASSETSLAB_EYE_ANIME_V6 -->"
-
-
 def make_gif(source_dir: Path, output: Path, stem: str, size: int) -> None:
     frames = []
     for index in range(8):
@@ -40,6 +37,8 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--project-root", type=Path, default=Path(__file__).resolve().parents[1])
     parser.add_argument("--render-dir", type=Path, required=True)
     parser.add_argument("--gallery", type=Path, default=Path("prototype/preview/animation_gallery"))
+    parser.add_argument("--candidate-id", default="eye-anime-v8")
+    parser.add_argument("--label", default="Eye Anime v8 · 标准比例眉眼组合层")
     return parser.parse_args()
 
 
@@ -48,7 +47,9 @@ def main() -> int:
     root = options.project_root.resolve()
     render_dir = (root / options.render_dir).resolve()
     gallery = (root / options.gallery).resolve()
-    target = gallery / "eye-anime-v6"
+    candidate_id = options.candidate_id
+    marker = f"<!-- ASSETSLAB_{candidate_id.upper().replace('-', '_')} -->"
+    target = gallery / candidate_id
     target.mkdir(parents=True, exist_ok=True)
     source_manifest = render_dir / "manifest.json"
     manifest = json.loads(source_manifest.read_text(encoding="utf-8"))
@@ -66,8 +67,8 @@ def main() -> int:
 
     gallery_manifest = {
         "schema": "assetslab_eye_anime_gallery_candidate_v1",
-        "id": "eye-anime-v6",
-        "label": "Eye Anime v6 · image_gen 眉眼组合层",
+        "id": candidate_id,
+        "label": options.label,
         "action": "Walk + deterministic blink",
         "source_manifest": manifest,
         "directions": directions,
@@ -80,22 +81,22 @@ def main() -> int:
 
     index = gallery / "gallery.html"
     text = index.read_text(encoding="utf-8")
-    if MARKER not in text:
+    if marker not in text:
         figures = []
         pixels = []
         label = html.escape(gallery_manifest["label"])
         for direction in DIRECTIONS:
             item = directions[direction]
             figures.append(
-                f'<figure><img src="eye-anime-v6/{item["render"]}" alt="{label} {direction} render">'
+                f'<figure><img src="{candidate_id}/{item["render"]}" alt="{label} {direction} render">'
                 f"<figcaption>{direction} · 256px 3D渲染参考 GIF</figcaption></figure>"
             )
             pixels.append(
-                f'<figure><img class="pixel" src="eye-anime-v6/{item["pixel"]}" alt="{label} {direction} preview">'
+                f'<figure><img class="pixel" src="{candidate_id}/{item["pixel"]}" alt="{label} {direction} preview">'
                 f"<figcaption>{direction} · 64px 最近邻预览（非最终像素资产）</figcaption></figure>"
             )
         card = (
-            f"{MARKER}\n<section class=\"panel\"><h2>{label}</h2>"
+            f"{marker}\n<section class=\"panel\"><h2>{label}</h2>"
             '<p class="warning">WIP：眉毛与眼睛由 image_gen 作为同一组合层生成；此处用于验证 3D→2D 参考渲染和眨眼节奏，不代表最终像素画。</p>'
             '<h3>四向 3D 渲染</h3><div class="grid">'
             + "".join(figures)

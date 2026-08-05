@@ -44,5 +44,11 @@ open → half → closed → half → open
 - 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
 - image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
 - 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v6 已通过前、左、右、背四向的 `open/closed` 组合层切换验证；背面无眼睛，身体材质 review render 已关闭不必要的透明抖动；`half` 仍是下一步形变实验，不作为本次通过条件。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v6/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+- 当前实验状态：v8 已通过前、左、右、背四向的 `open/closed` 组合层切换验证；背面无眼睛，身体材质 review render 已关闭不必要的透明抖动；`half` 仍是下一步形变实验，不作为本次通过条件。
+- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v8/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+
+## 标准一致性与缺陷记录
+
+- **EYE-SCALE-01（v6）**：新生成的组合层没有锁定 Actor 标准眼睛的外框和眉眼间距，导致 3D review 中眼睛显得像另一套角色。标准参数记录为：运行时画布 `64×64`；正面角色 alpha bbox `[18,7,46,57]`；标准 `eye_right.png` 内容 bbox `[13,12,488,597]`。后续组合层必须保留这个 bbox 和眉眼相对位置。
+- **EYE-WINDOW-01（v7）**：标准贴图原本带透明 alpha，但处理脚本把已有 `alpha=0` 改成了不透明黑色；同时眼睛材质使用 hashed/dithered alpha，造成随帧变化的黑色矩形“小窗”。现已修复为保留源 alpha，并使用 `BLENDED/BLEND`。
+- **v8**：front open 直接基于标准 `eye_right.png` 归一化，closed 与左右侧组合层均由 image_gen 参考标准生成；已复查 open/closed 和背面状态。

@@ -86,9 +86,11 @@ def make_texture_material(name: str, texture_path: Path) -> bpy.types.Material:
     material = bpy.data.materials.new(name)
     material.use_nodes = True
     if hasattr(material, "surface_render_method"):
-        material.surface_render_method = "DITHERED"
+        # Dithered/hashed alpha produces frame-dependent holes on these shallow
+        # eye layers, which looks like a small window opening in the face.
+        material.surface_render_method = "BLENDED"
     if hasattr(material, "blend_method"):
-        material.blend_method = "HASHED"
+        material.blend_method = "BLEND"
     nodes = material.node_tree.nodes
     links = material.node_tree.links
     nodes.clear()
@@ -333,7 +335,14 @@ def main() -> int:
         "source_blend": str(input_blend),
         "output_blend": str(output_blend),
         "layer": "Face/Eyes",
-        "source_open_eye_materials": ["EyePackageV1_MikuLeft", "EyePackageV1_MikuRight"],
+        "source_open_eye_materials": ["EyeBlinkV1_Open_L", "EyeBlinkV1_Open_R"],
+        "standard_reference": {
+            "actor_eye_texture": "prototype/assets/characters/actor_v1/eye_textures/eye_right.png",
+            "runtime_canvas_px": [64, 64],
+            "runtime_front_head_alpha_bbox_px": [18, 7, 46, 57],
+            "reference_eye_alpha_bbox_px": [13, 12, 488, 597],
+            "policy": "preserve_standard_bbox_and_eye_brow_spacing",
+        },
         "blink_geometry": {
             "closed_texture_lenses": [obj.name for obj in closed_eyes],
             "side_open_texture_planes": [obj.name for obj in side_open_eyes],
