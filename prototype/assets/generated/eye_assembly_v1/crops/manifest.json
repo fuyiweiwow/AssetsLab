@@ -1,0 +1,28 @@
+{
+  "schema": "assetslab_imagegen_eye_assembly_crops_v1",
+  "source": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\imagegen_eye_brows_front.png",
+  "canvas": [
+    496,
+    609
+  ],
+  "sides": {
+    "L": {
+      "source_alpha_bbox": [
+        102,
+        184,
+        677,
+        797
+      ],
+      "output": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops\\imagegen_eye_assembly_L.png"
+    },
+    "R": {
+      "source_alpha_bbox": [
+        861,
+        183,
+        1435,
+        797
+      ],
+      "output": "D:\\Apps\\CodeXApp\\Tests\\AssetsLab\\prototype\\assets\\generated\\eye_assembly_v1\\crops\\imagegen_eye_assembly_R.png"
+    }
+  }
+}

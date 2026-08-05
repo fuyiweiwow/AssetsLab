@@ -51,4 +51,7 @@ Blender 完成四方向 3D→2D 烘焙后，Godot 只负责播放已经验证的
 - 移动基线：`prototype/preview/animation_gallery/walk-v78/`
 - 原始角色基线：`prototype/preview/animation_gallery/actor-v1/`
 - 旧 eye-anime gallery：已删除，可从 Git 历史恢复，但不再作为当前实现引用。
-- 现有 Blender 脚本：保留为研究/回退材料；下一步应拆出“单一 3D 眼睛结构 + Shape Keys”实验，而不是继续扩展旧的贴图层方案。
+- 第一阶段已建立 `EyeAssemblyV1` 静态结构：`tools/blender/build_eye_assembly_v1.py`。
+- 第一阶段 image_gen 资产：`prototype/assets/generated/eye_assembly_v1/`，眉毛与眼睛由同一张 Q 版日系参考生成，再经过 chroma-key 去背景和左右裁切；没有本地绘制像素。
+- 第一阶段验证输出：`prototype/test_output/eye_assembly_v1/`。它通过 Actor V1 Blend 的 `CC_Base_Head` 父级挂载，正面/三分之四/右侧/背面均已渲染；暂不进入 gallery。
+- 当前仍未开始眨眼：下一阶段才在这套静态表面上建立稳定拓扑和 `Open/Half/Closed` Shape Keys。

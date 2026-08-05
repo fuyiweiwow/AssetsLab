@@ -57,7 +57,7 @@ Actor V1 是离线生成基线，不等于已经接入 Godot 的最终运行时�
 
 ## 开发待办
 
-- [~] **eye_anime：移动眨眼与眼睛层**。旧的 eye-anime gallery 实验已全部删除，移动基线保留。此前的独立贴图层、眼骨骼二次绑定和 profile 平面方案均不作为实现基础；下一步按成熟路线重新建立单一 3D 眼睛结构，以 Shape Keys/driver 控制眨眼，再统一渲染四方向 2D 结果，不修改身体 8 帧合同。
+- [~] **eye_anime：移动眨眼与眼睛层**。旧的 eye-anime gallery 实验已全部删除，移动基线保留。第一阶段已建立静态 `EyeAssemblyV1`：image_gen 眉眼组合资产 + 同构浅曲面 + `CC_Base_Head` 跟随，并通过四方向渲染验证；尚未进入 gallery。下一步在该结构上建立 Shape Keys/driver 控制眨眼，再联动完整身体 8 帧，不修改身体 8 帧合同。
 - [ ] **pixelization：像素化质量 A/B**。比较 Blender 原生 Pixelate/Closest/Box、免费像素化插件和可选 2DFactory；固定相机、锚点、调色板、透明 pass 和 manifest 后再决定是否引入外部工具或 MCP。
 
 ## 当前入口文档

@@ -28,6 +28,12 @@
 5. 每次只增加一个变量；body pass 永远使用移动基线的完整 8 帧，不在眼睛实验中改变身体姿态采样。
 6. 只有静态四方向、头部跟随、单次眨眼和完整步态全部通过后，才生成新的 gallery 目录。
 
+## 第一阶段结果
+
+已完成静态 `EyeAssemblyV1`：使用 image_gen 生成的眉毛+眼睛组合参考，裁切为左右 RGBA 资产，并由两个同构的浅曲面组成同一个 `EyeAssemblyV1` 集合。两个表面都直接 Bone Parent 到 `Armature/CC_Base_Head`，旧 `EyePackageV1_*` 和 `EyeBlinkV1_*` 对象在实验 Blend 中已移除。
+
+已验证：正面最大睁眼、三分之四投影、右侧边缘投影、背面无眼睛、frame 1/31 的头部跟随。输出仍是 `prototype/test_output/eye_assembly_v1/`，没有加入 gallery，因为眨眼 Shape Keys 和身体 8 帧联动还未验收。
+
 ## 暂不做
 
 - 不再制作独立的 profile 眼睛 PNG 平面。
