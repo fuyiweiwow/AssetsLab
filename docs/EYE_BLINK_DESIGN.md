@@ -44,8 +44,8 @@ open → half → closed → half → open
 - 无窗口材质渲染：`tools/blender/render_eye_blink_experiment.py`
 - image_gen 眼睛+眉毛源的去色键与尺寸归一化：`tools/process_imagegen_eye_texture.py`
 - 派生实验输出：`prototype/test_output/eye_anime/`（不修改 Actor V1 原始 Blend）
-- 当前实验状态：v18 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；眼睛可见性先按眼睛帧缓存，再清除原生可见性动作并手动按方向应用，避免 depsgraph 复活旧对象；侧眼平面已按左右相机修正法线和眼窝位置，body pass 严格使用完整 8 帧身体采样。gallery 采样显式包含最大睁眼帧，前、左、右、背四向均已通过检查，背面无眼睛。
-- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v18/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
+- 当前实验状态：v20/v22 在独立 `body` / `eyes` / `composite` 三阶段中关闭原生 `EyePackageV1_*` 眼睛对象，只播放自有的 `EyeBlinkV1_OpenTexture_*`、`HalfTexture_*`、`ClosedTexture_*` 状态层；眼睛可见性先按眼睛帧缓存，再清除原生可见性动作并手动按方向应用，避免 depsgraph 复活旧对象。正面保持 Actor 标准眉眼尺寸；左右独立眼层绑定到 `CC_Base_L_Eye` / `CC_Base_R_Eye`，通过面部骨骼链继承头部和面部动画；侧面 profile 平面保持刚性并放大有效可视区域，避免 shrinkwrap 把眼睛压成细缝。body pass 严格使用完整 8 帧身体采样，gallery 采样显式包含最大睁眼帧，背面无眼睛。
+- Gallery 参考：`prototype/preview/animation_gallery/eye-anime-v22/`；其中 64px GIF 仅为最近邻观察，不是最终像素资产。
 
 ## 标准一致性与缺陷记录
 
@@ -62,11 +62,13 @@ open → half → closed → half → open
 - **EYE-SIDE-02（v15）**：仅设置 `hide_render` 仍不足以阻止带关键帧的眼睛对象在 depsgraph 中复活；v18 先缓存 `EyeBlinkV1_*` 在目标眼睛帧的状态，再清除可见性动作并手动应用方向筛选。
 - **EYE-SIDE-03（v15）**：侧眼平面位置仍落在鼻侧，且左右法线与相机方向相反；v18 将平面移到侧面眼窝位置，右侧使用 `-X`、左侧使用 `+X` 法线，并使用贴图自发光材质保持 image_gen 颜色。
 - **EYE-WALK-02（v15）**：body pass 仍先跳到 eye frame 再恢复骨骼姿态，造成走路周期看起来不完整；v18 在 body pass 直接使用 `[1,11,21,31,41,51,61,71]`，只有 eyes/full pass 才进行身体姿态锁定。
-- **EYE-BIND-01（v18）**：眼睛对象必须保持 `parent_type=BONE`、`parent_bone=CC_Base_Head`，不能只保存世界坐标。v18 已对所有 `EyeBlinkV1_*` 的父级和多身体帧世界包围盒做回归检查；眼层屏幕位置随头部姿态连续变化后，才允许进入合成 gallery。
+- **EYE-BIND-01（v18，已被 v20 扩展）**：眼睛对象必须保持 `parent_type=BONE`，不能只保存世界坐标。v18 先以 `CC_Base_Head` 验证头部跟随；v20 将合同扩展为左右眼分别绑定眼骨骼，以覆盖面部动画。
+- **EYE-BIND-02（v20）**：仅绑定 `CC_Base_Head` 只能继承头部移动，不能继承独立的面部/眼球动画。正面左右眼、侧面左右 profile 层现在分别绑定 `CC_Base_L_Eye` / `CC_Base_R_Eye`，通过 `CC_Base_FacialBone -> CC_Base_Head` 继承上层运动；脚本同时验证每个独立层的 parent bone。
+- **EYE-SIDE-04（v20）**：侧面 image_gen 画布透明留白较多，且对 profile 平面使用 shrinkwrap 会把平面投影变形为细缝。侧面层改为刚性骨骼绑定，平面尺寸固定为 `0.68×0.64`，只用 bone transform 跟随面部动画。
 
 ## 中间帧工具评估
 
 - ToonCrafter、AnimateDiff 属于生成式动画/卡通插帧工具，适合离线概念验证，但会改变线稿、透明边缘和角色身份，不适合作为随机眼睛的运行时依赖。
 - FILM 或 RIFE 属于通用帧插值，能减少显式 `half` 状态，但对透明 2D 眼睛层和像素边缘需要逐帧人工验收；后续可作为离线 A/B，不替换当前确定性的 3D→2D 流程。
 - 当前保留 `open/half/closed` 三态的原因是可复现、可随机换 bundle、可单独替换 Face/Eyes 层；若工具试验通过，优先把它用于离线生成候选，再固化为少量状态贴图。
-- v18 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。
+- v20 独立层入口：`tools/blender/render_eye_blink_experiment.py --layer body|eyes`，合成入口：`tools/composite_eye_layers.py`；`body`、`eyes` 和 `full` pass 均不再渲染原生 EyePackage 动画。

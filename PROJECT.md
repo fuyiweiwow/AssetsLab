@@ -57,7 +57,7 @@ Actor V1 是离线生成基线，不等于已经接入 Godot 的最终运行时�
 
 ## 开发待办
 
-- [~] **eye_anime：移动眨眼与眼睛层**。已在派生 Actor V1 Blend 中建立可替换的 `Face/Eyes` 组合层，眉毛与眼睛由 image_gen 一起生成，并按 Actor 标准 bbox 校准；已修复 alpha 误覆盖导致的黑色“小窗”和透明抖动，接入自有 open/half/closed/half/open 状态、稳定 seed 烘焙、四向 headless 验证和 movement gallery；v18 修复了可见性动作在 depsgraph 中复活导致的侧面重叠，修正侧眼平面法线与位置，并让 body pass 严格使用完整 8 帧身体采样；下一步是正式透明 2D eye pass，不修改身体 8 帧合同。
+- [~] **eye_anime：移动眨眼与眼睛层**。已在派生 Actor V1 Blend 中建立可替换的 `Face/Eyes` 组合层，眉毛与眼睛由 image_gen 一起生成，并按 Actor 标准 bbox 校准；已修复 alpha 误覆盖导致的黑色“小窗”和透明抖动，接入自有 open/half/closed/half/open 状态、稳定 seed 烘焙、四向 headless 验证和 movement gallery。v20 进一步把独立正面/侧面眼层从仅绑定 `CC_Base_Head` 改为绑定左右眼骨骼，使其继承面部动画；正面不再缩放，侧面保持刚性骨骼绑定并放大 profile 有效区域；body pass 继续严格使用完整 8 帧身体采样。下一步是正式透明 2D eye pass，不修改身体 8 帧合同。
 - [ ] **pixelization：像素化质量 A/B**。比较 Blender 原生 Pixelate/Closest/Box、免费像素化插件和可选 2DFactory；固定相机、锚点、调色板、透明 pass 和 manifest 后再决定是否引入外部工具或 MCP。
 
 ## 当前入口文档

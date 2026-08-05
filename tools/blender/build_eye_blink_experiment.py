@@ -20,6 +20,8 @@ from mathutils import Matrix, Vector
 
 HEAD_BONE = "CC_Base_Head"
 LENS_NAMES = ("EyePackageV1_Lens_L", "EyePackageV1_Lens_R")
+SIDE_EYE_WIDTH = 0.68
+SIDE_EYE_HEIGHT = 0.64
 
 
 def cli_args() -> argparse.Namespace:
@@ -65,7 +67,11 @@ def key_state(obj: bpy.types.Object, frame: int, visible: bool, scale_z: float) 
 
 
 def duplicate_state(
-    source: bpy.types.Object, material: bpy.types.Material, state: str
+    source: bpy.types.Object,
+    material: bpy.types.Material,
+    state: str,
+    armature: bpy.types.Object,
+    eye_bone_name: str,
 ) -> bpy.types.Object:
     lid = source.copy()
     lid.data = source.data.copy()
@@ -75,16 +81,23 @@ def duplicate_state(
     lid.data.materials.append(material)
     bpy.context.collection.objects.link(lid)
 
-    # The source eye is already parented to the head bone. Keep that contract
-    # and move the closed texture a few millimetres toward the front camera.
-    # Object.copy() retains the source's armature parent and local transform.
-    # Offset the object in parent-local space so the source Shrinkwrap can
-    # continue to follow the animated head surface.
+    # Keep the standard bundle at the Actor V1 lens size. Move it a few
+    # millimetres toward the front camera before rebinding it to the eye bone.
+    # The eye bone is a child of the facial/head chain, so it follows both
+    # walking head motion and any later facial/eye animation.
     offset_local = source.matrix_world.to_3x3().inverted() @ Vector((0.0, -0.090, 0.0))
     lid.location += offset_local
+    world_matrix = lid.matrix_world.copy()
+    lid.parent = armature
+    lid.parent_type = "BONE"
+    lid.parent_bone = eye_bone_name
+    lid.matrix_parent_inverse = Matrix.Identity(4)
+    eye_bone_world = armature.matrix_world @ armature.pose.bones[eye_bone_name].matrix
+    lid.matrix_basis = eye_bone_world.inverted() @ world_matrix
     lid["assetslab_layer"] = "Face/Eyes"
     lid["assetslab_role"] = f"eye_blink_3d_{state.lower()}_texture"
     lid["assetslab_source"] = source.name
+    lid["assetslab_parent_bone"] = eye_bone_name
     return lid
 
 
@@ -127,9 +140,13 @@ def create_side_plane(
     normal_sign: float,
     material: bpy.types.Material,
     armature: bpy.types.Object,
+    eye_bone_name: str,
 ) -> bpy.types.Object:
-    width = 0.31
-    height = 0.29
+    # The side source is a profile eye inside a transparent 496x609 canvas.
+    # Its non-transparent content occupies less of that canvas than the front
+    # bundle, so the native v18 plane made the eye unreadable at 256px.
+    width = SIDE_EYE_WIDTH
+    height = SIDE_EYE_HEIGHT
     vertices = [
         (-width * 0.5, -height * 0.5, 0.0),
         (width * 0.5, -height * 0.5, 0.0),
@@ -150,15 +167,21 @@ def create_side_plane(
     # Local X follows head Y, local Y follows head Z, and local Z faces +/-X.
     basis = Matrix(((0.0, 0.0, normal_sign), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0))).to_4x4()
     desired_world = Matrix.Translation(location) @ basis
-    bone_world = armature.matrix_world @ armature.pose.bones[HEAD_BONE].matrix
+    bone_world = armature.matrix_world @ armature.pose.bones[eye_bone_name].matrix
     obj.parent = armature
     obj.parent_type = "BONE"
-    obj.parent_bone = HEAD_BONE
+    obj.parent_bone = eye_bone_name
     obj.matrix_parent_inverse = Matrix.Identity(4)
     obj.matrix_basis = bone_world.inverted() @ desired_world
     obj["assetslab_layer"] = "Face/Eyes"
     obj["assetslab_role"] = "eye_blink_3d_side_texture"
     obj["assetslab_side_normal"] = normal_sign
+    obj["assetslab_side_plane_size"] = (width, height)
+    obj["assetslab_parent_bone"] = eye_bone_name
+    # Keep the profile plane rigid. The imagegen side canvas is already
+    # camera-oriented; a shrinkwrap projection would deform the plane across
+    # the rounded head and make the eye collapse into a tiny sliver. The eye
+    # bone parent supplies the required facial/head motion.
     return obj
 
 
@@ -249,6 +272,9 @@ def main() -> int:
     lenses = [bpy.data.objects.get(name) for name in LENS_NAMES]
     if any(obj is None for obj in lenses):
         raise RuntimeError("Actor V1 eye package is incomplete")
+    eye_bones = ("CC_Base_L_Eye", "CC_Base_R_Eye")
+    if any(name not in armature.pose.bones for name in eye_bones):
+        raise RuntimeError("Actor V1 eye bones are incomplete")
     open_materials = [
         make_texture_material("EyeBlinkV1_Open_L", options.open_left_texture),
         make_texture_material("EyeBlinkV1_Open_R", options.open_right_texture),
@@ -280,16 +306,16 @@ def main() -> int:
         bpy.context.scene.collection.children.link(collection)
 
     open_eyes = [
-        duplicate_state(obj, material, "Open")
-        for obj, material in zip(lenses, open_materials)
+        duplicate_state(obj, material, "Open", armature, eye_bone)
+        for obj, material, eye_bone in zip(lenses, open_materials, eye_bones)
     ]
     closed_eyes = [
-        duplicate_state(obj, material, "Closed")
-        for obj, material in zip(lenses, closed_materials)
+        duplicate_state(obj, material, "Closed", armature, eye_bone)
+        for obj, material, eye_bone in zip(lenses, closed_materials, eye_bones)
     ]
     half_eyes = [
-        duplicate_state(obj, material, "Half")
-        for obj, material in zip(lenses, half_materials)
+        duplicate_state(obj, material, "Half", armature, eye_bone)
+        for obj, material, eye_bone in zip(lenses, half_materials, eye_bones)
     ]
     side_open_eyes = [
         create_side_plane(
@@ -298,10 +324,11 @@ def main() -> int:
             normal_sign,
             material,
             armature,
+            eye_bone,
         )
-        for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideOpen_L", Vector((-0.66, -0.07, 2.07)), 1.0, side_open_materials[0]),
-            ("EyeBlinkV1_SideOpen_R", Vector((0.66, -0.07, 2.07)), -1.0, side_open_materials[1]),
+        for name, location, normal_sign, material, eye_bone in (
+            ("EyeBlinkV1_SideOpen_L", Vector((-0.66, -0.07, 2.07)), 1.0, side_open_materials[0], eye_bones[0]),
+            ("EyeBlinkV1_SideOpen_R", Vector((0.66, -0.07, 2.07)), -1.0, side_open_materials[1], eye_bones[1]),
         )
     ]
     side_closed_eyes = [
@@ -311,10 +338,11 @@ def main() -> int:
             normal_sign,
             material,
             armature,
+            eye_bone,
         )
-        for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideClosed_L", Vector((-0.665, -0.07, 2.07)), 1.0, side_closed_materials[0]),
-            ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.07, 2.07)), -1.0, side_closed_materials[1]),
+        for name, location, normal_sign, material, eye_bone in (
+            ("EyeBlinkV1_SideClosed_L", Vector((-0.665, -0.07, 2.07)), 1.0, side_closed_materials[0], eye_bones[0]),
+            ("EyeBlinkV1_SideClosed_R", Vector((0.665, -0.07, 2.07)), -1.0, side_closed_materials[1], eye_bones[1]),
         )
     ]
     side_half_eyes = [
@@ -324,10 +352,11 @@ def main() -> int:
             normal_sign,
             material,
             armature,
+            eye_bone,
         )
-        for name, location, normal_sign, material in (
-            ("EyeBlinkV1_SideHalf_L", Vector((-0.662, -0.07, 2.07)), 1.0, side_half_materials[0]),
-            ("EyeBlinkV1_SideHalf_R", Vector((0.662, -0.07, 2.07)), -1.0, side_half_materials[1]),
+        for name, location, normal_sign, material, eye_bone in (
+            ("EyeBlinkV1_SideHalf_L", Vector((-0.662, -0.07, 2.07)), 1.0, side_half_materials[0], eye_bones[0]),
+            ("EyeBlinkV1_SideHalf_R", Vector((0.662, -0.07, 2.07)), -1.0, side_half_materials[1], eye_bones[1]),
         )
     ]
     for obj in side_open_eyes + side_half_eyes + side_closed_eyes:
@@ -399,7 +428,11 @@ def main() -> int:
             "side_open_texture_planes": [obj.name for obj in side_open_eyes],
             "side_half_texture_planes": [obj.name for obj in side_half_eyes],
             "side_closed_texture_planes": [obj.name for obj in side_closed_eyes],
-            "parent_bone": HEAD_BONE,
+            "parent_bone": {
+                "left": eye_bones[0],
+                "right": eye_bones[1],
+                "chain": "CC_Base_L/R_Eye -> CC_Base_FacialBone -> CC_Base_Head",
+            },
             "back_policy": "transparent_no_eye_geometry",
         },
         "imagegen_closed_eye_textures": [
