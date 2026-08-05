@@ -24,6 +24,7 @@ def cli_args() -> argparse.Namespace:
     )
     parser.add_argument("--size", type=int, default=256)
     parser.add_argument("--gallery", action="store_true")
+    parser.add_argument("--layer", choices=("full", "body", "eyes"), default="full")
     return parser.parse_args(argv)
 
 
@@ -46,7 +47,7 @@ def make_camera(scene: bpy.types.Scene, target: Vector, location: Vector, scale:
     return camera
 
 
-def apply_direction_face_pass(view_name: str) -> None:
+def apply_direction_face_pass(view_name: str, layer: str) -> None:
     allowed: set[str]
     if view_name in ("front", "threequarter"):
         allowed = {"front"}
@@ -60,6 +61,10 @@ def apply_direction_face_pass(view_name: str) -> None:
     for obj in bpy.data.objects:
         if not obj.name.startswith(("EyePackageV1_Lens_", "EyePackageV1_AlmondFrame_", "EyeBlinkV1_")):
             continue
+        if layer == "body":
+            obj.hide_render = True
+            obj.hide_viewport = True
+            continue
         if obj.name.startswith("EyePackageV1_Lens_") or (
             "Texture" in obj.name and "Side" not in obj.name
         ):
@@ -71,6 +76,24 @@ def apply_direction_face_pass(view_name: str) -> None:
         else:
             role = "none"
         if role not in allowed:
+            obj.hide_render = True
+            obj.hide_viewport = True
+
+
+def apply_layer_pass(layer: str) -> None:
+    eye_prefixes = ("EyePackageV1_", "EyeBlinkV1_")
+    for obj in bpy.data.objects:
+        if obj.type != "MESH":
+            continue
+        if layer == "body" and obj.name.startswith(eye_prefixes):
+            # The eye objects have animated hide_render properties. Clear
+            # those local actions for the body pass so Blender cannot restore
+            # an eye between the visibility pass and the actual render.
+            if obj.animation_data is not None:
+                obj.animation_data_clear()
+            obj.hide_render = True
+            obj.hide_viewport = True
+        elif layer == "eyes" and not obj.name.startswith(eye_prefixes):
             obj.hide_render = True
             obj.hide_viewport = True
 
@@ -119,8 +142,7 @@ def main() -> int:
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.image_settings.color_mode = "RGBA"
-    scene.render.film_transparent = True
-    scene.render.film_transparent = False
+    scene.render.film_transparent = options.layer == "eyes"
     # Keep the review render clean enough to judge texture edges and shadows.
     scene.eevee.taa_render_samples = 128
     scene.eevee.shadow_ray_count = 4
@@ -144,7 +166,8 @@ def main() -> int:
                 body_pose = capture_pose(armature)
                 scene.frame_set(frame)
                 restore_pose(armature, body_pose)
-            apply_direction_face_pass(view_name)
+            apply_layer_pass(options.layer)
+            apply_direction_face_pass(view_name, options.layer)
             filename = f"{view_name}_{index:02d}.png" if options.gallery else f"{view_name}_frame{frame:03d}.png"
             scene.render.filepath = str(output / filename)
             bpy.ops.render.render(write_still=True)
