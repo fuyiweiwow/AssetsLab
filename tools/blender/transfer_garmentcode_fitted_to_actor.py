@@ -69,6 +69,11 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--debug-hide-actor", action="store_true")
     parser.add_argument("--depth-bias", type=float, default=0.0)
     parser.add_argument("--resolution", type=int, default=256)
+    parser.add_argument(
+        "--smooth-shading",
+        action="store_true",
+        help="use smooth polygon normals on the transferred garment for a shading diagnostic",
+    )
     parser.add_argument("--obj-scale", type=float, default=0.01)
     parser.add_argument(
         "--obj-orientation",
@@ -179,6 +184,14 @@ def apply_actor_surface_fit(garment: bpy.types.Object, actor: bpy.types.Object, 
     garment.select_set(True)
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     garment.select_set(False)
+
+
+def apply_smooth_shading(garment: bpy.types.Object) -> int:
+    """Smooth only polygon normals; do not alter garment geometry."""
+    for polygon in garment.data.polygons:
+        polygon.use_smooth = True
+    garment.data.update()
+    return len(garment.data.polygons)
 
 
 def evaluated_world_points(obj: bpy.types.Object) -> list[Vector]:
@@ -576,6 +589,7 @@ def main() -> int:
     else:
         garment = load_fitted_garment(options.fitted_blend, scene)
         fitted_source = options.fitted_blend
+    smooth_polygons = apply_smooth_shading(garment) if options.smooth_shading else 0
     source_low, source_high = object_bounds(garment)
     hem_fit = None
     if options.skip_pelvis_hem_fit:
@@ -689,6 +703,8 @@ def main() -> int:
         "project_side_x": options.project_side_x,
         "projection_max_z": projection_max_z,
         "preserve_sleeve_edges": options.preserve_sleeve_edges,
+        "smooth_shading": options.smooth_shading,
+        "smooth_polygons": smooth_polygons,
         "surface_bias": {
             "front_flatten": options.front_flatten,
             "back_clearance": options.back_clearance,

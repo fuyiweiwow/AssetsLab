@@ -262,3 +262,12 @@ completed 406 frames, but reported 74 body collisions and 1 self-collision, so
 the physics gate failed. The complete sim OBJ was nevertheless transferred to
 the Actor as the current visual diagnostic; it is not a milestone or random
 seed. The Gallery labels these metrics explicitly.
+
+## Smooth-normal diagnostic (2026-08-06)
+
+The raw GarmentCode render did not show the same strong horizontal bands as the
+Actor transfer. The next isolated test therefore kept the failed but complete
+profile sim OBJ unchanged and enabled smooth polygon normals only during the
+Blender transfer. This does not alter geometry, collisions, seams, or animation
+weights; it is a display-layer diagnostic. The current Gallery was overwritten
+with this result for visual comparison.
