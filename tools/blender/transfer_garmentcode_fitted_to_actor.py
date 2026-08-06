@@ -426,6 +426,28 @@ def apply_bone_shoulder_fit(
         else:
             source_y_bins[key] = (min(current[0], point.y), max(current[1], point.y))
 
+    source_depth_samples = [
+        (key * 0.05, bounds[0], bounds[1])
+        for key, bounds in sorted(source_y_bins.items())
+    ]
+
+    def source_depth(z: float) -> tuple[float, float]:
+        """Continuously interpolate the source garment's depth envelope."""
+        if z <= source_depth_samples[0][0]:
+            return source_depth_samples[0][1:]
+        if z >= source_depth_samples[-1][0]:
+            return source_depth_samples[-1][1:]
+        for first, second in zip(source_depth_samples, source_depth_samples[1:]):
+            z0, low0, high0 = first
+            z1, low1, high1 = second
+            if z0 <= z <= z1:
+                ratio = (z - z0) / max(z1 - z0, 1e-6)
+                return (
+                    low0 + (low1 - low0) * ratio,
+                    high0 + (high1 - high0) * ratio,
+                )
+        return source_depth_samples[-1][1:]
+
     def sampled_torso_half_width(z: float) -> float:
         """Sample the central torso, excluding detached arm lobes."""
         samples = [
@@ -490,7 +512,7 @@ def apply_bone_shoulder_fit(
             x_clamped += 1
 
         if garment_low_z <= world.z <= high_z:
-            source_low, source_high = source_y_bins[round(world.z / 0.05)]
+            source_low, source_high = source_depth(world.z)
             torso_low, torso_high = torso_depth(world.z)
             target_y_low = torso_low - clearance
             target_y_high = torso_high + clearance
@@ -516,7 +538,7 @@ def apply_bone_shoulder_fit(
         "hip_half_width": hip_half,
         "ease": ease,
         "band": {"low_z": low_z, "high_z": high_z},
-        "depth_fit": "actor_torso_slice_plus_clearance_by_0.05m_height_bin",
+        "depth_fit": "actor_torso_slice_plus_clearance_with_continuous_source_depth_interpolation",
         "width_fit": {
             "method": "sampled_actor_torso_width_linear_interpolation_with_shoulder_cap",
             "sample_step": sample_step,

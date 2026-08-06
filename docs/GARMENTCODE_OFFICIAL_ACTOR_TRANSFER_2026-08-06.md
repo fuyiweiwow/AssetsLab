@@ -300,3 +300,12 @@ GarmentCode completed 406 frames with 22 body collisions and 0 self-collisions,
 then transferred to Actor without a new visible penetration. This is the current
 Gallery candidate; the remaining horizontal back bands are a separate visual
 quality issue.
+
+## Continuous depth-envelope transfer (2026-08-06)
+
+The transfer previously mapped each garment vertex through a discrete 5 cm
+source-depth bin. The mapping now linearly interpolates the source garment
+envelope between adjacent height samples while keeping the same Actor torso
+clearance, bones, and physics OBJ. The back bands visibly weakened, confirming
+that the bin boundaries contributed to the artifact, but they did not disappear;
+the remaining portion is likely source mesh or texture structure.
