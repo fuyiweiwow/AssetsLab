@@ -192,3 +192,7 @@ Warp 编译产物、MCP 缓存和模拟日志，合计超过 1 GB。目录、版
 代理、测量 YAML、分区和最大模拟帧数等参数都在这里保留；因此同步仓库不会丢失
 本项目对上游测试脚本的 CLI 改动。`prototype/test_output/` 仍然只作为本地
 实验缓存，Gallery 静态审核资源才提交到 `prototype/preview/`。
+
+本轮下一步使用 `tools/garmentcode/apply_actor_torso_profile.py`：它只改变前后
+衣片的横向边界坐标，不改变衣片数量、缝合关系或人体 YAML，曲线强度写入输出
+specification，便于物理门禁和视觉审核分别定位问题。

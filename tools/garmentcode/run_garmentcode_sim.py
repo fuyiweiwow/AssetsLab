@@ -40,6 +40,9 @@ def main() -> int:
     args = parse_args()
     pattern_spec = args.pattern_spec.resolve()
     sim_config = args.sim_config.resolve()
+    body_obj = args.body_obj.resolve() if args.body_obj else None
+    body_measurements = args.body_measurements.resolve() if args.body_measurements else None
+    body_segmentation = args.body_segmentation.resolve() if args.body_segmentation else None
     if not pattern_spec.is_file():
         raise FileNotFoundError(pattern_spec)
     if not sim_config.is_file():
@@ -67,12 +70,12 @@ def main() -> int:
             smpl_body=False,
             add_timestamp=True,
         )
-        if args.body_obj:
-            paths.in_body_obj = args.body_obj.resolve()
-        if args.body_measurements:
-            paths.in_body_mes = args.body_measurements.resolve()
-        if args.body_segmentation:
-            paths.body_seg = args.body_segmentation.resolve()
+        if body_obj:
+            paths.in_body_obj = body_obj
+        if body_measurements:
+            paths.in_body_mes = body_measurements
+        if body_segmentation:
+            paths.body_seg = body_segmentation
 
         garment_box_mesh = BoxMesh(
             paths.in_g_spec, props["sim"]["config"]["resolution_scale"]

@@ -251,3 +251,14 @@ custom torso-panel boundary/side-edge construction, preserving the validated
 body preset and sewing topology. Cloth stiffness must be evaluated separately
 after that pattern is stable; `enable_body_smoothing` is not a garment smoothing
 switch and remains disabled.
+
+## Low-strength panel-profile preview (2026-08-06)
+
+The first custom panel-boundary experiment uses
+`tools/garmentcode/apply_actor_torso_profile.py` with `strength=0.30`. It leaves
+the four torso panels, seams, and body YAML unchanged and only scales their
+horizontal boundary coordinates against the sampled Actor curve. GarmentCode
+completed 406 frames, but reported 74 body collisions and 1 self-collision, so
+the physics gate failed. The complete sim OBJ was nevertheless transferred to
+the Actor as the current visual diagnostic; it is not a milestone or random
+seed. The Gallery labels these metrics explicitly.
