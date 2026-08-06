@@ -9,7 +9,10 @@ param(
     [string]$Output,
 
     [Parameter(Mandatory = $false)]
-    [string]$GarmentName = "GarmentCodeShirt_ActorTransfer"
+    [string]$GarmentName = "GarmentCodeShirt_ActorTransfer",
+
+    [Parameter(Mandatory = $false)]
+    [string]$GarmentNames = ""
 )
 
 $ErrorActionPreference = "Stop"
@@ -29,10 +32,15 @@ if (-not [string]::IsNullOrWhiteSpace($outputParent)) {
 }
 
 Write-Output "CLOTHING_FIT_GATE_BEGIN blend=$Blend garment=$GarmentName"
-& $BlenderPath --background --python $detector -- `
-    --blend $Blend `
-    --output $Output `
-    --garment-name $GarmentName
+$detectorArguments = @(
+    "--blend", $Blend,
+    "--output", $Output,
+    "--garment-name", $GarmentName
+)
+if (-not [string]::IsNullOrWhiteSpace($GarmentNames)) {
+    $detectorArguments += @("--garment-names", $GarmentNames)
+}
+& $BlenderPath --background --python $detector -- @detectorArguments
 $exitCode = $LASTEXITCODE
 
 if ($exitCode -eq 0) {

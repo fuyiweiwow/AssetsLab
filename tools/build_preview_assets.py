@@ -49,6 +49,13 @@ CLOTHING_REVIEW_CANDIDATES = (
         "status": "通过",
         "note": "用户确认的无袖上衣里程碑：采用官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖必须以此衣身为基线，只增加袖窿/袖筒结构。",
     },
+    {
+        "slug": "clothes_short_sleeve_from_confirmed_milestone_v1",
+        "label": "Current experiment / official-demo short sleeves",
+        "root": ROOT / "prototype/test_output/clothes_short_sleeve_from_confirmed_milestone_v1",
+        "status": "当前实验",
+        "note": "基于用户确认的无袖里程碑原样保留躯干，仅按 GarmentCode 官方短袖结构增加跟随上臂骨骼的短袖筒；自动适配门禁已通过，等待人工审核袖长、肩袖衔接与运动连续性。",
+    },
 )
 
 

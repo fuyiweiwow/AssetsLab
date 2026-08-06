@@ -15,6 +15,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -44,6 +45,14 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--clean-render-surface", action="store_true")
     parser.add_argument("--render-surface-clearance", type=float, default=0.035)
     parser.add_argument("--build-clean-render-garment", action="store_true")
+    parser.add_argument("--build-clean-short-sleeve-render-garment", action="store_true")
+    parser.add_argument(
+        "--reuse-existing-render-pair",
+        action="store_true",
+        help="keep the confirmed RenderGarment/AnimationProxy pair from the input blend",
+    )
+    parser.add_argument("--sleeve-length-fraction", type=float, default=0.42)
+    parser.add_argument("--sleeve-clearance", type=float, default=0.012)
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
@@ -71,6 +80,12 @@ def apply_render_subdivision(obj: bpy.types.Object, level: int) -> dict[str, int
     bpy.ops.object.select_all(action="DESELECT")
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
+    # Apply the render-only subdivision before any deformation modifier. This
+    # is especially important for the short sleeves: their Armature modifier
+    # must remain after subdivision so the generated cuff follows the upperarm
+    # without Blender warning that the requested modifier is not first.
+    while obj.modifiers.find(modifier.name) > 0:
+        bpy.ops.object.modifier_move_up(modifier=modifier.name)
     bpy.ops.object.modifier_apply(modifier=modifier.name)
     obj.select_set(False)
     for polygon in obj.data.polygons:
@@ -613,6 +628,136 @@ def build_clean_tank_render_mesh(
     }
 
 
+def build_clean_short_sleeve_mesh(
+    scene: bpy.types.Scene,
+    actor: bpy.types.Object,
+    armature: bpy.types.Object,
+    proxy: bpy.types.Object,
+    clearance: float,
+    length_fraction: float,
+) -> tuple[bpy.types.Object, dict[str, object]]:
+    """Build short sleeve tubes from the Actor upper-arm bones.
+
+    The confirmed milestone torso remains the Surface Deform garment. Sleeves
+    are separate rigid-ish shells because the milestone animation proxy has no
+    arm geometry for Surface Deform to follow. Their construction follows the
+    official GarmentCode short-sleeve idea: a connected armhole-side band,
+    short length, and an open cuff with no hand coverage.
+    """
+    if not 0.25 <= length_fraction <= 0.65:
+        raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.65")
+    actor_points = evaluated_world_points(actor)
+    vertices: list[tuple[float, float, float]] = []
+    faces: list[tuple[int, int, int, int]] = []
+    side_indices: dict[str, list[int]] = {"left": [], "right": []}
+    ring_indices: dict[str, list[list[int]]] = {"left": [], "right": []}
+    segments = 10
+    ring_fractions = (0.02, 0.22, 0.52, 0.82, 1.0)
+
+    def add_sleeve(side: str, bone_name: str, sign: float) -> None:
+        bone = armature.pose.bones.get(bone_name)
+        if bone is None:
+            raise RuntimeError(f"missing sleeve bone: {bone_name}")
+        head = armature.matrix_world @ bone.head
+        tail = armature.matrix_world @ bone.tail
+        axis = (tail - head).normalized()
+        length = (tail - head).length * length_fraction
+        reference = Vector((0.0, 0.0, 1.0))
+        if abs(axis.dot(reference)) > 0.92:
+            reference = Vector((0.0, 1.0, 0.0))
+        radial_a = axis.cross(reference).normalized()
+        radial_b = axis.cross(radial_a).normalized()
+
+        rings: list[list[int]] = []
+        for ring_number, fraction in enumerate(ring_fractions):
+            center = head + axis * (length * fraction)
+            nearby = []
+            for point in actor_points:
+                projection = (point - head).dot(axis)
+                if -0.025 <= projection <= length + 0.035:
+                    radial = point - (head + axis * max(0.0, min(length, projection)))
+                    if radial.length <= 0.13 and point.x * sign > -0.015:
+                        nearby.append(radial.length)
+            measured = sorted(nearby)
+            if measured:
+                measured_radius = measured[int((len(measured) - 1) * 0.88)]
+            else:
+                measured_radius = 0.052
+            base_radius = max(0.045, min(0.078, measured_radius + clearance))
+            if ring_number == 0:
+                base_radius += 0.008
+            if ring_number == len(ring_fractions) - 1:
+                base_radius *= 0.94
+            ring: list[int] = []
+            for segment in range(segments):
+                angle = 2.0 * 3.141592653589793 * segment / segments
+                point = center + radial_a * (base_radius * math.cos(angle)) + radial_b * (base_radius * math.sin(angle))
+                ring.append(len(vertices))
+                vertices.append(tuple(point))
+                side_indices[side].append(ring[-1])
+            rings.append(ring)
+        ring_indices[side] = rings
+        for ring_a, ring_b in zip(rings, rings[1:]):
+            for segment in range(segments):
+                a = ring_a[segment]
+                b = ring_a[(segment + 1) % segments]
+                c = ring_b[(segment + 1) % segments]
+                d = ring_b[segment]
+                faces.append((a, b, c, d))
+
+    add_sleeve("left", "CC_Base_L_Upperarm", -1.0)
+    add_sleeve("right", "CC_Base_R_Upperarm", 1.0)
+    mesh = bpy.data.meshes.new("GarmentCodeCleanShortSleeveMesh")
+    mesh.from_pydata(vertices, [], faces)
+    mesh.update()
+    sleeves = bpy.data.objects.new("GarmentCodeShirt_ShortSleeves", mesh)
+    scene.collection.objects.link(sleeves)
+    sleeves["assetslab_role"] = "short_sleeve_render_garment"
+    sleeves["assetslab_deformation_source"] = "Actor upper-arm bones"
+    sleeves.matrix_world = Matrix.Identity(4)
+    if proxy.data.materials:
+        sleeves.data.materials.append(proxy.data.materials[0])
+    return sleeves, {
+        "enabled": True,
+        "method": "official_demo_short_sleeve_ratio_as_bone_following_open_cuff_shell",
+        "length_fraction_of_upperarm": length_fraction,
+        "clearance": clearance,
+        "segments_per_ring": segments,
+        "ring_fractions": list(ring_fractions),
+        "vertex_count": len(vertices),
+        "face_count": len(faces),
+        "left_vertex_indices": side_indices["left"],
+        "right_vertex_indices": side_indices["right"],
+    }
+
+
+def bind_short_sleeve_armature(
+    sleeves: bpy.types.Object,
+    armature: bpy.types.Object,
+    metadata: dict[str, object],
+) -> dict[str, object]:
+    """Bind each sleeve to its own upper-arm bone without hand weights."""
+    left = sleeves.vertex_groups.new(name="CC_Base_L_Upperarm")
+    right = sleeves.vertex_groups.new(name="CC_Base_R_Upperarm")
+    left_indices = [int(index) for index in metadata["left_vertex_indices"]]
+    right_indices = [int(index) for index in metadata["right_vertex_indices"]]
+    left.add(left_indices, 1.0, "REPLACE")
+    right.add(right_indices, 1.0, "REPLACE")
+    modifier = sleeves.modifiers.new("ShortSleevesArmatureDeform", "ARMATURE")
+    modifier.object = armature
+    for polygon in sleeves.data.polygons:
+        polygon.use_smooth = True
+    sleeves.data.update()
+    return {
+        "method": "rigid_upperarm_bone_groups",
+        "modifier": modifier.name,
+        "left_group": left.name,
+        "right_group": right.name,
+        "left_vertices": len(left_indices),
+        "right_vertices": len(right_indices),
+    }
+
+
 def render_walk(scene: bpy.types.Scene, output: Path, resolution: int) -> list[dict[str, object]]:
     low, high = visible_bounds()
     center = (low + high) * 0.5
@@ -673,31 +818,45 @@ def main() -> int:
     if armature is None:
         raise RuntimeError("input blend is missing Armature")
 
-    animation_proxy = proxy.copy()
-    animation_proxy.data = proxy.data.copy()
-    animation_proxy.name = "GarmentCodeShirt_AnimationProxy"
-    animation_proxy["assetslab_role"] = "animation_deform_proxy"
-    animation_proxy["assetslab_source"] = proxy.name
-    animation_proxy.parent = None
-    animation_proxy.matrix_world = proxy.matrix_world.copy()
-    animation_proxy.hide_render = True
-    animation_proxy.hide_viewport = False
-    animation_proxy.display_type = "WIRE"
-    scene.collection.objects.link(animation_proxy)
+    reused_render_pair = bool(options.reuse_existing_render_pair)
+    if reused_render_pair:
+        animation_proxy = bpy.data.objects.get("GarmentCodeShirt_AnimationProxy")
+        render_garment = bpy.data.objects.get("GarmentCodeShirt_RenderGarment")
+        if animation_proxy is None or render_garment is None:
+            raise RuntimeError("--reuse-existing-render-pair requires the confirmed AnimationProxy and RenderGarment")
+        if animation_proxy.type != "MESH" or render_garment.type != "MESH":
+            raise RuntimeError("existing render pair must contain mesh objects")
+        animation_proxy.hide_render = True
+        animation_proxy.hide_viewport = False
+        render_garment.hide_render = False
+        render_garment.hide_viewport = False
+        render_garment.display_type = "TEXTURED"
+    else:
+        animation_proxy = proxy.copy()
+        animation_proxy.data = proxy.data.copy()
+        animation_proxy.name = "GarmentCodeShirt_AnimationProxy"
+        animation_proxy["assetslab_role"] = "animation_deform_proxy"
+        animation_proxy["assetslab_source"] = proxy.name
+        animation_proxy.parent = None
+        animation_proxy.matrix_world = proxy.matrix_world.copy()
+        animation_proxy.hide_render = True
+        animation_proxy.hide_viewport = False
+        animation_proxy.display_type = "WIRE"
+        scene.collection.objects.link(animation_proxy)
 
-    render_garment = proxy.copy()
-    render_garment.data = proxy.data.copy()
-    render_garment.name = "GarmentCodeShirt_RenderGarment"
-    render_garment["assetslab_role"] = "render_garment"
-    render_garment["assetslab_deformation_source"] = proxy.name
-    render_garment.parent = None
-    render_garment.matrix_world = proxy.matrix_world.copy()
-    render_garment.hide_render = False
-    render_garment.hide_viewport = False
-    render_garment.display_type = "TEXTURED"
-    scene.collection.objects.link(render_garment)
-    for modifier in list(render_garment.modifiers):
-        render_garment.modifiers.remove(modifier)
+        render_garment = proxy.copy()
+        render_garment.data = proxy.data.copy()
+        render_garment.name = "GarmentCodeShirt_RenderGarment"
+        render_garment["assetslab_role"] = "render_garment"
+        render_garment["assetslab_deformation_source"] = proxy.name
+        render_garment.parent = None
+        render_garment.matrix_world = proxy.matrix_world.copy()
+        render_garment.hide_render = False
+        render_garment.hide_viewport = False
+        render_garment.display_type = "TEXTURED"
+        scene.collection.objects.link(render_garment)
+        for modifier in list(render_garment.modifiers):
+            render_garment.modifiers.remove(modifier)
 
     actor = bpy.data.objects.get("ChibiBaseMesh_AccuRIG_InputMesh")
     if actor is None:
@@ -720,9 +879,23 @@ def main() -> int:
             armature,
             options.render_surface_clearance,
         )
-        if options.build_clean_render_garment
-        else {"enabled": False}
+        if options.build_clean_render_garment and not reused_render_pair
+        else {
+            "enabled": False,
+            "method": "reused_confirmed_milestone_render_garment" if reused_render_pair else "not_requested",
+        }
     )
+    short_sleeves = None
+    short_sleeve_geometry = {"enabled": False}
+    if options.build_clean_short_sleeve_render_garment:
+        short_sleeves, short_sleeve_geometry = build_clean_short_sleeve_mesh(
+            scene,
+            actor,
+            armature,
+            proxy,
+            options.sleeve_clearance,
+            options.sleeve_length_fraction,
+        )
     clean_surface = (
         build_clean_render_surface(
             render_garment,
@@ -730,8 +903,8 @@ def main() -> int:
             actor,
             options.render_surface_clearance,
         )
-        if options.clean_render_surface
-        else {"enabled": False}
+        if options.clean_render_surface and not reused_render_pair
+        else {"enabled": False, "method": "reused_confirmed_milestone_surface" if reused_render_pair else "not_requested"}
     )
     if options.proxy_weighted_render:
         armature.data.pose_position = previous_pose_position
@@ -744,29 +917,51 @@ def main() -> int:
             options.animation_proxy_smooth_factor,
             options.animation_proxy_decimate_ratio,
         )
-        if options.clean_animation_proxy
-        else {"enabled": False, "vertex_count": len(animation_proxy.data.vertices)}
+        if options.clean_animation_proxy and not reused_render_pair
+        else {
+            "enabled": False,
+            "method": "reused_confirmed_milestone_animation_proxy" if reused_render_pair else "not_requested",
+            "vertex_count": len(animation_proxy.data.vertices),
+        }
     )
-    subdivision = apply_render_subdivision(render_garment, options.subdivision_level)
-    render_surface_smoothing = apply_render_surface_smoothing(
-        render_garment,
-        options.render_surface_smoothing_iterations,
-        options.render_surface_smoothing_factor,
+    subdivision = (
+        apply_render_subdivision(render_garment, options.subdivision_level)
+        if not reused_render_pair
+        else {"enabled": False, "method": "reused_confirmed_milestone_subdivision"}
+    )
+    render_surface_smoothing = (
+        apply_render_surface_smoothing(
+            render_garment,
+            options.render_surface_smoothing_iterations,
+            options.render_surface_smoothing_factor,
+        )
+        if not reused_render_pair
+        else {"enabled": False, "method": "reused_confirmed_milestone_surface_smoothing"}
     )
     render_weighted_normals = {"enabled": False, "reason": "continuous smooth normals are preferred for the demo side transition"}
     deformation = (
         bind_proxy_weighted_armature(render_garment, animation_proxy, armature)
-        if options.proxy_weighted_render
+        if options.proxy_weighted_render and not reused_render_pair
         else bind_surface_deform(render_garment, animation_proxy)
+        if not reused_render_pair
+        else {"enabled": True, "method": "reused_confirmed_milestone_surface_deform"}
     )
+    short_sleeve_binding = {"enabled": False}
+    short_sleeve_subdivision = {"enabled": False}
+    if short_sleeves is not None:
+        short_sleeve_binding = bind_short_sleeve_armature(short_sleeves, armature, short_sleeve_geometry)
+        short_sleeve_subdivision = apply_render_subdivision(short_sleeves, 1)
     post_deform_smoothing = (
         add_post_deform_surface_smoothing(
             render_garment,
             options.post_deform_smooth_iterations,
             options.post_deform_smooth_factor,
         )
-        if not options.proxy_weighted_render
-        else {"enabled": False}
+        if not options.proxy_weighted_render and not reused_render_pair
+        else {
+            "enabled": False,
+            "method": "reused_confirmed_milestone_post_deform_smoothing" if reused_render_pair else "weighted_render_route",
+        }
     )
     bpy.context.view_layer.update()
 
@@ -800,6 +995,13 @@ def main() -> int:
             "post_deform_smoothing": post_deform_smoothing,
             "deformation": deformation,
             "armature_modifier": any(modifier.type == "ARMATURE" for modifier in render_garment.modifiers),
+        },
+        "short_sleeves": {
+            "object": short_sleeves.name if short_sleeves is not None else None,
+            "geometry": short_sleeve_geometry,
+            "binding": short_sleeve_binding,
+            "subdivision": short_sleeve_subdivision,
+            "vertex_count": len(short_sleeves.data.vertices) if short_sleeves is not None else 0,
         },
         "animation": {
             "directions": list(DIRECTIONS),

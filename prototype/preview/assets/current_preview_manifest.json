@@ -15,13 +15,31 @@
         "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/back_00.png",
         "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/left_00.png"
       ]
+    },
+    {
+      "slug": "clothes_short_sleeve_from_confirmed_milestone_v1",
+      "label": "Current experiment / official-demo short sleeves",
+      "status": "当前实验",
+      "note": "基于用户确认的无袖里程碑原样保留躯干，仅按 GarmentCode 官方短袖结构增加跟随上臂骨骼的短袖筒；自动适配门禁已通过，等待人工审核袖长、肩袖衔接与运动连续性。",
+      "contact_sheet": "clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/4way_8frames.png",
+      "stills": [
+        "clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/front_00.png",
+        "clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/right_00.png",
+        "clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/back_00.png",
+        "clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/left_00.png"
+      ]
     }
   ],
   "files": [
     "4way_8frames.png",
+    "4way_8frames.png",
+    "back_00.png",
     "back_00.png",
     "front_00.png",
+    "front_00.png",
     "left_00.png",
+    "left_00.png",
+    "right_00.png",
     "right_00.png"
   ]
 }

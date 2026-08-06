@@ -22,11 +22,30 @@
 <body>
 <main>
   <h1>AssetsLab 服装里程碑</h1>
-  <p class="status">当前只保留用户确认的无袖上衣版本。其它服装实验候选已从本地生成资源和正式 Gallery 清理。</p>
+  <p class="status">保留用户确认的无袖上衣里程碑，并展示一个基于该里程碑的当前短袖实验；其它历史候选已清理。</p>
   <section class="panel hero">
     <h2>确认里程碑：无袖上衣</h2>
     <p>官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖实验必须以此衣身为基线，只增加袖窿与袖筒结构。</p>
     <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/4way_8frames.png" alt="无袖上衣四方向八帧动作总览"><figcaption>四方向 × 8 动作帧</figcaption></figure>
+  </section>
+  <section class="panel hero">
+    <h2>当前实验：官方 Demo 结构短袖</h2>
+    <p>躯干完全复用确认里程碑，仅增加沿左右上臂骨骼跟随的开放袖筒。GarmentCode 官方短袖参考为 <code>sleeveless=false</code>、<code>sleeve.length=0.30</code>、开放袖口；当前 Actor 专属映射为上臂长度比例 <code>0.65</code>、袖筒间隙 <code>0.012m</code>。自动适配门禁已通过，等待人工审核。</p>
+    <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/4way_8frames.png" alt="短袖四方向八帧动作总览"><figcaption>四方向 × 8 动作帧（当前实验）</figcaption></figure>
+  </section>
+  <section class="panel">
+    <h2>当前实验静止四视图</h2>
+    <div class="grid">
+      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/front_00.png" alt="短袖正面"><figcaption>正面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/right_00.png" alt="短袖右侧"><figcaption>右侧</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/back_00.png" alt="短袖背面"><figcaption>背面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/left_00.png" alt="短袖左侧"><figcaption>左侧</figcaption></figure>
+    </div>
+    <table>
+      <tr><th>候选目录</th><td><code>prototype/test_output/clothes_short_sleeve_from_confirmed_milestone_v1/</code></td></tr>
+      <tr><th>自动检测</th><td class="status">pass（躯干、袖筒合并检查）</td></tr>
+      <tr><th>人工状态</th><td>review_required：请重点检查袖长、肩袖衔接、侧面连续性和走路时袖口是否跟随上臂。</td></tr>
+    </table>
   </section>
   <section class="panel">
     <h2>静止四视图</h2>
@@ -39,6 +58,7 @@
   </section>
   <section class="panel">
     <h2>里程碑身份</h2>
+    <p><a href="clothes_milestone_audit_gallery.html">打开带勾选与备注的候选审核页</a></p>
     <table>
       <tr><th>候选目录</th><td><code>prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test/</code></td></tr>
       <tr><th>状态</th><td class="status">用户确认的无袖上衣里程碑</td></tr>

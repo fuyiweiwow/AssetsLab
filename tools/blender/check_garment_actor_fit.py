@@ -37,6 +37,11 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--blend", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
     parser.add_argument("--garment-name", default="GarmentCodeShirt_RenderGarment")
+    parser.add_argument(
+        "--garment-names",
+        default="",
+        help="comma-separated garment object names; the first object is the torso for hem checks",
+    )
     parser.add_argument("--actor-name", default="ChibiBaseMesh_AccuRIG_InputMesh")
     parser.add_argument("--armature-name", default="Armature")
     parser.add_argument("--penetration-threshold", type=float, default=0.010)
@@ -202,11 +207,14 @@ def main() -> int:
     options = cli_args()
     bpy.ops.wm.open_mainfile(filepath=str(options.blend.resolve()))
     scene = bpy.context.scene
-    garment = bpy.data.objects.get(options.garment_name)
+    garment_names = [name.strip() for name in options.garment_names.split(",") if name.strip()]
+    if not garment_names:
+        garment_names = [options.garment_name]
+    garments = [bpy.data.objects.get(name) for name in garment_names]
     actor = bpy.data.objects.get(options.actor_name)
     armature = bpy.data.objects.get(options.armature_name)
-    if garment is None or garment.type != "MESH":
-        raise RuntimeError(f"missing garment mesh: {options.garment_name}")
+    if any(garment is None or garment.type != "MESH" for garment in garments):
+        raise RuntimeError(f"missing garment mesh: {', '.join(garment_names)}")
     if actor is None or actor.type != "MESH":
         raise RuntimeError(f"missing Actor mesh: {options.actor_name}")
     if armature is None or armature.type != "ARMATURE":
@@ -237,27 +245,48 @@ def main() -> int:
     for frame in sample_frames:
         scene.frame_set(frame)
         bpy.context.view_layer.update()
-        garment_points, garment_polygons = evaluated_points(garment)
+        garment_points: list[Vector] = []
+        garment_polygons: list[tuple[int, ...]] = []
+        torso_points: list[Vector] = []
+        torso_polygons: list[tuple[int, ...]] = []
+        for object_index, garment_object in enumerate(garments):
+            object_points, object_polygons = evaluated_points(garment_object)
+            offset = len(garment_points)
+            garment_points.extend(object_points)
+            if object_index == 0:
+                torso_points = object_points
+                torso_polygons = object_polygons
+            garment_polygons.extend(
+                tuple(vertex_index + offset for vertex_index in polygon)
+                for polygon in object_polygons
+            )
         actor_points, actor_polygons = evaluated_points(actor)
         actor_torso_points = torso_weighted_points(actor)
         actor_bvh = make_bvh(actor_points, actor_polygons)
-        bottom_z = min(point.z for point in garment_points)
+        bottom_z = min(point.z for point in torso_points)
+        torso_top_z = max(point.z for point in torso_points)
         top_z = max(point.z for point in garment_points)
+        torso_indices = set(range(len(torso_points)))
         signed_distances = [nearest_signed_distance(actor_bvh, point) for point in garment_points]
         shoulder_bridge_items = [
             (index, signed, distance)
             for index, (signed, distance) in enumerate(signed_distances)
-            if garment_points[index].z >= top_z - 0.13
+            if (
+                garment_points[index].z >= (
+                    torso_top_z - 0.13 if index in torso_indices else top_z - 0.13
+                )
+            )
             and abs(garment_points[index].x) >= 0.10
             and abs(garment_points[index].y) < 0.08
         ]
+        shoulder_bridge_indices = {index for index, _signed, _distance in shoulder_bridge_items}
         depth_penetration_items = []
         depth_gap_items = []
         for index, point in enumerate(garment_points):
             if (
                 abs(point.y) < 0.08
                 or abs(point.x) > 0.24
-                or (index, signed_distances[index][0], signed_distances[index][1]) in shoulder_bridge_items
+                or index in shoulder_bridge_indices
             ):
                 continue
             depth_range = local_depth_range(actor_torso_points, point)
@@ -275,8 +304,11 @@ def main() -> int:
             if gap > 0.0:
                 depth_gap_items.append((index, point.y, gap))
         penetration_items = depth_penetration_items
-        hem_limit = bottom_z + max(0.20, (top_z - bottom_z) * 0.22)
-        hem_penetration_items = [item for item in penetration_items if garment_points[item[0]].z <= hem_limit]
+        hem_limit = bottom_z + max(0.20, (torso_top_z - bottom_z) * 0.22)
+        hem_penetration_items = [
+            item for item in penetration_items
+            if item[0] in torso_indices and garment_points[item[0]].z <= hem_limit
+        ]
         body_penetration_items = [item for item in penetration_items if garment_points[item[0]].z > hem_limit]
         detached_items = [
             item for item in depth_gap_items if garment_points[item[0]].z < top_z - 0.13
@@ -284,6 +316,9 @@ def main() -> int:
         penetrations = [signed for _index, signed, _distance in penetration_items]
         detached = [distance for _index, _signed, distance in detached_items]
         boundary = boundary_diagnostics(garment_points, garment_polygons, bottom_z, top_z)
+        torso_boundary = boundary_diagnostics(torso_points, torso_polygons, bottom_z, torso_top_z)
+        boundary["back_interior_boundary_edge_count"] = torso_boundary["back_interior_boundary_edge_count"]
+        boundary["back_interior_boundary_examples"] = torso_boundary["back_interior_boundary_examples"]
         shoulder = shoulder_check(
             garment_points,
             actor_bvh,
@@ -346,7 +381,7 @@ def main() -> int:
     result = {
         "schema": "assetslab_garment_actor_fit_check_v2",
         "source_blend": str(options.blend.resolve()),
-        "garment": garment.name,
+        "garment": garment_names,
         "actor": actor.name,
         "sample_frames": sample_frames,
         "thresholds": {
