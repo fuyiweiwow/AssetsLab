@@ -49,6 +49,10 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
     parser.add_argument("--animation-proxy-smooth-factor", type=float, default=0.35)
     parser.add_argument("--animation-proxy-decimate-ratio", type=float, default=0.30)
+    parser.add_argument("--post-deform-smooth-iterations", type=int, default=4)
+    parser.add_argument("--post-deform-smooth-factor", type=float, default=0.30)
+    parser.add_argument("--render-surface-smoothing-iterations", type=int, default=2)
+    parser.add_argument("--render-surface-smoothing-factor", type=float, default=0.15)
     return parser.parse_args(argv)
 
 
@@ -73,6 +77,65 @@ def apply_render_subdivision(obj: bpy.types.Object, level: int) -> dict[str, int
         polygon.use_smooth = True
     obj.data.update()
     return {"before_vertices": before, "after_vertices": len(obj.data.vertices), "level": level}
+
+
+def apply_render_surface_smoothing(
+    obj: bpy.types.Object,
+    iterations: int = 2,
+    factor: float = 0.15,
+) -> dict[str, object]:
+    """Soften the low-poly side transition without changing its landmarks."""
+    if iterations < 0 or not 0.0 < factor <= 1.0:
+        raise RuntimeError("invalid render surface smoothing parameters")
+    if iterations == 0:
+        return {"enabled": False, "iterations": 0, "factor": factor}
+    modifier = obj.modifiers.new("RenderGarmentSurfaceSmoothing", "SMOOTH")
+    modifier.factor = factor
+    modifier.iterations = iterations
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    result = bpy.ops.object.modifier_apply(modifier=modifier.name)
+    obj.select_set(False)
+    if "FINISHED" not in result:
+        raise RuntimeError(f"render surface smoothing did not finish: {result}")
+    for polygon in obj.data.polygons:
+        polygon.use_smooth = True
+    obj.data.update()
+    return {"enabled": True, "iterations": iterations, "factor": factor}
+
+
+def apply_render_weighted_normals(obj: bpy.types.Object) -> dict[str, object]:
+    """Keep the side arc visually continuous at the low-resolution render scale."""
+    modifier = obj.modifiers.new("RenderGarmentWeightedNormals", "WEIGHTED_NORMAL")
+    modifier.keep_sharp = False
+    modifier.weight = 50
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = obj
+    obj.select_set(True)
+    result = bpy.ops.object.modifier_apply(modifier=modifier.name)
+    obj.select_set(False)
+    if "FINISHED" not in result:
+        raise RuntimeError(f"weighted normal calculation did not finish: {result}")
+    obj.data.update()
+    return {"enabled": True, "weight": 50, "keep_sharp": False}
+
+
+def add_post_deform_surface_smoothing(
+    obj: bpy.types.Object,
+    iterations: int = 4,
+    factor: float = 0.30,
+) -> dict[str, object]:
+    """Smooth the deformed result, where the visible side highlight is formed."""
+    if iterations < 0 or not 0.0 < factor <= 1.0:
+        raise RuntimeError("invalid post-deform smoothing parameters")
+    if iterations == 0:
+        return {"enabled": False, "iterations": 0, "factor": factor}
+    modifier = obj.modifiers.new("PostDeformSurfaceSmoothing", "SMOOTH")
+    modifier.factor = factor
+    modifier.iterations = iterations
+    obj.data.update()
+    return {"enabled": True, "iterations": iterations, "factor": factor, "order": "after_deformation"}
 
 
 def apply_animation_proxy_cleanup(
@@ -390,10 +453,14 @@ def build_clean_tank_render_mesh(
         hem_z + span * 0.88,
         shoulder_top_z,
     ]
-    # Restore the demo proportions: a compact upper panel and broad continuous
-    # shoulder material read as one shirt. The previous 0.92/1.0 profile made
-    # the top bridge too wide and visually turned the garment into a plate.
-    half_widths = [0.340, 0.345, 0.340, 0.325, 0.300, 0.290, 0.300]
+    # Restore the accepted demo proportions: a compact upper panel and a broad
+    # continuous shoulder material that reads as one shirt. The side transition
+    # is sampled separately below, but the outer panel must retain this width so
+    # Catmull-Clark has enough support around the open hem.
+    # Add a small lower support allowance for the open hem. This is not a
+    # global scale change: the extra 0.015--0.020 m only covers the upper-thigh
+    # envelope where Catmull-Clark otherwise pulls the side transition inward.
+    half_widths = [0.370, 0.375, 0.365, 0.325, 0.300, 0.290, 0.300]
     # Keep the front/back panel just inside the lateral ridge. The extra ridge
     # vertex below turns the former 90-degree side wall into a three-part
     # rounded transition: front panel -> side arc -> back panel.
@@ -434,6 +501,16 @@ def build_clean_tank_render_mesh(
             for normalized_x in row_profile:
                 front, rear = depth_at(normalized_x * width, z)
                 y = rear if back else front
+                # The official demo begins wrapping before the panel edge.
+                # Blend the outer 0.68 -> 0.92 band toward the side midpoint
+                # so the first side-arc sample is tangent instead of reading
+                # as a sewn vertical line.
+                side_wrap = max(0.0, min(1.0, (abs(normalized_x) - 0.68) / 0.24))
+                if side_wrap > 0.0:
+                    if back:
+                        y -= (rear - front) * 0.30 * side_wrap
+                    else:
+                        y += (rear - front) * 0.30 * side_wrap
                 local_z = z
                 if row == len(z_rows) - 1:
                     # A sleeveless shoulder rises from the neckline toward the
@@ -461,22 +538,31 @@ def build_clean_tank_render_mesh(
 
     front_rows = add_panel(back=False)
     back_rows = add_panel(back=True)
-    left_ridge: list[int] = []
-    right_ridge: list[int] = []
+    left_arcs: list[list[int]] = []
+    right_arcs: list[list[int]] = []
     for z, width in zip(z_rows, half_widths):
         left_front, left_back = depth_at(-width, z)
         right_front, right_back = depth_at(width, z)
-        left_ridge.append(len(vertices))
-        vertices.append((-width, (left_front + left_back) * 0.5, z))
-        right_ridge.append(len(vertices))
-        vertices.append((width, (right_front + right_back) * 0.5, z))
+        left_row: list[int] = []
+        right_row: list[int] = []
+        # Use three shallow arc samples instead of a single visible ridge.
+        # This follows the dense demo mesh's gradual front/side/back normal
+        # change and prevents one highlight line at the side seam.
+        for x_factor, depth_fraction in ((0.94, 0.30), (0.97, 0.50), (0.94, 0.70)):
+            left_row.append(len(vertices))
+            vertices.append((-width * x_factor, left_front + (left_back - left_front) * depth_fraction, z))
+            right_row.append(len(vertices))
+            vertices.append((width * x_factor, right_front + (right_back - right_front) * depth_fraction, z))
+        left_arcs.append(left_row)
+        right_arcs.append(right_row)
     for row in range(len(z_rows) - 1):
-        # Left front -> side ridge -> left back.
-        faces.append((front_rows[row][0], left_ridge[row], left_ridge[row + 1], front_rows[row + 1][0]))
-        faces.append((left_ridge[row], back_rows[row][0], back_rows[row + 1][0], left_ridge[row + 1]))
-        # Right front -> side ridge -> right back.
-        faces.append((front_rows[row][5], front_rows[row + 1][5], right_ridge[row + 1], right_ridge[row]))
-        faces.append((right_ridge[row], right_ridge[row + 1], back_rows[row + 1][5], back_rows[row][5]))
+        left_chain = [front_rows[row][0], *left_arcs[row], back_rows[row][0]]
+        left_next = [front_rows[row + 1][0], *left_arcs[row + 1], back_rows[row + 1][0]]
+        right_chain = [front_rows[row][5], *right_arcs[row], back_rows[row][5]]
+        right_next = [front_rows[row + 1][5], *right_arcs[row + 1], back_rows[row + 1][5]]
+        for segment in range(4):
+            faces.append((left_chain[segment], left_chain[segment + 1], left_next[segment + 1], left_next[segment]))
+            faces.append((right_chain[segment], right_next[segment], right_next[segment + 1], right_chain[segment + 1]))
 
     # The demo joins the outer and inner bands into continuous shoulders. This
     # keeps the side silhouette connected and avoids floating shoulder tabs.
@@ -520,9 +606,9 @@ def build_clean_tank_render_mesh(
         "side_transition": {
             "enabled": True,
             "panel_outer_x": 0.92,
-            "lateral_ridge_x": 1.0,
-            "ridge_depth": "midpoint_of_sampled_front_back_depth",
-            "faces_per_side_per_row": 2,
+            "lateral_ridge_x": [0.94, 0.97, 0.94],
+            "ridge_depth": [0.30, 0.50, 0.70],
+            "faces_per_side_per_row": 4,
         },
     }
 
@@ -662,10 +748,25 @@ def main() -> int:
         else {"enabled": False, "vertex_count": len(animation_proxy.data.vertices)}
     )
     subdivision = apply_render_subdivision(render_garment, options.subdivision_level)
+    render_surface_smoothing = apply_render_surface_smoothing(
+        render_garment,
+        options.render_surface_smoothing_iterations,
+        options.render_surface_smoothing_factor,
+    )
+    render_weighted_normals = {"enabled": False, "reason": "continuous smooth normals are preferred for the demo side transition"}
     deformation = (
         bind_proxy_weighted_armature(render_garment, animation_proxy, armature)
         if options.proxy_weighted_render
         else bind_surface_deform(render_garment, animation_proxy)
+    )
+    post_deform_smoothing = (
+        add_post_deform_surface_smoothing(
+            render_garment,
+            options.post_deform_smooth_iterations,
+            options.post_deform_smooth_factor,
+        )
+        if not options.proxy_weighted_render
+        else {"enabled": False}
     )
     bpy.context.view_layer.update()
 
@@ -694,6 +795,9 @@ def main() -> int:
             "clean_render_garment": clean_render_garment,
             "clean_surface": clean_surface,
             "subdivision": subdivision,
+            "surface_smoothing": render_surface_smoothing,
+            "weighted_normals": render_weighted_normals,
+            "post_deform_smoothing": post_deform_smoothing,
             "deformation": deformation,
             "armature_modifier": any(modifier.type == "ARMATURE" for modifier in render_garment.modifiers),
         },

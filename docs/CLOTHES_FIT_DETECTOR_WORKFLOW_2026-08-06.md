@@ -47,7 +47,7 @@ review.
 The candidate promoted to Gallery current uses:
 
 - Actor frame-1 bind-pose measurements;
-- `--render-surface-clearance 0.035`;
+- `--render-surface-clearance 0.050`;
 - Catmull-Clark subdivision level 2;
 - open hem;
 - Surface Deform to the Animation Proxy;
@@ -59,9 +59,11 @@ sleeveless prototype, not yet a general random-clothing generator or a
 milestone for sleeves, trousers, armor, or clothing randomization.
 
 The current proportions are intentionally taken from the striped demo review:
-the lower width is approximately 0.34 m, the lower edge is approximately
-`z=0.775 m`, and the upper shoulder envelope is approximately ±0.31 m. These
-are clothing bounds, not global Actor scaling parameters.
+the lower edge remains approximately `z=0.775 m`; lower support rows use
+half-widths `0.370/0.375/0.365 m` to cover the upper-thigh envelope, middle
+rows taper to `0.325/0.300/0.290 m`, and the upper shoulder envelope remains
+approximately +/-0.31 m. These are clothing bounds, not global Actor scaling
+parameters.
 
 ## Parameter provenance and tools
 
@@ -74,10 +76,10 @@ freehand drawing:
 | shoulder joint height | `Armature`, `CC_Base_L_Upperarm.head` left/right | mean z ≈ 1.391 m in bind frame |
 | shoulder surface top | `Armature`, `CC_Base_L/R_Clavicle.tail` plus shoulder margin | max(clavicle tail, upperarm head) + 0.080 m |
 | hem anchor | `Armature`, `CC_Base_Waist.tail` | waist tail - 0.015 m, z ≈ 0.775 m |
-| torso front/back depth | `ChibiBaseMesh_AccuRIG_InputMesh`, torso-weighted vertices in local x/z slices | robust 5th/95th percentile y + 0.035 m clearance |
-| lower and shoulder width | last accepted striped demo render envelope | lower half-width ≈ 0.34 m; shoulder envelope ≈ ±0.31 m |
+| torso front/back depth | `ChibiBaseMesh_AccuRIG_InputMesh`, torso-weighted vertices in local x/z slices | robust 5th/95th percentile y + 0.050 m clearance |
+| lower and shoulder width | last accepted striped demo render envelope plus lower support rows | lower support half-widths 0.370/0.375/0.365 m; shoulder envelope approximately +/-0.31 m |
 | vertical interpolation | hem-to-shoulder span | normalized rows 0.00, 0.09, 0.31, 0.575, 0.72, 0.88, 1.00 |
-| neckline and shoulders | clean shell topology | x profile `(-1,-0.68,-0.34,0.34,0.68,1)`; front opening `(0.34,0.50,0.60)`; top bridges columns `0,1,4` |
+| neckline and shoulders | clean shell topology | x profile `(-0.92,-0.68,-0.34,0.34,0.68,0.92)`; front opening `(0.34,0.50,0.60)`; top bridges columns `0,1,4` |
 
 The torso depth sample includes vertices weighted to `CC_Base_Pelvis`,
 `CC_Base_Waist`, `CC_Base_Spine01`, `CC_Base_Spine02`, both clavicles, and both
@@ -100,19 +102,23 @@ The current render chain is therefore:
 
 ## Front-to-side transition rule
 
-The front/side discontinuity was corrected without changing the accepted
-shoulder or hem measurements. The front and back panels now use an outer
-normalized x value of `±0.92`, while each row adds a lateral ridge at `±1.00`
-with y equal to the midpoint of the sampled front/back torso depths. Each side
-is built as two faces per row:
+The front/side discontinuity is corrected using the same principle visible in
+the official GarmentCode demo: a continuous cloth surface with a gradual
+normal change, not a separate sewn-on side strip. The accepted shoulder and
+hem landmarks remain unchanged. The front and back panels use an outer
+normalized x value of +/-0.92. Between them, each row uses three lateral
+samples at x factors `0.94/0.97/0.94` and depth fractions `0.30/0.50/0.70`,
+making four faces per side and row:
 
-`front panel -> lateral midpoint ridge -> back panel`
+`front panel -> three lateral samples -> back panel`
 
 This replaces the old single vertical front-to-back wall, which created a hard
-90-degree fold even after Catmull-Clark smoothing. The side ridge is generated
-by `build_garment_proxy_render_pair.py`, recorded in `manifest.json`, and
-validated by the same eight-frame fit detector. It is a topology rule, not a
-new global scale factor.
+90-degree fold even after Catmull-Clark smoothing. The lower support rows and
+0.050 m torso clearance are fit guards for the open hem; they do not change the
+shoulder, neckline, or overall Actor scale. Render-only smoothing is disabled
+for this candidate because it pulled the open hem inward during walking. The
+geometry, transition samples, and smoothing switches are written to
+`manifest.json` and validated by the same eight-frame fit detector.
 
 ## Reproduction
 
@@ -121,9 +127,11 @@ new global scale factor.
   --input-blend prototype/test_output/garmentcode_actor_proxy_current/garmentcode_actor_transfer_candidate.blend `
   --output prototype/test_output/garmentcode_proxy_render_pair_current `
   --subdivision-level 2 --build-clean-render-garment `
-  --render-surface-clearance 0.035 --clean-animation-proxy `
+  --render-surface-clearance 0.050 --clean-animation-proxy `
   --animation-proxy-smooth-iterations 6 --animation-proxy-smooth-factor 0.35 `
-  --animation-proxy-decimate-ratio 0.30 --resolution 256
+  --animation-proxy-decimate-ratio 0.30 `
+  --render-surface-smoothing-iterations 0 --post-deform-smooth-iterations 0 `
+  --resolution 256
 
 & blender.exe --background --python tools/blender/check_garment_actor_fit.py -- `
   --blend prototype/test_output/garmentcode_proxy_render_pair_current/garmentcode_proxy_render_pair_candidate.blend `
