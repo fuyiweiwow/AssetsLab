@@ -27,9 +27,9 @@
     },
     {
       "slug": "garmentcode_actor_proxy_current",
-      "label": "Current experiment / Actor-derived short sleeve v1",
+      "label": "Current experiment / official milestone transferred to Actor",
       "status": "当前实验",
-      "note": "Current review candidate: Actor-derived shirt body plus independently bone-driven upper-arm sleeves. This is the first short-sleeve topology experiment; it is review_required and does not replace the saved sleeveless baseline until sleeve cuff, armpit, back integrity, and movement checks pass.",
+      "note": "Current review candidate: the official GarmentCode neutral-body milestone with its U-neck and sewn short sleeves, transferred to the Actor with side-preserving projection and Actor armature weights. It remains review_required until neckline, sleeve/armhole continuity, back integrity, and movement checks pass. The sleeveless baseline is preserved.",
       "contact_sheet": "clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png",
       "stills": [
         "clothes_gallery/garmentcode_actor_proxy_current/front_00.png",
