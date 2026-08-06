@@ -281,3 +281,12 @@ diagnostic limit without static-equilibrium completion and reported 145 body
 collisions and 10 self-collisions. The result was not transferred or published:
 mesh refinement alone worsened contact stability and is not the next control
 variable.
+
+## Collision-thickness test (2026-08-06)
+
+Keeping the profile pattern unchanged, the Warp body collision thickness was
+lowered from `0.25` to `0.10`. The 120-frame diagnostic became less stable:
+386 body collisions and a self-intersection were reported. This rejects the
+"collision shell is too thick" hypothesis; the next correction must restore
+garment ease or change the panel profile construction rather than reduce the
+collision thickness.
