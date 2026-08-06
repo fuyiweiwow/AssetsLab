@@ -33,7 +33,10 @@
 
 ## Actor 转移结果
 
-当前候选：`prototype/test_output/clothes_next_short_sleeve_official_transfer_v1/`
+历史候选：`prototype/test_output/clothes_next_short_sleeve_official_transfer_v1/`
+
+该候选已在里程碑清理中删除。官方短袖参数和 Warp 结果仅保留为设计参考，
+后续必须从用户确认的无袖 Actor 里程碑重新构建。
 
 转移参数沿用已验证的官方源转移路线：侧面保持投影、`clearance=0.018`、
 `front_flatten=0.008`、`back_clearance=0.008`、`sleeve_clearance=0.006`，并继承

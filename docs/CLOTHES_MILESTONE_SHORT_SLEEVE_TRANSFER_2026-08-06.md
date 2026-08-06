@@ -22,9 +22,11 @@ T-shirt 里程碑，以避免重新手工构造领口、袖窿和袖片。
 3. 继承 Actor 顶点权重和 Armature modifier，让衣服跟随 walk action；
 4. 通过四方向 × 8 帧 Gallery 审核领口、袖窿、背部和动作连续性。
 
-## 当前候选
+## 历史候选
 
 `prototype/test_output/garmentcode_actor_official_neutral_v3_surface_bias/`
+
+该候选已删除。它不是用户确认的无袖里程碑，不能作为后续短袖输入。
 
 它仍然是 `review_required`，不替换已保存的无袖基线，也不进入随机池。只有
 领口稳定、袖口和腋下连续、背面完整且动作帧不穿模后，才可作为短袖里程碑。

@@ -59,7 +59,10 @@ Gallery 截图把它提升为通过。
 
 ## 当前官方短袖参数化转移结果
 
-候选：`prototype/test_output/clothes_next_short_sleeve_official_transfer_v1/`
+历史候选：`prototype/test_output/clothes_next_short_sleeve_official_transfer_v1/`
+
+该候选已在 2026-08-06 里程碑清理中删除，不再是当前输入，也不应从文档中的
+历史路径恢复为短袖基线。
 
 已运行统一检测，结果为 `fail`：
 

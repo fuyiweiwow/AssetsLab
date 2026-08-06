@@ -3,59 +3,47 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AssetsLab 服装审核 Gallery</title>
+  <title>AssetsLab 服装里程碑</title>
   <style>
-    :root { color-scheme: dark; --bg:#111522; --panel:#1b2233; --line:#35415d; --text:#f4f5f7; --muted:#aeb9cc; --ok:#a5e8bb; --warn:#ffd18a; }
+    :root { color-scheme: dark; --bg:#101827; --panel:#18243a; --line:#31425f; --text:#e7eef9; --muted:#a9b7cc; --ok:#9ee6b5; }
     * { box-sizing:border-box; }
-    body { margin:0; background:linear-gradient(150deg,#101522,#1d2639); color:var(--text); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
-    main { width:min(1180px,100%); margin:auto; padding:24px 14px 48px; }
-    h1 { margin:0 0 6px; font-size:clamp(26px,5vw,40px); }
-    h2 { margin:0 0 10px; font-size:21px; }
-    p { color:var(--muted); margin:6px 0 12px; }
-    .panel { margin:16px 0; padding:16px; border:1px solid var(--line); border-radius:16px; background:rgba(27,34,51,.92); }
-    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
-    figure { margin:0; padding:10px; border:1px solid var(--line); border-radius:12px; background:#0c101b; }
-    img { display:block; width:100%; max-height:520px; object-fit:contain; background:#080b13; border-radius:8px; image-rendering:auto; }
-    figcaption { padding-top:8px; color:var(--muted); font-size:14px; }
-    .ok { color:var(--ok); }
-    .status { color:var(--warn); }
-    .tag { display:inline-block; margin:2px 6px 2px 0; padding:4px 8px; border:1px solid var(--line); border-radius:999px; color:#8fd3ff; font-size:13px; }
+    body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(1100px,100%); margin:auto; padding:18px 14px 42px; }
+    h1 { margin:0 0 6px; font-size:28px; } h2 { margin:0 0 10px; font-size:20px; }
+    p { color:var(--muted); margin:7px 0 13px; } code { color:#d8e7ff; word-break:break-word; }
+    .status { color:var(--ok); } .panel { margin:16px 0; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
+    figure { margin:0; padding:9px; border:1px solid var(--line); border-radius:10px; background:#0c1320; }
+    img { display:block; width:100%; background:#27344a; border-radius:7px; image-rendering:auto; } figcaption { padding-top:7px; color:var(--muted); font-size:13px; }
+    .hero img { max-height:640px; object-fit:contain; } table { width:100%; border-collapse:collapse; } th,td { padding:8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { color:#8bd3ff; width:180px; }
+    @media (max-width:650px) { main { padding:12px 9px 30px; } .panel { padding:11px; } }
   </style>
 </head>
 <body>
 <main>
-  <h1>AssetsLab 服装审核 Gallery</h1>
-  <p>页面只保留通过的里程碑结果和当前实验。普通失败尝试不会长期堆积；下一次实验会覆盖 current。</p>
-  <div><span class="tag">milestones</span><span class="tag">current experiment</span><span class="tag">headless Blender</span><span class="tag">Tailscale</span></div>
-
+  <h1>AssetsLab 服装里程碑</h1>
+  <p class="status">当前只保留用户确认的无袖上衣版本。其它服装实验候选已从本地生成资源和正式 Gallery 清理。</p>
+  <section class="panel hero">
+    <h2>确认里程碑：无袖上衣</h2>
+    <p>官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖实验必须以此衣身为基线，只增加袖窿与袖筒结构。</p>
+    <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/4way_8frames.png" alt="无袖上衣四方向八帧动作总览"><figcaption>四方向 × 8 动作帧</figcaption></figure>
+  </section>
   <section class="panel">
-    <h2>通过里程碑：GarmentCode neutral T-shirt</h2>
-    <p class="ok">通过：官方 neutral body，Warp 模拟完成，无身体碰撞和自交。</p>
+    <h2>静止四视图</h2>
     <div class="grid">
-      <figure><img src="assets/clothes_gallery/garmentcode_official_neutral_v1/front_00.png" alt="GarmentCode neutral front"><figcaption>front</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_official_neutral_v1/back_00.png" alt="GarmentCode neutral back"><figcaption>back</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/front_00.png" alt="正面"><figcaption>正面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/right_00.png" alt="右侧"><figcaption>右侧</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/back_00.png" alt="背面"><figcaption>背面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/left_00.png" alt="左侧"><figcaption>左侧</figcaption></figure>
     </div>
   </section>
-
   <section class="panel">
-    <h2>通过里程碑：GarmentCode mean_male T-shirt</h2>
-    <p class="ok">通过：官方 mean_male body，作为第二个物理基准保留。</p>
-    <div class="grid">
-      <figure><img src="assets/clothes_gallery/garmentcode_official_mean_male_v1/front_00.png" alt="GarmentCode mean male front"><figcaption>front</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_official_mean_male_v1/back_00.png" alt="GarmentCode mean male back"><figcaption>back</figcaption></figure>
-    </div>
-  </section>
-
-  <section class="panel">
-    <h2>当前实验：Clean Render Garment + Physics Proxy</h2>
-    <p class="status">当前：保留已通过物理门禁的 GarmentCode 结果作为 Physics Proxy，独立生成规则四边面无袖 Render Garment（U 型领口、肩带、侧缝、下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy。背部条带已消除；仍需审核领口比例、肩带宽度和动作帧，下一次实验将覆盖本目录。</p>
-    <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png" alt="Physics proxy and render garment current experiment"><figcaption>front / right / back / left × 8 frames</figcaption></figure>
-    <div class="grid" style="margin-top:12px">
-      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/front_00.png" alt="Current front"><figcaption>front</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/right_00.png" alt="Current right"><figcaption>right</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/back_00.png" alt="Current back"><figcaption>back</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/left_00.png" alt="Current left"><figcaption>left</figcaption></figure>
-    </div>
+    <h2>里程碑身份</h2>
+    <table>
+      <tr><th>候选目录</th><td><code>prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test/</code></td></tr>
+      <tr><th>状态</th><td class="status">用户确认的无袖上衣里程碑</td></tr>
+      <tr><th>后续规则</th><td>短袖必须保留当前衣身的衣长、下摆、领口和侧面连续过渡，只增加官方 Demo 风格的袖窿与短袖结构。</td></tr>
+    </table>
   </section>
 </main>
 </body>

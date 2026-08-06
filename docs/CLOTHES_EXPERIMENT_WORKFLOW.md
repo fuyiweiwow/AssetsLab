@@ -7,6 +7,11 @@
 关于服装风格、参数配方和可控随机种子的长期蓝图，见
 [服装风格配方与可控随机化蓝图](CLOTHES_STYLE_CONTROLLED_RANDOMIZATION_BLUEPRINT_2026-08-06.md)。
 
+2026-08-06 清理后，用户确认的唯一无袖 Actor 里程碑为
+`prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test/`；
+此前的 `garmentcode_actor_proxy_current` 和其它 current 候选均为历史实验，已删除。
+清理详情见 [服装里程碑清理记录](CLOTHES_MILESTONE_CLEANUP_2026-08-06.md)。
+
 ## 1. Gallery 与实验状态规则
 
 - `milestone`：只有物理门禁和视觉审核都通过的结果，长期保留。

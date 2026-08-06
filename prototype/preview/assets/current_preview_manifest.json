@@ -4,51 +4,23 @@
   "reason": "retired current-body source PNGs are not present in the checkout",
   "clothing_gallery": [
     {
-      "slug": "garmentcode_official_neutral_v1",
-      "label": "GarmentCode milestone / neutral T-shirt",
+      "slug": "garmentcode_official_side_supported_arc_clearance_final2_test",
+      "label": "Milestone / confirmed sleeveless Actor garment",
       "status": "通过",
-      "note": "官方 neutral body 基线，作为 GarmentCode 物理通过里程碑保留。",
-      "contact_sheet": "clothes_gallery/garmentcode_official_neutral_v1/front_back.png",
+      "note": "用户确认的无袖上衣里程碑：采用官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖必须以此衣身为基线，只增加袖窿/袖筒结构。",
+      "contact_sheet": "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/4way_8frames.png",
       "stills": [
-        "clothes_gallery/garmentcode_official_neutral_v1/front_00.png",
-        "clothes_gallery/garmentcode_official_neutral_v1/back_00.png"
-      ]
-    },
-    {
-      "slug": "garmentcode_official_mean_male_v1",
-      "label": "GarmentCode milestone / mean_male T-shirt",
-      "status": "通过",
-      "note": "官方 mean_male body 基线，作为第二个物理通过里程碑保留。",
-      "contact_sheet": "clothes_gallery/garmentcode_official_mean_male_v1/front_back.png",
-      "stills": [
-        "clothes_gallery/garmentcode_official_mean_male_v1/front_00.png",
-        "clothes_gallery/garmentcode_official_mean_male_v1/back_00.png"
-      ]
-    },
-    {
-      "slug": "garmentcode_actor_proxy_current",
-      "label": "Current experiment / official milestone transferred to Actor",
-      "status": "当前实验",
-      "note": "Current review candidate: a freshly regenerated official GarmentCode short-sleeve pattern with CircleNeckHalf, official Warp draping, then side-preserving Actor transfer and armature weights. It remains review_required because the Actor transfer still has sleeve/hem penetration; the sleeveless baseline and prior milestone transfer are preserved.",
-      "contact_sheet": "clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png",
-      "stills": [
-        "clothes_gallery/garmentcode_actor_proxy_current/front_00.png",
-        "clothes_gallery/garmentcode_actor_proxy_current/right_00.png",
-        "clothes_gallery/garmentcode_actor_proxy_current/back_00.png",
-        "clothes_gallery/garmentcode_actor_proxy_current/left_00.png"
+        "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/front_00.png",
+        "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/right_00.png",
+        "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/back_00.png",
+        "clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/left_00.png"
       ]
     }
   ],
   "files": [
     "4way_8frames.png",
     "back_00.png",
-    "back_00.png",
-    "back_00.png",
     "front_00.png",
-    "front_00.png",
-    "front_00.png",
-    "front_back.png",
-    "front_back.png",
     "left_00.png",
     "right_00.png"
   ]

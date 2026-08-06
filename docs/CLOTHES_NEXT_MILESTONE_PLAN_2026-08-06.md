@@ -95,9 +95,19 @@ Actor 适配、Surface Deform、四方向八动作帧渲染和适配检测，但
 当前开始执行“1. 短袖上衣”。第一轮只验证短袖袖筒的骨骼跟随、袖口位置和
 腋下连续性；无袖衣身参数保持不变。
 
+### 基线锁定补充
+
+经过候选回溯和人工确认，短袖实验的唯一无袖基线锁定为：
+
+`prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test/`
+
+该版本是官方 Demo 风格连续侧面过渡的无袖 Render Garment。官方 GarmentCode
+短袖物理结果只作为袖窿、袖片和短袖比例参考，不得替代该 Actor 基线或重新生成
+整件普通 T-shirt。其它历史候选已清理，失败版本不得恢复为当前输入。
+
 ## 短袖实验 v1 记录
 
-输出目录：`prototype/test_output/clothes_next_short_sleeve_v1/`
+历史输出目录：`prototype/test_output/clothes_next_short_sleeve_v1/`（已清理）
 
 - 输入：Actor V1 原始 Blender 文件；
 - 衣身范围：`bottom_z=0.775`、`top_z=1.47`；

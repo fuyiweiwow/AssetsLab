@@ -39,139 +39,15 @@ SKELETON_BACK_LEG_CAPTURE_DIRECTORY = ROOT / "prototype/test_output/skeleton_pip
 SKELETON_BACK_LEG_CAPTURE_GIF = ROOT / "prototype/test_output/skeleton_pipeline/back_legs.gif"
 STAGED_CAPTURE_GIF = OUTPUT / "movement_vertical_body_candidate.gif"
 DIRECTIONS = ("front", "right", "back", "left")
-CLOTHING_REVIEW_CANDIDATES = (
-    {
-        "slug": "actor_derived_tshirt_v10",
-        "label": "Actor 派生基础 T 恤 v10",
-        "root": ROOT / "prototype/test_output/actor_derived_tshirt_v10",
-        "status": "待审查",
-        "note": "躯干从 Actor 表面提取并外扩间隙，袖子改为完整独立袖筒并绑定上臂骨骼，肩部与躯干重叠；继承 Actor 权重，作为合身基准。",
-    },
-    {
-        "slug": "garmentcode_cloth_v4",
-        "label": "GarmentCode 裁片 + Blender Cloth v4",
-        "root": ROOT / "prototype/test_output/garmentcode_cloth_v4",
-        "status": "拟合失败",
-        "note": "保留 GarmentCode 的裁片平移/旋转并提高缝合力与边界密度；默认人体版型与 Q 版 Actor 不匹配，肩部开口、袖片翻折和背部散开，不能进入随机池。",
-    },
-    {
-        "slug": "garmentcode_native_boxmesh_preview_v7",
-        "label": "GarmentCode native BoxMesh static v1",
-        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_preview_v7",
-        "status": "待审核",
-        "note": "原生 BoxMesh 已消除三角扇和散乱拓扑；这是匹配身体上的静态初始组装态，肩部开口和侧面叠层仍需物理或几何整理。",
-    },
-    {
-        "slug": "garmentcode_native_boxmesh_cloth_v1",
-        "label": "GarmentCode native BoxMesh + Blender Cloth v1",
-        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_cloth_v1",
-        "status": "拟合失败",
-        "note": "原生缝合网格直接进入 Blender Cloth 后发生严重自相交和尖刺爆炸；暂不进入随机池。",
-    },
-    {
-        "slug": "garmentcode_native_boxmesh_fitted_v1",
-        "label": "GarmentCode native BoxMesh body-surface fit v1",
-        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_fitted_v1",
-        "status": "待审核",
-        "note": "Shrinkwrap 到匹配身体后，四方向闭合且侧面不再出现横向叠层；领口、袖口和下摆的裁片形状仍需美术检查。",
-    },
-    {
-        "slug": "garmentcode_fitted_boxmesh_cloth_v1",
-        "label": "GarmentCode fitted BoxMesh + restrained Cloth v1",
-        "root": ROOT / "prototype/test_output/garmentcode_fitted_boxmesh_cloth_v1",
-        "status": "待审核",
-        "note": "从身体表面拟合姿态开始，低强度 Cloth 稳定完成；关闭自碰撞以避免先前的尖刺爆炸，仍需确认褶皱是否适合像素化。",
-    },
-    {
-        "slug": "proxy_collared_shirt_v5",
-        "label": "OverScore Proxy / Collared Shirt v5",
-        "root": ROOT / "prototype/test_output/clothes_proxy_collared_shirt_v5",
-        "status": "拟合失败",
-        "note": "只是包围盒缩放，未贴合身体；侧面外扩，不能视为已穿上。",
-    },
-    {
-        "slug": "proxy_cropped_sweatshirt_v1",
-        "label": "OverScore Proxy / Cropped Sweatshirt v1",
-        "root": ROOT / "prototype/test_output/clothes_proxy_cropped_sweatshirt_v1",
-        "status": "未通过",
-        "note": "正面比例较好，侧面袖部块状外扩。",
-    },
-    {
-        "slug": "garmentcode_official_neutral_v1",
-        "label": "GarmentCode 官方 neutral body T-shirt v1",
-        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-14-57_260805-19-31-09",
-        "source_frames": {
-            "front": "t-shirt__260805-19-14-57_render_front.png",
-            "back": "t-shirt__260805-19-14-57_render_back.png",
-        },
-        "status": "通过",
-        "note": "官方裁片 + GarmentCode Warp 披挂；fails 为空，身体碰撞 0，自交 0，第 405 帧达到静态。该基线只有官方 front/back 视图，尚未进入 Actor。",
-    },
-    {
-        "slug": "garmentcode_official_mean_male_v1",
-        "label": "GarmentCode 官方 mean_male T-shirt v1",
-        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-36-01_260805-19-38-18",
-        "source_frames": {
-            "front": "t-shirt__260805-19-36-01_render_front.png",
-            "back": "t-shirt__260805-19-36-01_render_back.png",
-        },
-        "status": "通过",
-        "note": "官方 mean_male 身体参数复测；fails 为空，身体碰撞 0，自交 0，第 405 帧达到静态。该基线只有官方 front/back 视图，尚未进入 Actor。",
-    },
-    {
-        "slug": "garmentcode_actor_official_neutral_v1",
-        "label": "Official GarmentCode sim.obj -> Actor v1",
-        "root": ROOT / "prototype/test_output/garmentcode_actor_official_neutral_v1",
-        "status": "review_required",
-        "note": "Official Warp CPU neutral-body sim.obj transferred to Actor with side-preserving projection, Actor weights, and the original walk action. Review only; not in the random pool.",
-    },
-    {
-        "slug": "garmentcode_actor_official_neutral_v3_surface_bias",
-        "label": "Official GarmentCode sim.obj -> Actor v3 surface bias",
-        "root": ROOT / "prototype/test_output/garmentcode_actor_official_neutral_v3_surface_bias",
-        "status": "review_required",
-        "note": "Experimental millimetre-scale Actor-space correction: front chest flattened, back clearance added, sleeve edges offset outward. The official source mesh and Actor walk action remain unchanged.",
-    },
-    {
-        "slug": "garmentcode_actor_proxy_v1_baseline",
-        "label": "GarmentCode Actor proxy / sleeveless baseline v1",
-        "root": ROOT / "prototype/test_output/garmentcode_actor_proxy_v1_baseline",
-        "status": "review_required",
-        "note": "First closed Actor proxy route: 3 cm voxel body, corrected head/neck measurement, GarmentCode Warp 406-frame equilibrium, 19 body collisions and 0 self-collisions. Sleeveless baseline only; not yet a finished random clothing seed.",
-    },
-)
-
 # Gallery policy: keep only milestone passes and the single current experiment.
 # Older diagnostic candidates remain in the worktree but are not republished.
 CLOTHING_REVIEW_CANDIDATES = (
     {
-        "slug": "garmentcode_official_neutral_v1",
-        "label": "GarmentCode milestone / neutral T-shirt",
-        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-14-57_260805-19-31-09",
-        "source_frames": {
-            "front": "t-shirt__260805-19-14-57_render_front.png",
-            "back": "t-shirt__260805-19-14-57_render_back.png",
-        },
+        "slug": "garmentcode_official_side_supported_arc_clearance_final2_test",
+        "label": "Milestone / confirmed sleeveless Actor garment",
+        "root": ROOT / "prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test",
         "status": "通过",
-        "note": "官方 neutral body 基线，作为 GarmentCode 物理通过里程碑保留。",
-    },
-    {
-        "slug": "garmentcode_official_mean_male_v1",
-        "label": "GarmentCode milestone / mean_male T-shirt",
-        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-36-01_260805-19-38-18",
-        "source_frames": {
-            "front": "t-shirt__260805-19-36-01_render_front.png",
-            "back": "t-shirt__260805-19-36-01_render_back.png",
-        },
-        "status": "通过",
-        "note": "官方 mean_male body 基线，作为第二个物理通过里程碑保留。",
-    },
-    {
-        "slug": "garmentcode_actor_proxy_current",
-        "label": "Current experiment / regenerated official short sleeve",
-        "root": ROOT / "prototype/test_output/clothes_next_short_sleeve_official_transfer_v1",
-        "status": "当前实验",
-        "note": "保留 GarmentCode 物理代理，独立生成规则四边面无袖 Render Garment（放大 U 型领口、前后肩带连接、侧缝、闭合下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy；条带和侧面缺口已消除，仍需审核肩带贴合和动作帧。下一次实验会覆盖它。",
+        "note": "用户确认的无袖上衣里程碑：采用官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖必须以此衣身为基线，只增加袖窿/袖筒结构。",
     },
 )
 
@@ -326,16 +202,8 @@ def copy_clothing_review_assets() -> list[dict[str, object]]:
             shutil.copy2(source, target)
             stills.append(target.relative_to(OUTPUT).as_posix())
         contact_sheet = destination / ("front_back.png" if source_frame_names else "4way_8frames.png")
-        if slug == "garmentcode_actor_proxy_current":
-            candidate_label = "Current experiment / official milestone transferred to Actor"
-            candidate_note = (
-                "Current review candidate: a freshly regenerated official GarmentCode short-sleeve pattern with CircleNeckHalf, "
-                "official Warp draping, then side-preserving Actor transfer and armature weights. It remains review_required "
-                "because the Actor transfer still has sleeve/hem penetration; the sleeveless baseline and prior milestone transfer are preserved."
-            )
-        else:
-            candidate_label = candidate["label"]
-            candidate_note = candidate["note"]
+        candidate_label = candidate["label"]
+        candidate_note = candidate["note"]
         published.append(
             {
                 "slug": slug,
