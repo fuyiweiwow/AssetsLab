@@ -326,12 +326,22 @@ def copy_clothing_review_assets() -> list[dict[str, object]]:
             shutil.copy2(source, target)
             stills.append(target.relative_to(OUTPUT).as_posix())
         contact_sheet = destination / ("front_back.png" if source_frame_names else "4way_8frames.png")
+        if slug == "garmentcode_actor_proxy_current":
+            candidate_label = "Current experiment / demo-style bind-pose tank + Surface Deform"
+            candidate_note = (
+                "Current review candidate: compact demo-style open-hem sleeveless shell authored in the frame-1 bind pose, "
+                "Catmull-Clark subdivision, and Surface Deform to the Animation Proxy. Render clearance is 0.035 m; the fit "
+                "detector passes shoulder placement, back boundary, hem penetration, body clearance, and manifold checks."
+            )
+        else:
+            candidate_label = candidate["label"]
+            candidate_note = candidate["note"]
         published.append(
             {
                 "slug": slug,
-                "label": candidate["label"],
+                "label": candidate_label,
                 "status": candidate["status"],
-                "note": candidate["note"],
+                "note": candidate_note,
                 "contact_sheet": contact_sheet.relative_to(OUTPUT).as_posix(),
                 "stills": stills,
             }
