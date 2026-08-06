@@ -290,3 +290,13 @@ lowered from `0.25` to `0.10`. The 120-frame diagnostic became less stable:
 "collision shell is too thick" hypothesis; the next correction must restore
 garment ease or change the panel profile construction rather than reduce the
 collision thickness.
+
+## Lower-side-only profile correction (2026-08-06)
+
+The previous profile pass scaled shoulder and collar vertices along with the
+lower body and caused 74 body collisions. The corrected pass preserves the upper
+60% of each torso panel and only applies `strength=0.15` below that boundary.
+GarmentCode completed 406 frames with 22 body collisions and 0 self-collisions,
+then transferred to Actor without a new visible penetration. This is the current
+Gallery candidate; the remaining horizontal back bands are a separate visual
+quality issue.

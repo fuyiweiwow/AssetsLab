@@ -89,7 +89,10 @@ def main() -> int:
         for point in vertices:
             y = float(point[1])
             t = clamp(y / max(max_y, 1e-6), 0.0, 1.0)
-            target_ratio = profile_ratio(curve, t)
+            # Keep armhole, shoulder, and collar geometry untouched. The
+            # earlier pass scaled every non-zero vertex and destabilized the
+            # attachment region; only the lower side boundary may taper.
+            target_ratio = profile_ratio(curve, t) if t < 0.60 else 1.0
             scale = 1.0 - strength * (1.0 - target_ratio)
             original_x = float(point[0])
             point[0] = original_x * scale
@@ -106,6 +109,7 @@ def main() -> int:
         "sewing_relationships_changed": False,
         "normalized_curve": curve,
         "changed_vertices": changed,
+        "upper_profile_preserved_from": 0.60,
         "next_stage": "GarmentCode physics gate, then Actor cage transfer",
     }
     output = options.output.resolve()
