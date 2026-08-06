@@ -98,6 +98,22 @@ The current render chain is therefore:
 
 `Actor bones + torso slices -> demo-style clean shell -> Catmull-Clark 2 -> Surface Deform -> Animation Proxy -> 4 directions x 8 frames -> fit detector -> Gallery`
 
+## Front-to-side transition rule
+
+The front/side discontinuity was corrected without changing the accepted
+shoulder or hem measurements. The front and back panels now use an outer
+normalized x value of `±0.92`, while each row adds a lateral ridge at `±1.00`
+with y equal to the midpoint of the sampled front/back torso depths. Each side
+is built as two faces per row:
+
+`front panel -> lateral midpoint ridge -> back panel`
+
+This replaces the old single vertical front-to-back wall, which created a hard
+90-degree fold even after Catmull-Clark smoothing. The side ridge is generated
+by `build_garment_proxy_render_pair.py`, recorded in `manifest.json`, and
+validated by the same eight-frame fit detector. It is a topology rule, not a
+new global scale factor.
+
 ## Reproduction
 
 ```powershell

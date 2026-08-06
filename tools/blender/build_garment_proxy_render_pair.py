@@ -394,7 +394,10 @@ def build_clean_tank_render_mesh(
     # shoulder material read as one shirt. The previous 0.92/1.0 profile made
     # the top bridge too wide and visually turned the garment into a plate.
     half_widths = [0.340, 0.345, 0.340, 0.325, 0.300, 0.290, 0.300]
-    x_profile = (-1.0, -0.68, -0.34, 0.34, 0.68, 1.0)
+    # Keep the front/back panel just inside the lateral ridge. The extra ridge
+    # vertex below turns the former 90-degree side wall into a three-part
+    # rounded transition: front panel -> side arc -> back panel.
+    x_profile = (-0.92, -0.68, -0.34, 0.34, 0.68, 0.92)
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
 
@@ -426,7 +429,7 @@ def build_clean_tank_render_mesh(
                 # the compact top width, not by pushing the opening across the
                 # full shoulder span.
                 opening_half = (0.34, 0.50, 0.60)[min(row - 4, 2)]
-                row_profile = (-1.0, -0.68, -opening_half, opening_half, 0.68, 1.0)
+                row_profile = (-0.92, -0.68, -opening_half, opening_half, 0.68, 0.92)
             row_indices: list[int] = []
             for normalized_x in row_profile:
                 front, rear = depth_at(normalized_x * width, z)
@@ -458,9 +461,22 @@ def build_clean_tank_render_mesh(
 
     front_rows = add_panel(back=False)
     back_rows = add_panel(back=True)
+    left_ridge: list[int] = []
+    right_ridge: list[int] = []
+    for z, width in zip(z_rows, half_widths):
+        left_front, left_back = depth_at(-width, z)
+        right_front, right_back = depth_at(width, z)
+        left_ridge.append(len(vertices))
+        vertices.append((-width, (left_front + left_back) * 0.5, z))
+        right_ridge.append(len(vertices))
+        vertices.append((width, (right_front + right_back) * 0.5, z))
     for row in range(len(z_rows) - 1):
-        faces.append((front_rows[row][0], back_rows[row][0], back_rows[row + 1][0], front_rows[row + 1][0]))
-        faces.append((front_rows[row][5], front_rows[row + 1][5], back_rows[row + 1][5], back_rows[row][5]))
+        # Left front -> side ridge -> left back.
+        faces.append((front_rows[row][0], left_ridge[row], left_ridge[row + 1], front_rows[row + 1][0]))
+        faces.append((left_ridge[row], back_rows[row][0], back_rows[row + 1][0], left_ridge[row + 1]))
+        # Right front -> side ridge -> right back.
+        faces.append((front_rows[row][5], front_rows[row + 1][5], right_ridge[row + 1], right_ridge[row]))
+        faces.append((right_ridge[row], right_ridge[row + 1], back_rows[row + 1][5], back_rows[row][5]))
 
     # The demo joins the outer and inner bands into continuous shoulders. This
     # keeps the side silhouette connected and avoids floating shoulder tabs.
@@ -501,6 +517,13 @@ def build_clean_tank_render_mesh(
         },
         "clearance": clearance,
         "neckline": "front_u_opening_back_shallow_scoop",
+        "side_transition": {
+            "enabled": True,
+            "panel_outer_x": 0.92,
+            "lateral_ridge_x": 1.0,
+            "ridge_depth": "midpoint_of_sampled_front_back_depth",
+            "faces_per_side_per_row": 2,
+        },
     }
 
 
