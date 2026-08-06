@@ -377,3 +377,18 @@ widens the front neckline, connects the front/back shoulder straps, and closes
 the lower hem strip; this removes the side hem notch and the previous bandeau
 appearance. This is a current review candidate, not a final clothing seed: the
 shoulder-strap fit and chibi proportions still need visual approval.
+
+## Proxy-weighted clean garment candidate (2026-08-06)
+
+The clean garment was tested with the Actor's nearest vertex weights, direct
+Actor Shrinkwrap, and the validated GarmentCode Proxy weight schema. The first
+two approaches were rejected: nearest weights pulled shoulder vertices toward
+the upper arm, while Shrinkwrap projected sparse garment faces through or
+behind the body. The accepted review candidate uses
+`--proxy-weighted-render`, transfers the 63 existing garment groups from
+`GarmentCodeShirt_AnimationProxy`, and applies the same Actor Armature.
+
+This makes the front shoulder straps visibly land on the Actor and preserves
+the 4-direction × 8-frame render without restoring the old back bands. The
+side action frames still require a dedicated armhole-shape review; the
+candidate remains `review_required` and is not a milestone or random seed.

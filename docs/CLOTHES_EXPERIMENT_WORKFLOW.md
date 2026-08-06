@@ -232,3 +232,20 @@ Gallery current，也不会改变已经通过物理门禁的代理。
 降面到 5,369 顶点，Render Garment 细分后为 321 个顶点；前后片在肩部增加连接面，
 下摆增加内侧闭合面。当前 4 方向 × 8 帧通过后台渲染，背部条带和侧面下缘缺口
 消失，状态为 `review_required`，尚未进入 milestone。
+
+## 10. Proxy 权重 Render Garment 实验（2026-08-06）
+
+上一版静止正面仍然像抹胸，原因不是单纯的缩放，而是清洁衣片顶部宽度小于 Actor
+肩部切片，肩带被身体遮住。本轮先按 Actor 肩部数据重新检查版型，再验证三种变形
+方式：Actor 最近邻权重、Actor Shrinkwrap，以及从已经通过物理转移的 GarmentCode
+Animation Proxy 继承权重。
+
+前两种方式被废弃：最近邻权重会把肩部边界分配给上臂骨，Shrinkwrap 会把稀疏衣片
+投到身体背面或内部。最终保留 `--proxy-weighted-render`：清洁衣片从 Animation
+Proxy 继承原有 63 个骨骼权重并直接使用同一 Armature。该版本正面肩带已明确落在
+肩部，四方向 × 8 帧可见，背面没有重新出现水平条带；侧面动作帧仍需继续审核袖窿
+开口，但没有再把它误判为肩带断裂。
+
+该候选已覆盖 Gallery current，仍为 `review_required`，不进入 milestone 或随机
+种子池。后续只针对侧面袖窿轮廓做独立拓扑调整，不再混用 Actor 最近邻权重或
+Shrinkwrap。

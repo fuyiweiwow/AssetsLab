@@ -44,6 +44,7 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--clean-render-surface", action="store_true")
     parser.add_argument("--render-surface-clearance", type=float, default=0.035)
     parser.add_argument("--build-clean-render-garment", action="store_true")
+    parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
     parser.add_argument("--animation-proxy-smooth-factor", type=float, default=0.35)
@@ -132,6 +133,39 @@ def bind_surface_deform(render_garment: bpy.types.Object, proxy: bpy.types.Objec
         "target": proxy.name,
         "strength": modifier.strength,
         "bound": bool(modifier.is_bound),
+    }
+
+
+def bind_proxy_weighted_armature(
+    render_garment: bpy.types.Object,
+    source_proxy: bpy.types.Object,
+    armature: bpy.types.Object,
+) -> dict[str, object]:
+    """Transfer the already validated garment weight schema to the clean mesh."""
+    for source_group in source_proxy.vertex_groups:
+        if render_garment.vertex_groups.get(source_group.name) is None:
+            render_garment.vertex_groups.new(name=source_group.name)
+    modifier = render_garment.modifiers.new("TransferGarmentProxyWeights", "DATA_TRANSFER")
+    modifier.object = source_proxy
+    modifier.use_vert_data = True
+    modifier.data_types_verts = {"VGROUP_WEIGHTS"}
+    modifier.vert_mapping = "POLYINTERP_NEAREST"
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = render_garment
+    render_garment.select_set(True)
+    result = bpy.ops.object.modifier_apply(modifier=modifier.name)
+    render_garment.select_set(False)
+    if "FINISHED" not in result:
+        raise RuntimeError(f"Garment proxy vertex-weight transfer did not finish: {result}")
+    armature_modifier = render_garment.modifiers.new("RenderGarmentProxyArmatureDeform", "ARMATURE")
+    armature_modifier.object = armature
+    bpy.context.view_layer.update()
+    return {
+        "method": "garment_proxy_vertex_group_transfer_plus_armature",
+        "source": source_proxy.name,
+        "armature": armature.name,
+        "vertex_groups": len(render_garment.vertex_groups),
+        "armature_modifier": armature_modifier.name,
     }
 
 
@@ -440,7 +474,11 @@ def main() -> int:
         else {"enabled": False, "vertex_count": len(animation_proxy.data.vertices)}
     )
     subdivision = apply_render_subdivision(render_garment, options.subdivision_level)
-    surface_deform = bind_surface_deform(render_garment, animation_proxy)
+    deformation = (
+        bind_proxy_weighted_armature(render_garment, animation_proxy, armature)
+        if options.proxy_weighted_render
+        else bind_surface_deform(render_garment, animation_proxy)
+    )
     bpy.context.view_layer.update()
 
     scene["assetslab_garment_proxy_render_pair_status"] = "review_required"
@@ -468,7 +506,7 @@ def main() -> int:
             "clean_render_garment": clean_render_garment,
             "clean_surface": clean_surface,
             "subdivision": subdivision,
-            "surface_deform": surface_deform,
+            "deformation": deformation,
             "armature_modifier": any(modifier.type == "ARMATURE" for modifier in render_garment.modifiers),
         },
         "animation": {
