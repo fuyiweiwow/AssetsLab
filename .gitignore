@@ -22,3 +22,15 @@ tools/refine_limb_puzzle_motion.py
 prototype/**/*.uid
 prototype/**/*.tmp
 __pycache__/
+third_party/GarmentCode/.venv/
+third_party/GarmentCode/.upstream_warp/
+third_party/GarmentCode/Logs/
+third_party/GarmentCode/
+third_party/NvidiaWarp-GarmentCode/
+third_party/blender-mcp-server/
+third_party/NvidiaWarp-GarmentCode/warp/bin/*.dll
+third_party/NvidiaWarp-GarmentCode/warp/bin/*.exp
+third_party/NvidiaWarp-GarmentCode/warp/bin/*.lib
+third_party/NvidiaWarp-GarmentCode/warp/native/*.obj
+third_party/NvidiaWarp-GarmentCode/warp/native/clang/*.obj
+third_party/NvidiaWarp-GarmentCode/warp/native/exports.h

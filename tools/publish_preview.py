@@ -20,7 +20,9 @@ def safe_name(value: str) -> str:
 
 
 def write_snapshot_page(snapshot_root: Path, snapshot_name: str) -> None:
-    page = (PREVIEW_ROOT / "index.html").read_text(encoding="utf-8")
+    # The current checkout no longer contains the retired body PNG sources;
+    # publish the self-contained clothing review page as the active snapshot.
+    page = (PREVIEW_ROOT / "clothes_gallery.html").read_text(encoding="utf-8")
     page = page.replace("assets/", "")
     page = page.replace("AssetsLab Preview", f"AssetsLab Preview {snapshot_name}")
     (snapshot_root / "index.html").write_text(page, encoding="utf-8")

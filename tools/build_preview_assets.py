@@ -39,6 +39,141 @@ SKELETON_BACK_LEG_CAPTURE_DIRECTORY = ROOT / "prototype/test_output/skeleton_pip
 SKELETON_BACK_LEG_CAPTURE_GIF = ROOT / "prototype/test_output/skeleton_pipeline/back_legs.gif"
 STAGED_CAPTURE_GIF = OUTPUT / "movement_vertical_body_candidate.gif"
 DIRECTIONS = ("front", "right", "back", "left")
+CLOTHING_REVIEW_CANDIDATES = (
+    {
+        "slug": "actor_derived_tshirt_v10",
+        "label": "Actor 派生基础 T 恤 v10",
+        "root": ROOT / "prototype/test_output/actor_derived_tshirt_v10",
+        "status": "待审查",
+        "note": "躯干从 Actor 表面提取并外扩间隙，袖子改为完整独立袖筒并绑定上臂骨骼，肩部与躯干重叠；继承 Actor 权重，作为合身基准。",
+    },
+    {
+        "slug": "garmentcode_cloth_v4",
+        "label": "GarmentCode 裁片 + Blender Cloth v4",
+        "root": ROOT / "prototype/test_output/garmentcode_cloth_v4",
+        "status": "拟合失败",
+        "note": "保留 GarmentCode 的裁片平移/旋转并提高缝合力与边界密度；默认人体版型与 Q 版 Actor 不匹配，肩部开口、袖片翻折和背部散开，不能进入随机池。",
+    },
+    {
+        "slug": "garmentcode_native_boxmesh_preview_v7",
+        "label": "GarmentCode native BoxMesh static v1",
+        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_preview_v7",
+        "status": "待审核",
+        "note": "原生 BoxMesh 已消除三角扇和散乱拓扑；这是匹配身体上的静态初始组装态，肩部开口和侧面叠层仍需物理或几何整理。",
+    },
+    {
+        "slug": "garmentcode_native_boxmesh_cloth_v1",
+        "label": "GarmentCode native BoxMesh + Blender Cloth v1",
+        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_cloth_v1",
+        "status": "拟合失败",
+        "note": "原生缝合网格直接进入 Blender Cloth 后发生严重自相交和尖刺爆炸；暂不进入随机池。",
+    },
+    {
+        "slug": "garmentcode_native_boxmesh_fitted_v1",
+        "label": "GarmentCode native BoxMesh body-surface fit v1",
+        "root": ROOT / "prototype/test_output/garmentcode_native_boxmesh_fitted_v1",
+        "status": "待审核",
+        "note": "Shrinkwrap 到匹配身体后，四方向闭合且侧面不再出现横向叠层；领口、袖口和下摆的裁片形状仍需美术检查。",
+    },
+    {
+        "slug": "garmentcode_fitted_boxmesh_cloth_v1",
+        "label": "GarmentCode fitted BoxMesh + restrained Cloth v1",
+        "root": ROOT / "prototype/test_output/garmentcode_fitted_boxmesh_cloth_v1",
+        "status": "待审核",
+        "note": "从身体表面拟合姿态开始，低强度 Cloth 稳定完成；关闭自碰撞以避免先前的尖刺爆炸，仍需确认褶皱是否适合像素化。",
+    },
+    {
+        "slug": "proxy_collared_shirt_v5",
+        "label": "OverScore Proxy / Collared Shirt v5",
+        "root": ROOT / "prototype/test_output/clothes_proxy_collared_shirt_v5",
+        "status": "拟合失败",
+        "note": "只是包围盒缩放，未贴合身体；侧面外扩，不能视为已穿上。",
+    },
+    {
+        "slug": "proxy_cropped_sweatshirt_v1",
+        "label": "OverScore Proxy / Cropped Sweatshirt v1",
+        "root": ROOT / "prototype/test_output/clothes_proxy_cropped_sweatshirt_v1",
+        "status": "未通过",
+        "note": "正面比例较好，侧面袖部块状外扩。",
+    },
+    {
+        "slug": "garmentcode_official_neutral_v1",
+        "label": "GarmentCode 官方 neutral body T-shirt v1",
+        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-14-57_260805-19-31-09",
+        "source_frames": {
+            "front": "t-shirt__260805-19-14-57_render_front.png",
+            "back": "t-shirt__260805-19-14-57_render_back.png",
+        },
+        "status": "通过",
+        "note": "官方裁片 + GarmentCode Warp 披挂；fails 为空，身体碰撞 0，自交 0，第 405 帧达到静态。该基线只有官方 front/back 视图，尚未进入 Actor。",
+    },
+    {
+        "slug": "garmentcode_official_mean_male_v1",
+        "label": "GarmentCode 官方 mean_male T-shirt v1",
+        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-36-01_260805-19-38-18",
+        "source_frames": {
+            "front": "t-shirt__260805-19-36-01_render_front.png",
+            "back": "t-shirt__260805-19-36-01_render_back.png",
+        },
+        "status": "通过",
+        "note": "官方 mean_male 身体参数复测；fails 为空，身体碰撞 0，自交 0，第 405 帧达到静态。该基线只有官方 front/back 视图，尚未进入 Actor。",
+    },
+    {
+        "slug": "garmentcode_actor_official_neutral_v1",
+        "label": "Official GarmentCode sim.obj -> Actor v1",
+        "root": ROOT / "prototype/test_output/garmentcode_actor_official_neutral_v1",
+        "status": "review_required",
+        "note": "Official Warp CPU neutral-body sim.obj transferred to Actor with side-preserving projection, Actor weights, and the original walk action. Review only; not in the random pool.",
+    },
+    {
+        "slug": "garmentcode_actor_official_neutral_v3_surface_bias",
+        "label": "Official GarmentCode sim.obj -> Actor v3 surface bias",
+        "root": ROOT / "prototype/test_output/garmentcode_actor_official_neutral_v3_surface_bias",
+        "status": "review_required",
+        "note": "Experimental millimetre-scale Actor-space correction: front chest flattened, back clearance added, sleeve edges offset outward. The official source mesh and Actor walk action remain unchanged.",
+    },
+    {
+        "slug": "garmentcode_actor_proxy_v1_baseline",
+        "label": "GarmentCode Actor proxy / sleeveless baseline v1",
+        "root": ROOT / "prototype/test_output/garmentcode_actor_proxy_v1_baseline",
+        "status": "review_required",
+        "note": "First closed Actor proxy route: 3 cm voxel body, corrected head/neck measurement, GarmentCode Warp 406-frame equilibrium, 19 body collisions and 0 self-collisions. Sleeveless baseline only; not yet a finished random clothing seed.",
+    },
+)
+
+# Gallery policy: keep only milestone passes and the single current experiment.
+# Older diagnostic candidates remain in the worktree but are not republished.
+CLOTHING_REVIEW_CANDIDATES = (
+    {
+        "slug": "garmentcode_official_neutral_v1",
+        "label": "GarmentCode milestone / neutral T-shirt",
+        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-14-57_260805-19-31-09",
+        "source_frames": {
+            "front": "t-shirt__260805-19-14-57_render_front.png",
+            "back": "t-shirt__260805-19-14-57_render_back.png",
+        },
+        "status": "通过",
+        "note": "官方 neutral body 基线，作为 GarmentCode 物理通过里程碑保留。",
+    },
+    {
+        "slug": "garmentcode_official_mean_male_v1",
+        "label": "GarmentCode milestone / mean_male T-shirt",
+        "root": ROOT / "third_party/GarmentCode/Logs/t-shirt__260805-19-36-01_260805-19-38-18",
+        "source_frames": {
+            "front": "t-shirt__260805-19-36-01_render_front.png",
+            "back": "t-shirt__260805-19-36-01_render_back.png",
+        },
+        "status": "通过",
+        "note": "官方 mean_male body 基线，作为第二个物理通过里程碑保留。",
+    },
+    {
+        "slug": "garmentcode_actor_proxy_current",
+        "label": "当前实验 / Actor proxy sleeveless depth fit",
+        "root": ROOT / "prototype/test_output/garmentcode_actor_proxy_current",
+        "status": "当前实验",
+        "note": "当前只保留这一版实验结果：收紧躯干深度并增加背部余量。仍需审核胸腔比例、背部条纹和四方向跟随。下一次实验会覆盖它。",
+    },
+)
 
 
 def rgba(path: Path) -> Image.Image:
@@ -116,6 +251,94 @@ def skeleton_contact_sheet(paths: list[Path], path: Path) -> None:
 	output.save(path)
 
 
+def clothing_contact_sheet(root: Path, path: Path) -> None:
+    """Create a 4-direction x 8-frame review sheet for one candidate."""
+
+    cell = 128
+    output = Image.new("RGB", (cell * 8, cell * 4), (17, 24, 39))
+    draw = ImageDraw.Draw(output)
+    for row, direction in enumerate(DIRECTIONS):
+        for frame in range(8):
+            source = root / f"{direction}_{frame:02d}.png"
+            if not source.exists():
+                continue
+            with Image.open(source) as image:
+                thumbnail = image.convert("RGB").resize((cell, cell), Image.Resampling.LANCZOS)
+                x = frame * cell
+                y = row * cell
+                output.paste(thumbnail, (x, y))
+                draw.rectangle((x + 2, y + 2, x + 44, y + 18), fill=(8, 11, 19))
+                draw.text((x + 5, y + 4), f"{direction[0].upper()}{frame}", fill=(255, 241, 168))
+    output.save(path)
+
+
+def clothing_pair_sheet(source_frames: dict[str, Path], path: Path) -> None:
+    """Create a truthful front/back sheet for official static renders."""
+
+    cell = 256
+    output = Image.new("RGB", (cell * 2, cell), (17, 24, 39))
+    draw = ImageDraw.Draw(output)
+    for column, direction in enumerate(("front", "back")):
+        source = source_frames.get(direction)
+        if source is None or not source.exists():
+            continue
+        with Image.open(source) as image:
+            thumbnail = image.convert("RGB")
+            thumbnail.thumbnail((cell, cell), Image.Resampling.LANCZOS)
+            x = column * cell + (cell - thumbnail.width) // 2
+            y = (cell - thumbnail.height) // 2
+            output.paste(thumbnail, (x, y))
+            draw.rectangle((column * cell + 6, 6, column * cell + 70, 26), fill=(8, 11, 19))
+            draw.text((column * cell + 12, 9), direction, fill=(255, 241, 168))
+    output.save(path)
+
+
+def copy_clothing_review_assets() -> list[dict[str, object]]:
+    gallery_root = OUTPUT / "clothes_gallery"
+    gallery_root.mkdir(parents=True, exist_ok=True)
+    published: list[dict[str, object]] = []
+    for candidate in CLOTHING_REVIEW_CANDIDATES:
+        root = candidate["root"]
+        source_frame_names = candidate.get("source_frames")
+        if not isinstance(root, Path):
+            continue
+        if source_frame_names:
+            source_frames = {
+                direction: root / filename
+                for direction, filename in source_frame_names.items()
+            }
+            if not all(path.exists() for path in source_frames.values()):
+                continue
+        elif not (root / "manifest.json").exists():
+            continue
+        slug = str(candidate["slug"])
+        destination = gallery_root / slug
+        destination.mkdir(parents=True, exist_ok=True)
+        if source_frame_names:
+            clothing_pair_sheet(source_frames, destination / "front_back.png")
+        else:
+            clothing_contact_sheet(root, destination / "4way_8frames.png")
+        stills = []
+        directions = source_frames.keys() if source_frame_names else DIRECTIONS
+        for direction in directions:
+            source = source_frames[direction] if source_frame_names else root / f"{direction}_00.png"
+            target = destination / f"{direction}_00.png"
+            shutil.copy2(source, target)
+            stills.append(target.relative_to(OUTPUT).as_posix())
+        contact_sheet = destination / ("front_back.png" if source_frame_names else "4way_8frames.png")
+        published.append(
+            {
+                "slug": slug,
+                "label": candidate["label"],
+                "status": candidate["status"],
+                "note": candidate["note"],
+                "contact_sheet": contact_sheet.relative_to(OUTPUT).as_posix(),
+                "stills": stills,
+            }
+        )
+    return published
+
+
 def load_offsets() -> dict[str, tuple[int, int]]:
     payload = json.loads((HEAD_ROOT / "runtime_manifest.json").read_text(encoding="utf-8"))
     return {
@@ -125,12 +348,30 @@ def load_offsets() -> dict[str, tuple[int, int]]:
 
 
 def main() -> int:
-    subprocess.run(
-        [sys.executable, str(ROOT / "tools/build_recommended_horizontal_fix.py")],
-        cwd=ROOT,
-        check=True,
-    )
+    recommended_source = RECOMMENDED_FIX_ROOT / "right_source.png"
+    recommended_runtime = RECOMMENDED_FIX_ROOT / "runtime"
+    recommended_ready = recommended_source.exists() and (recommended_runtime / "right_walk_8.png").exists() and (recommended_runtime / "right_walk_8.gif").exists()
+    if recommended_ready:
+        subprocess.run(
+            [sys.executable, str(ROOT / "tools/build_recommended_horizontal_fix.py")],
+            cwd=ROOT,
+            check=True,
+        )
     clear_output()
+    if not (BODY_ROOT / "walk_row0_frame0.png").exists():
+        clothing_gallery = copy_clothing_review_assets()
+        manifest = {
+            "schema": "assetslab_clothing_preview_v1",
+            "status": "clothing_review_only",
+            "reason": "retired current-body source PNGs are not present in the checkout",
+            "clothing_gallery": clothing_gallery,
+            "files": sorted(path.name for path in OUTPUT.rglob("*") if path.is_file()),
+        }
+        (OUTPUT / "current_preview_manifest.json").write_text(
+            json.dumps(manifest, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+        )
+        print("CURRENT_PREVIEW_ASSETS_PASS clothing_review_only")
+        return 0
     body_frames = load_frames(BODY_ROOT, "walk_row{row}_frame{frame}.png")
     head_frames = load_head_frames()
     offsets = load_offsets()
@@ -209,11 +450,11 @@ def main() -> int:
     if style_image.exists():
         shutil.copy2(style_image, OUTPUT / "style_experiment_db16.png")
 
-    recommended_source = RECOMMENDED_FIX_ROOT / "right_source.png"
-    recommended_runtime = RECOMMENDED_FIX_ROOT / "runtime"
-    shutil.copy2(recommended_source, OUTPUT / "recommended_horizontal_layer_fix_source.png")
-    shutil.copy2(recommended_runtime / "right_walk_8.png", OUTPUT / "recommended_horizontal_layer_fix_8frames.png")
-    shutil.copy2(recommended_runtime / "right_walk_8.gif", OUTPUT / "recommended_horizontal_layer_fix.gif")
+    if recommended_ready:
+        shutil.copy2(recommended_source, OUTPUT / "recommended_horizontal_layer_fix_source.png")
+        shutil.copy2(recommended_runtime / "right_walk_8.png", OUTPUT / "recommended_horizontal_layer_fix_8frames.png")
+        shutil.copy2(recommended_runtime / "right_walk_8.gif", OUTPUT / "recommended_horizontal_layer_fix.gif")
+    clothing_gallery = copy_clothing_review_assets()
 
     manifest = {
         "schema": "assetslab_current_preview_v2",
@@ -234,8 +475,9 @@ def main() -> int:
             "source": "prototype/assets/characters/generated/recommended_base_horizontal_layer_fix_v1/right_source.png",
             "runtime": "prototype/assets/characters/generated/recommended_base_horizontal_layer_fix_v1/runtime",
             "foot_occlusion_policy": ["right_front", "right_front", "right_front", "left_front", "left_front", "left_front", "left_front", "right_front"],
-            "status": "candidate_for_visual_review",
+            "status": "candidate_for_visual_review" if recommended_ready else "source_removed",
         },
+        "clothing_gallery": clothing_gallery,
         "skeleton_walk_pipeline": {
             "source": "prototype/assets/characters/generated/skeleton_walk_pipeline_v1/back_base_manifest.json",
             "stage": "back_base",

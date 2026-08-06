@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>AssetsLab 服装审核 Gallery</title>
+  <style>
+    :root { color-scheme: dark; --bg:#111522; --panel:#1b2233; --line:#35415d; --text:#f4f5f7; --muted:#aeb9cc; --ok:#a5e8bb; --warn:#ffd18a; }
+    * { box-sizing:border-box; }
+    body { margin:0; background:linear-gradient(150deg,#101522,#1d2639); color:var(--text); font:16px/1.55 system-ui,-apple-system,"Segoe UI",sans-serif; }
+    main { width:min(1180px,100%); margin:auto; padding:24px 14px 48px; }
+    h1 { margin:0 0 6px; font-size:clamp(26px,5vw,40px); }
+    h2 { margin:0 0 10px; font-size:21px; }
+    p { color:var(--muted); margin:6px 0 12px; }
+    .panel { margin:16px 0; padding:16px; border:1px solid var(--line); border-radius:16px; background:rgba(27,34,51,.92); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; }
+    figure { margin:0; padding:10px; border:1px solid var(--line); border-radius:12px; background:#0c101b; }
+    img { display:block; width:100%; max-height:520px; object-fit:contain; background:#080b13; border-radius:8px; image-rendering:auto; }
+    figcaption { padding-top:8px; color:var(--muted); font-size:14px; }
+    .ok { color:var(--ok); }
+    .status { color:var(--warn); }
+    .tag { display:inline-block; margin:2px 6px 2px 0; padding:4px 8px; border:1px solid var(--line); border-radius:999px; color:#8fd3ff; font-size:13px; }
+  </style>
+</head>
+<body>
+<main>
+  <h1>AssetsLab 服装审核 Gallery</h1>
+  <p>页面只保留通过的里程碑结果和当前实验。普通失败尝试不会长期堆积；下一次实验会覆盖 current。</p>
+  <div><span class="tag">milestones</span><span class="tag">current experiment</span><span class="tag">headless Blender</span><span class="tag">Tailscale</span></div>
+
+  <section class="panel">
+    <h2>通过里程碑：GarmentCode neutral T-shirt</h2>
+    <p class="ok">通过：官方 neutral body，Warp 模拟完成，无身体碰撞和自交。</p>
+    <div class="grid">
+      <figure><img src="assets/clothes_gallery/garmentcode_official_neutral_v1/front_00.png" alt="GarmentCode neutral front"><figcaption>front</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_neutral_v1/back_00.png" alt="GarmentCode neutral back"><figcaption>back</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>通过里程碑：GarmentCode mean_male T-shirt</h2>
+    <p class="ok">通过：官方 mean_male body，作为第二个物理基准保留。</p>
+    <div class="grid">
+      <figure><img src="assets/clothes_gallery/garmentcode_official_mean_male_v1/front_00.png" alt="GarmentCode mean male front"><figcaption>front</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_official_mean_male_v1/back_00.png" alt="GarmentCode mean male back"><figcaption>back</figcaption></figure>
+    </div>
+  </section>
+
+  <section class="panel">
+    <h2>当前实验：Actor proxy sleeveless depth fit</h2>
+    <p class="status">当前：已通过 GarmentCode 代理物理门禁并转移到 Actor，但仍需审核胸腔比例、背部条纹和四方向跟随。下一次实验将覆盖本目录。</p>
+    <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png" alt="Current Actor proxy clothing experiment"><figcaption>front / right / back / left × 8 frames</figcaption></figure>
+    <div class="grid" style="margin-top:12px">
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/front_00.png" alt="Current front"><figcaption>front</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/right_00.png" alt="Current right"><figcaption>right</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/back_00.png" alt="Current back"><figcaption>back</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/left_00.png" alt="Current left"><figcaption>left</figcaption></figure>
+    </div>
+  </section>
+</main>
+</body>
+</html>
