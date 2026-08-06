@@ -32,6 +32,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--body-measurements", type=Path)
     parser.add_argument("--body-segmentation", type=Path)
     parser.add_argument("--max-sim-steps", type=int)
+    parser.add_argument("--resolution-scale", type=float)
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args()
 
@@ -54,6 +55,8 @@ def main() -> int:
         props = data_config.Properties(str(sim_config))
         if args.max_sim_steps is not None:
             props["sim"]["config"]["max_sim_steps"] = args.max_sim_steps
+        if args.resolution_scale is not None:
+            props["sim"]["config"]["resolution_scale"] = args.resolution_scale
         props.set_section_stats(
             "sim", fails={}, sim_time={}, spf={}, fin_frame={},
             body_collisions={}, self_collisions={}

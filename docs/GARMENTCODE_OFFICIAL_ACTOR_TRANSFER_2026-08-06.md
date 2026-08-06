@@ -271,3 +271,13 @@ profile sim OBJ unchanged and enabled smooth polygon normals only during the
 Blender transfer. This does not alter geometry, collisions, seams, or animation
 weights; it is a display-layer diagnostic. The current Gallery was overwritten
 with this result for visual comparison.
+
+## Higher mesh resolution test (2026-08-06)
+
+GarmentCode documents `resolution_scale=1.0` as approximately 1 cm edge
+spacing; smaller values are finer, so the next isolated run used `0.75` with
+the same profile pattern, body proxy, and material. It reached the 120-frame
+diagnostic limit without static-equilibrium completion and reported 145 body
+collisions and 10 self-collisions. The result was not transferred or published:
+mesh refinement alone worsened contact stability and is not the next control
+variable.
