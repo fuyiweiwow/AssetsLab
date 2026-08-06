@@ -4,6 +4,9 @@
 `GARMENTCODE_OFFICIAL_ACTOR_TRANSFER_2026-08-06.md` 保存 GarmentCode/Actor
 路线的详细结果，本文件保存以后每次实验都必须执行的检查和记录规则。
 
+关于服装风格、参数配方和可控随机种子的长期蓝图，见
+[服装风格配方与可控随机化蓝图](CLOTHES_STYLE_CONTROLLED_RANDOMIZATION_BLUEPRINT_2026-08-06.md)。
+
 ## 1. Gallery 与实验状态规则
 
 - `milestone`：只有物理门禁和视觉审核都通过的结果，长期保留。
