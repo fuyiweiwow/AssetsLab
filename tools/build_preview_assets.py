@@ -169,7 +169,7 @@ CLOTHING_REVIEW_CANDIDATES = (
     {
         "slug": "garmentcode_actor_proxy_current",
         "label": "当前实验 / Clean Render Garment + Physics Proxy",
-        "root": ROOT / "prototype/test_output/garmentcode_proxy_render_pair_current",
+        "root": ROOT / "prototype/test_output/clothes_next_short_sleeve_v1",
         "status": "当前实验",
         "note": "保留 GarmentCode 物理代理，独立生成规则四边面无袖 Render Garment（放大 U 型领口、前后肩带连接、侧缝、闭合下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy；条带和侧面缺口已消除，仍需审核肩带贴合和动作帧。下一次实验会覆盖它。",
     },
@@ -327,11 +327,11 @@ def copy_clothing_review_assets() -> list[dict[str, object]]:
             stills.append(target.relative_to(OUTPUT).as_posix())
         contact_sheet = destination / ("front_back.png" if source_frame_names else "4way_8frames.png")
         if slug == "garmentcode_actor_proxy_current":
-            candidate_label = "Current experiment / demo-style bind-pose tank + Surface Deform"
+            candidate_label = "Current experiment / Actor-derived short sleeve v1"
             candidate_note = (
-                "Current review candidate: compact demo-style open-hem sleeveless shell authored in the frame-1 bind pose, "
-                "Catmull-Clark subdivision, and Surface Deform to the Animation Proxy. Render clearance is 0.035 m; the fit "
-                "detector passes shoulder placement, back boundary, hem penetration, body clearance, and manifold checks."
+                "Current review candidate: Actor-derived shirt body plus independently bone-driven upper-arm sleeves. "
+                "This is the first short-sleeve topology experiment; it is review_required and does not replace the saved "
+                "sleeveless baseline until sleeve cuff, armpit, back integrity, and movement checks pass."
             )
         else:
             candidate_label = candidate["label"]

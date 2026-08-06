@@ -94,3 +94,15 @@ Actor 适配、Surface Deform、四方向八动作帧渲染和适配检测，但
 
 当前开始执行“1. 短袖上衣”。第一轮只验证短袖袖筒的骨骼跟随、袖口位置和
 腋下连续性；无袖衣身参数保持不变。
+
+## 短袖实验 v1 记录
+
+输出目录：`prototype/test_output/clothes_next_short_sleeve_v1/`
+
+- 输入：Actor V1 原始 Blender 文件；
+- 衣身范围：`bottom_z=0.775`、`top_z=1.47`；
+- 袖筒：上臂骨骼驱动，`sleeve_fraction=0.45`；
+- 表面余量：`clearance=0.050 m`；
+- 当前观察：袖筒能够跟随上臂，首轮仍需人工确认袖口是否避开手部、腋下是否
+  连续、背面是否过暗；
+- 状态：`review_required`，不替换已保存的无袖基线，也不进入随机池。
