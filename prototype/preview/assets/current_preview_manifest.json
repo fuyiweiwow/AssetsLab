@@ -29,7 +29,7 @@
       "slug": "garmentcode_actor_proxy_current",
       "label": "Current experiment / official milestone transferred to Actor",
       "status": "当前实验",
-      "note": "Current review candidate: the official GarmentCode neutral-body milestone with its U-neck and sewn short sleeves, transferred to the Actor with side-preserving projection and Actor armature weights. It remains review_required until neckline, sleeve/armhole continuity, back integrity, and movement checks pass. The sleeveless baseline is preserved.",
+      "note": "Current review candidate: a freshly regenerated official GarmentCode short-sleeve pattern with CircleNeckHalf, official Warp draping, then side-preserving Actor transfer and armature weights. It remains review_required because the Actor transfer still has sleeve/hem penetration; the sleeveless baseline and prior milestone transfer are preserved.",
       "contact_sheet": "clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png",
       "stills": [
         "clothes_gallery/garmentcode_actor_proxy_current/front_00.png",

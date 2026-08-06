@@ -29,6 +29,12 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--width", type=float, default=1.05)
     parser.add_argument("--flare", type=float, default=1.03)
     parser.add_argument("--sleeveless", action="store_true")
+    parser.add_argument("--sleeve-length", type=float, default=None)
+    parser.add_argument("--sleeve-connecting-width", type=float, default=None)
+    parser.add_argument("--sleeve-end-width", type=float, default=None)
+    parser.add_argument("--cuff-type", choices=("CuffBand", "CuffSkirt", "CuffBandSkirt", "null"), default=None)
+    parser.add_argument("--front-collar", default=None)
+    parser.add_argument("--back-collar", default=None)
     return parser.parse_args()
 
 
@@ -49,6 +55,18 @@ def main() -> int:
     design["shirt"]["length"]["v"] = options.length
     design["shirt"]["width"]["v"] = options.width
     design["shirt"]["flare"]["v"] = options.flare
+    if options.sleeve_length is not None:
+        design["sleeve"]["length"]["v"] = options.sleeve_length
+    if options.sleeve_connecting_width is not None:
+        design["sleeve"]["connecting_width"]["v"] = options.sleeve_connecting_width
+    if options.sleeve_end_width is not None:
+        design["sleeve"]["end_width"]["v"] = options.sleeve_end_width
+    if options.cuff_type is not None:
+        design["sleeve"]["cuff"]["type"]["v"] = None if options.cuff_type == "null" else options.cuff_type
+    if options.front_collar is not None:
+        design["collar"]["f_collar"]["v"] = options.front_collar
+    if options.back_collar is not None:
+        design["collar"]["b_collar"]["v"] = options.back_collar
     if options.sleeveless:
         design["sleeve"]["sleeveless"]["v"] = True
         design["left"]["sleeve"]["sleeveless"]["v"] = True
@@ -84,6 +102,12 @@ def main() -> int:
             "width": options.width,
             "flare": options.flare,
             "sleeveless": options.sleeveless,
+            "sleeve_length": options.sleeve_length,
+            "sleeve_connecting_width": options.sleeve_connecting_width,
+            "sleeve_end_width": options.sleeve_end_width,
+            "cuff_type": options.cuff_type,
+            "front_collar": options.front_collar,
+            "back_collar": options.back_collar,
         },
         "output": str(Path(destination).resolve()),
         "panels": sorted(pattern.pattern["panels"]),

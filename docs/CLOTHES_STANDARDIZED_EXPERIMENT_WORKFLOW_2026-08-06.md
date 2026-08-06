@@ -57,17 +57,17 @@ prototype/test_output/<candidate>/
 脚本退出码为 0 才表示自动门禁通过；非 0 必须保留报告并标记为 `fail`，不能仅凭
 Gallery 截图把它提升为通过。
 
-## 当前官方里程碑转移结果
+## 当前官方短袖参数化转移结果
 
-候选：`prototype/test_output/garmentcode_actor_official_neutral_v3_surface_bias/`
+候选：`prototype/test_output/clothes_next_short_sleeve_official_transfer_v1/`
 
 已运行统一检测，结果为 `fail`：
 
-- `shoulder_placement`: fail；
+- `shoulder_placement`: pass；
 - `hem_penetration`: fail；
-- `body_clearance`: fail；
+- `body_clearance`: pass；
 - `back_integrity` 与 `nonmanifold`: pass；
-- 8 个动作采样帧中均有不同程度的穿透/离体问题。
+- 8 个动作采样帧中仍有明显的衣身/下摆穿透。
 
 因此当前候选可以继续用于 Gallery 调优，但不能称为短袖里程碑，也不能进入随机池。
 下一轮应优先修正 Actor 转移的肩部、表面余量和下摆深度，再重新跑同一门禁；不能
