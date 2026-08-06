@@ -47,8 +47,8 @@
   </section>
 
   <section class="panel">
-    <h2>当前实验：Physics Proxy + Render Garment</h2>
-    <p class="status">当前：复用已通过物理门禁的 GarmentCode 结果作为 Physics Proxy，仅给独立 Render Garment 应用一级细分，并用 Surface Deform 跟随代理。Proxy 17,306 顶点、Render Garment 102,670 顶点；4 方向 × 8 帧已渲染。仍需审核背部条带和衣身边界，下一次实验将覆盖本目录。</p>
+    <h2>当前实验：Clean Render Garment + Physics Proxy</h2>
+    <p class="status">当前：保留已通过物理门禁的 GarmentCode 结果作为 Physics Proxy，独立生成规则四边面无袖 Render Garment（U 型领口、肩带、侧缝、下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy。背部条带已消除；仍需审核领口比例、肩带宽度和动作帧，下一次实验将覆盖本目录。</p>
     <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/4way_8frames.png" alt="Physics proxy and render garment current experiment"><figcaption>front / right / back / left × 8 frames</figcaption></figure>
     <div class="grid" style="margin-top:12px">
       <figure><img src="assets/clothes_gallery/garmentcode_actor_proxy_current/front_00.png" alt="Current front"><figcaption>front</figcaption></figure>

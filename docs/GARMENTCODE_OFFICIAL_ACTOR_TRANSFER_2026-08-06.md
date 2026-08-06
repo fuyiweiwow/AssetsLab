@@ -360,3 +360,18 @@ route is to author or generate a separate smooth render garment with explicit
 neckline, shoulder-strap, armhole, and hem boundaries, then bind that clean
 mesh to the existing Physics Proxy. The Proxy/Render split remains useful, but
 the current source mesh is not a suitable render source.
+
+## Clean render garment prototype (2026-08-06)
+
+The first independent render garment now uses a small regular quad shell rather
+than the GarmentCode sim topology. It is derived from the Actor torso depth
+envelope with `0.035 m` clearance and explicit front U-neck, shallow rear
+neckline, shoulder-strap, side-seam, and hem boundaries. The render mesh is
+subdivided to 306 vertices and has no Armature modifier. A separate cleaned
+Animation Proxy is reduced from 17,306 to 5,369 vertices and keeps the Actor
+Armature modifier; the Render Garment is bound to it with Surface Deform.
+
+The 4-direction × 8-frame render removes the previous horizontal back bands and
+keeps the garment visible through the walk samples. This is a current review
+candidate, not a final clothing seed: the neckline is intentionally simple and
+still needs visual approval for shoulder-strap width and chibi proportions.

@@ -168,10 +168,10 @@ CLOTHING_REVIEW_CANDIDATES = (
     },
     {
         "slug": "garmentcode_actor_proxy_current",
-        "label": "当前实验 / Physics proxy + Render Garment",
+        "label": "当前实验 / Clean Render Garment + Physics Proxy",
         "root": ROOT / "prototype/test_output/garmentcode_proxy_render_pair_current",
         "status": "当前实验",
-        "note": "物理代理保留 Actor Armature，渲染服装应用一级细分并通过 Surface Deform 跟随代理；4 方向 × 8 帧已渲染，仍需审核背部条带和衣身边界。下一次实验会覆盖它。",
+        "note": "保留 GarmentCode 物理代理，独立生成规则四边面无袖 Render Garment（U 型领口、肩带、侧缝、下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy；条带已消除，仍需审核领口比例和动作帧。下一次实验会覆盖它。",
     },
 )
 
