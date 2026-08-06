@@ -168,10 +168,10 @@ CLOTHING_REVIEW_CANDIDATES = (
     },
     {
         "slug": "garmentcode_actor_proxy_current",
-        "label": "当前实验 / Actor proxy sleeveless depth fit",
-        "root": ROOT / "prototype/test_output/garmentcode_actor_proxy_current",
+        "label": "当前实验 / Physics proxy + Render Garment",
+        "root": ROOT / "prototype/test_output/garmentcode_proxy_render_pair_current",
         "status": "当前实验",
-        "note": "当前只保留这一版实验结果：收紧躯干深度并增加背部余量。仍需审核胸腔比例、背部条纹和四方向跟随。下一次实验会覆盖它。",
+        "note": "物理代理保留 Actor Armature，渲染服装应用一级细分并通过 Surface Deform 跟随代理；4 方向 × 8 帧已渲染，仍需审核背部条带和衣身边界。下一次实验会覆盖它。",
     },
 )
 

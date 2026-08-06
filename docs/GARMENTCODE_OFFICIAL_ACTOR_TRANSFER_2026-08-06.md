@@ -309,3 +309,26 @@ envelope between adjacent height samples while keeping the same Actor torso
 clearance, bones, and physics OBJ. The back bands visibly weakened, confirming
 that the bin boundaries contributed to the artifact, but they did not disappear;
 the remaining portion is likely source mesh or texture structure.
+
+## Physics proxy / render garment split (2026-08-06)
+
+To separate animation stability from render topology, the next experiment used
+`tools/blender/build_garment_proxy_render_pair.py` on the current transfer blend.
+The already-passing GarmentCode result remains the low-resolution
+`GarmentCodeShirt_PhysicsProxy`: 17,306 vertices, nearest-Actor weights, and the
+`ActorArmatureDeform` modifier. A copied
+`GarmentCodeShirt_RenderGarment` removes the Armature modifier, applies one
+Catmull-Clark subdivision level, and binds
+`SurfaceDeformFromPhysicsProxy` to the proxy.
+
+The bind report is `bound=true`; the render mesh contains 102,670 vertices and
+renders correctly in front/right/back/left × 8 walk samples. This validates the
+architecture as a reusable boundary for future higher-quality clothing meshes,
+but does not yet fix the source back-panel horizontal bands. The pair is still
+`review_required`, not a randomization seed or milestone.
+
+Implementation note: Blender object duplication also copied the proxy's
+`hide_render=true` flag. The first run therefore bound successfully but rendered
+no clothing. The script now explicitly restores render visibility and the
+workflow treats “bound + visible at rest + visible during animation” as one
+combined gate.

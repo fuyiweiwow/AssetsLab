@@ -196,3 +196,26 @@ Warp 编译产物、MCP 缓存和模拟日志，合计超过 1 GB。目录、版
 本轮下一步使用 `tools/garmentcode/apply_actor_torso_profile.py`：它只改变前后
 衣片的横向边界坐标，不改变衣片数量、缝合关系或人体 YAML，曲线强度写入输出
 specification，便于物理门禁和视觉审核分别定位问题。
+
+## 9. 物理代理与渲染服装分层实验（2026-08-06）
+
+本轮开始验证更接近生产的分层路线：
+
+`GarmentCode sim.obj -> Physics Proxy -> Render Garment -> Surface Deform -> Actor walk`
+
+输入使用上一版已经通过物理门禁的 `garmentcode_actor_transfer_candidate.blend`，
+不重新运行不稳定的模拟。`tools/blender/build_garment_proxy_render_pair.py` 执行以下
+固定步骤：
+
+1. 保留 Actor 权重和 Armature modifier 的 17,306 顶点衣服为
+   `GarmentCodeShirt_PhysicsProxy`，只负责跟随 Actor 动画；
+2. 复制为独立的 `GarmentCodeShirt_RenderGarment`，移除 Armature modifier；
+3. 对渲染服装应用一级 Catmull-Clark subdivision，得到 102,670 个顶点；
+4. 在静止帧绑定 `SurfaceDeformFromPhysicsProxy`，目标为 Physics Proxy；
+5. 渲染 4 方向 × 8 个 walk 帧，并保存 pair blend 和 manifest。
+
+本次验证结果：Surface Deform `bound=true`，渲染对象没有 Armature modifier，四方向
+均能显示衣服并跟随动作。首次运行发现复制 Blender 对象会同时复制
+`hide_render=true`，导致“绑定成功但渲染服装完全不可见”；已在脚本中显式恢复
+渲染对象的可见性，并把这条检查加入流程。当前 Gallery 已切换为该 pair 结果；
+背面源衣片的水平条带仍然是几何/材质质量问题，尚未进入 milestone 或随机池。
