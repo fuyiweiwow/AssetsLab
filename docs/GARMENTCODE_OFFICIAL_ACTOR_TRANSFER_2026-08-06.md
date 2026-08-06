@@ -332,3 +332,31 @@ Implementation note: Blender object duplication also copied the proxy's
 no clothing. The script now explicitly restores render visibility and the
 workflow treats “bound + visible at rest + visible during animation” as one
 combined gate.
+
+## Render-layer banding and shoulder-strap diagnostics (2026-08-06)
+
+Review of the pair result found two unresolved visual defects: the shoulder
+straps intersect the Actor shoulder region, and the back still contains many
+horizontal bands. The material is a single blue Principled BSDF without a
+texture, so the bands are not a texture-packing or Gallery scaling problem.
+They are already present in the 17,306-vertex transferred proxy geometry.
+
+Three render-only controls were tested without changing the Physics Proxy:
+
+- light Laplacian smoothing followed by subdivision: bands remained almost
+  unchanged;
+- stronger surface smoothing plus a small Actor clearance: the shoulder strap
+  did not become natural and the bands remained;
+- complete nearest-surface re-projection: bands were reduced, but the neckline
+  and shoulder boundaries were pulled into spikes and the back silhouette was
+  distorted;
+- interior-only re-projection with garment boundaries preserved: it still
+  produced an unnatural shoulder/back shape and was rejected.
+
+None of these diagnostics was published to Gallery or committed as the current
+candidate. The conclusion is that the GarmentCode simulation mesh cannot also
+serve as the final Render Garment by modifier cleanup alone. The next valid
+route is to author or generate a separate smooth render garment with explicit
+neckline, shoulder-strap, armhole, and hem boundaries, then bind that clean
+mesh to the existing Physics Proxy. The Proxy/Render split remains useful, but
+the current source mesh is not a suitable render source.
