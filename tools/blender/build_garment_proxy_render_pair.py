@@ -253,7 +253,7 @@ def build_clean_tank_render_mesh(
             y = rear if back else front
             row_profile = x_profile
             if not back and row >= 4:
-                opening_half = (0.26, 0.40, 0.48)[min(row - 4, 2)]
+                opening_half = (0.34, 0.50, 0.60)[min(row - 4, 2)]
                 row_profile = (-1.0, -0.68, -opening_half, opening_half, 0.68, 1.0)
             row_indices: list[int] = []
             for normalized_x in row_profile:
@@ -281,6 +281,19 @@ def build_clean_tank_render_mesh(
     for row in range(len(z_rows) - 1):
         faces.append((front_rows[row][0], back_rows[row][0], back_rows[row + 1][0], front_rows[row + 1][0]))
         faces.append((front_rows[row][5], front_rows[row + 1][5], back_rows[row + 1][5], back_rows[row][5]))
+
+    # Join the front/back top edges over the left and right shoulders.  The
+    # previous render shell left these as two disconnected panels, which made
+    # the garment read as a bandeau and let the side view expose a notch.
+    top = len(z_rows) - 1
+    for column in (0, 1, 4):
+        faces.append((front_rows[top][column], front_rows[top][column + 1], back_rows[top][column + 1], back_rows[top][column]))
+
+    # Close the lower hem with a shallow underside strip so the side silhouette
+    # has a continuous lower edge instead of a semicircular opening.
+    bottom = 0
+    for column in range(len(x_profile) - 1):
+        faces.append((front_rows[bottom][column], back_rows[bottom][column], back_rows[bottom][column + 1], front_rows[bottom][column + 1]))
 
     mesh = bpy.data.meshes.new("GarmentCodeCleanTankRenderMesh")
     mesh.from_pydata(vertices, [], faces)

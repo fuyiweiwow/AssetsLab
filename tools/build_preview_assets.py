@@ -171,7 +171,7 @@ CLOTHING_REVIEW_CANDIDATES = (
         "label": "当前实验 / Clean Render Garment + Physics Proxy",
         "root": ROOT / "prototype/test_output/garmentcode_proxy_render_pair_current",
         "status": "当前实验",
-        "note": "保留 GarmentCode 物理代理，独立生成规则四边面无袖 Render Garment（U 型领口、肩带、侧缝、下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy；条带已消除，仍需审核领口比例和动作帧。下一次实验会覆盖它。",
+        "note": "保留 GarmentCode 物理代理，独立生成规则四边面无袖 Render Garment（放大 U 型领口、前后肩带连接、侧缝、闭合下摆），再通过 Surface Deform 跟随 5,369 顶点 Animation Proxy；条带和侧面缺口已消除，仍需审核肩带贴合和动作帧。下一次实验会覆盖它。",
     },
 )
 

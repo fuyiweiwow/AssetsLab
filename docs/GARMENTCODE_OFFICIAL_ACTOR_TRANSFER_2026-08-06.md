@@ -367,11 +367,13 @@ The first independent render garment now uses a small regular quad shell rather
 than the GarmentCode sim topology. It is derived from the Actor torso depth
 envelope with `0.035 m` clearance and explicit front U-neck, shallow rear
 neckline, shoulder-strap, side-seam, and hem boundaries. The render mesh is
-subdivided to 306 vertices and has no Armature modifier. A separate cleaned
+subdivided to 321 vertices and has no Armature modifier. A separate cleaned
 Animation Proxy is reduced from 17,306 to 5,369 vertices and keeps the Actor
 Armature modifier; the Render Garment is bound to it with Surface Deform.
 
 The 4-direction × 8-frame render removes the previous horizontal back bands and
-keeps the garment visible through the walk samples. This is a current review
-candidate, not a final clothing seed: the neckline is intentionally simple and
-still needs visual approval for shoulder-strap width and chibi proportions.
+keeps the garment visible through the walk samples. The later topology pass
+widens the front neckline, connects the front/back shoulder straps, and closes
+the lower hem strip; this removes the side hem notch and the previous bandeau
+appearance. This is a current review candidate, not a final clothing seed: the
+shoulder-strap fit and chibi proportions still need visual approval.

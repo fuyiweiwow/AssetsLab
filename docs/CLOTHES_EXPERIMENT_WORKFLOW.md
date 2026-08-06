@@ -229,5 +229,6 @@ Gallery current，也不会改变已经通过物理门禁的代理。
 本轮 A 方案已完成首个可审核样例：`build_garment_proxy_render_pair.py` 生成
 规则四边面无袖 Render Garment，前片保留 U 型领口，后片保留浅领口，肩带、侧缝
 和下摆使用独立边界；Physics Proxy 保留 17,306 顶点，Animation Proxy 另行平滑
-降面到 5,369 顶点，Render Garment 细分后为 306 个顶点。当前 4 方向 × 8 帧通过
-后台渲染，背部条带消失，状态为 `review_required`，尚未进入 milestone。
+降面到 5,369 顶点，Render Garment 细分后为 321 个顶点；前后片在肩部增加连接面，
+下摆增加内侧闭合面。当前 4 方向 × 8 帧通过后台渲染，背部条带和侧面下缘缺口
+消失，状态为 `review_required`，尚未进入 milestone。
