@@ -53,6 +53,7 @@ def cli_args() -> argparse.Namespace:
     )
     parser.add_argument("--sleeve-length-fraction", type=float, default=0.42)
     parser.add_argument("--sleeve-clearance", type=float, default=0.012)
+    parser.add_argument("--sleeve-forward-offset", type=float, default=0.04)
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
@@ -635,6 +636,7 @@ def build_clean_short_sleeve_mesh(
     proxy: bpy.types.Object,
     clearance: float,
     length_fraction: float,
+    forward_offset: float,
 ) -> tuple[bpy.types.Object, dict[str, object]]:
     """Build short sleeve tubes from the Actor upper-arm bones.
 
@@ -646,7 +648,53 @@ def build_clean_short_sleeve_mesh(
     """
     if not 0.25 <= length_fraction <= 0.65:
         raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.65")
+    # The sleeve mesh will be deformed by an Armature modifier.  Therefore its
+    # source vertices must be authored in the armature rest space, not from
+    # the frame-1 posed bone coordinates.  The previous implementation used
+    # pose-space centers and then applied the pose a second time, which put the
+    # blue sleeve shell inside the Actor upper arm and left only a side sliver
+    # visible.
+    previous_pose_position = armature.data.pose_position
+    armature.data.pose_position = "REST"
+    bpy.context.view_layer.update()
     actor_points = evaluated_world_points(actor)
+    rest_bones: dict[str, tuple[Vector, Vector]] = {}
+    for side, bone_name in (("left", "CC_Base_L_Upperarm"), ("right", "CC_Base_R_Upperarm")):
+        bone = armature.data.bones.get(bone_name)
+        if bone is None:
+            armature.data.pose_position = previous_pose_position
+            bpy.context.view_layer.update()
+            raise RuntimeError(f"missing sleeve rest bone: {bone_name}")
+        rest_bones[side] = (
+            armature.matrix_world @ bone.head_local,
+            armature.matrix_world @ bone.tail_local,
+        )
+    armature.data.pose_position = previous_pose_position
+    bpy.context.view_layer.update()
+    actor_points_by_side: dict[str, list[Vector]] = {}
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated_actor = actor.evaluated_get(depsgraph)
+    evaluated_mesh = evaluated_actor.to_mesh()
+    try:
+        group_indices = {group.name: group.index for group in actor.vertex_groups}
+        group_names = {
+            "left": "CC_Base_L_Upperarm",
+            "right": "CC_Base_R_Upperarm",
+        }
+        for side, group_name in group_names.items():
+            group_index = group_indices.get(group_name)
+            if group_index is None:
+                actor_points_by_side[side] = list(actor_points)
+                continue
+            actor_points_by_side[side] = [
+                evaluated_actor.matrix_world @ evaluated_mesh.vertices[vertex.index].co
+                for vertex in actor.data.vertices
+                if any(assignment.group == group_index and assignment.weight >= 0.20 for assignment in vertex.groups)
+            ]
+            if len(actor_points_by_side[side]) < 32:
+                actor_points_by_side[side] = list(actor_points)
+    finally:
+        evaluated_actor.to_mesh_clear()
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
     side_indices: dict[str, list[int]] = {"left": [], "right": []}
@@ -655,11 +703,7 @@ def build_clean_short_sleeve_mesh(
     ring_fractions = (0.02, 0.22, 0.52, 0.82, 1.0)
 
     def add_sleeve(side: str, bone_name: str, sign: float) -> None:
-        bone = armature.pose.bones.get(bone_name)
-        if bone is None:
-            raise RuntimeError(f"missing sleeve bone: {bone_name}")
-        head = armature.matrix_world @ bone.head
-        tail = armature.matrix_world @ bone.tail
+        head, tail = rest_bones[side]
         axis = (tail - head).normalized()
         length = (tail - head).length * length_fraction
         reference = Vector((0.0, 0.0, 1.0))
@@ -668,30 +712,45 @@ def build_clean_short_sleeve_mesh(
         radial_a = axis.cross(reference).normalized()
         radial_b = axis.cross(radial_a).normalized()
 
+        side_actor_points = actor_points_by_side[side]
         rings: list[list[int]] = []
         for ring_number, fraction in enumerate(ring_fractions):
             center = head + axis * (length * fraction)
             nearby = []
-            for point in actor_points:
+            for point in side_actor_points:
                 projection = (point - head).dot(axis)
                 if -0.025 <= projection <= length + 0.035:
                     radial = point - (head + axis * max(0.0, min(length, projection)))
-                    if radial.length <= 0.13 and point.x * sign > -0.015:
+                    if radial.length <= 0.20 and point.x * sign > -0.015:
                         nearby.append(radial.length)
             measured = sorted(nearby)
             if measured:
-                measured_radius = measured[int((len(measured) - 1) * 0.88)]
+                # The 88th percentile was too conservative for this chibi
+                # arm: it estimated the inner half of the low-poly limb, so
+                # the sleeve stayed visually inside the skin. Use a robust
+                # outer-surface percentile and a small floor so the cloth
+                # shell is actually visible from the front and side.
+                measured_radius = measured[int((len(measured) - 1) * 0.95)]
             else:
-                measured_radius = 0.052
-            base_radius = max(0.045, min(0.078, measured_radius + clearance))
+                measured_radius = 0.10
+            # The Actor upper-arm envelope is much fuller than the torso
+            # cross-section (roughly 0.10--0.13 m in this chibi rig). Keep a
+            # dedicated arm-shell range so the sleeve cannot collapse inside
+            # the skin merely because a ring has sparse samples.
+            base_radius = max(0.10, min(0.18, measured_radius + clearance))
             if ring_number == 0:
                 base_radius += 0.008
             if ring_number == len(ring_fractions) - 1:
-                base_radius *= 0.94
+                base_radius *= 0.96
             ring: list[int] = []
             for segment in range(segments):
                 angle = 2.0 * 3.141592653589793 * segment / segments
                 point = center + radial_a * (base_radius * math.cos(angle)) + radial_b * (base_radius * math.sin(angle))
+                # The Actor's relaxed arms sit slightly behind the torso in
+                # the front camera. A small rest-space forward offset keeps
+                # the sleeve surface visible without changing the armature
+                # binding or touching the confirmed torso garment.
+                point.y -= forward_offset
                 ring.append(len(vertices))
                 vertices.append(tuple(point))
                 side_indices[side].append(ring[-1])
@@ -719,11 +778,15 @@ def build_clean_short_sleeve_mesh(
         sleeves.data.materials.append(proxy.data.materials[0])
     return sleeves, {
         "enabled": True,
-        "method": "official_demo_short_sleeve_ratio_as_bone_following_open_cuff_shell",
+        "method": "official_demo_short_sleeve_ratio_as_rest_space_bone_following_outer_surface_shell",
+        "source_space": "armature_rest_pose",
         "length_fraction_of_upperarm": length_fraction,
         "clearance": clearance,
+        "forward_offset": forward_offset,
         "segments_per_ring": segments,
         "ring_fractions": list(ring_fractions),
+        "radius_floor": 0.10,
+        "radius_cap": 0.18,
         "vertex_count": len(vertices),
         "face_count": len(faces),
         "left_vertex_indices": side_indices["left"],
@@ -895,6 +958,7 @@ def main() -> int:
             proxy,
             options.sleeve_clearance,
             options.sleeve_length_fraction,
+            options.sleeve_forward_offset,
         )
     clean_surface = (
         build_clean_render_surface(
