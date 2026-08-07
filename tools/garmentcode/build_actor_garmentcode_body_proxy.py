@@ -13,6 +13,7 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from trimesh.smoothing import filter_taubin
 from trimesh.voxel import VoxelGrid
 from trimesh.voxel.encoding import DenseEncoding
 
@@ -119,6 +120,12 @@ def main() -> None:
         metavar=("LEG", "HIP", "WAIST"),
         help="Target GarmentCode Y levels in centimetres for piecewise anatomical mapping",
     )
+    parser.add_argument(
+        "--smooth-iterations",
+        type=int,
+        default=0,
+        help="Apply volume-preserving Taubin smoothing after proxy construction",
+    )
     args = parser.parse_args()
 
     source = trimesh.load(args.input_obj, process=False)
@@ -175,6 +182,10 @@ def main() -> None:
         if not (np.all(np.diff(source_levels) > 0) and np.all(np.diff(target_levels) > 0)):
             raise ValueError("Y mapping levels must be strictly increasing: leg < hip < waist")
         proxy.vertices[:, 1] = map_piecewise(proxy.vertices[:, 1], source_levels, target_levels)
+    if args.smooth_iterations < 0:
+        raise ValueError("--smooth-iterations must be non-negative")
+    if args.smooth_iterations:
+        filter_taubin(proxy, lamb=0.4, nu=0.53, iterations=args.smooth_iterations)
     proxy.process(validate=True)
 
     source_bounds = np.asarray(proxy.bounds).tolist()
@@ -198,6 +209,7 @@ def main() -> None:
         "z_scale": args.z_scale,
         "y_map_source_cm": args.y_map_source,
         "y_map_target_cm": args.y_map_target,
+        "smooth_iterations": args.smooth_iterations,
         "output_scale": args.output_scale,
         "vertices": int(len(proxy.vertices)),
         "faces": int(len(proxy.faces)),
