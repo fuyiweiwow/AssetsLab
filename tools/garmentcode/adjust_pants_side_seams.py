@@ -19,6 +19,12 @@ def main() -> int:
     parser.add_argument("--input-spec", required=True, type=Path)
     parser.add_argument("--output-spec", required=True, type=Path)
     parser.add_argument("--inset", type=float, default=2.0)
+    parser.add_argument(
+        "--side",
+        choices=("both", "right", "left"),
+        default="both",
+        help="Which side to adjust; default is both.",
+    )
     options = parser.parse_args()
     if options.inset < 0:
         raise ValueError("--inset must be non-negative")
@@ -34,7 +40,12 @@ def main() -> int:
         "pant_f_l": [6, 5, 4],
         "pant_b_l": [1, 2, 3],
     }
-    edits: dict[str, list[int]] = {**right, **left}
+    if options.side == "right":
+        edits: dict[str, list[int]] = right
+    elif options.side == "left":
+        edits = left
+    else:
+        edits = {**right, **left}
     for panel_name, indices in edits.items():
         vertices = panels[panel_name]["vertices"]
         max_y = max(float(vertices[index][1]) for index in indices)
@@ -47,6 +58,7 @@ def main() -> int:
         "schema": "assetslab_pants_side_seam_adjustment_v1",
         "source_spec": str(options.input_spec.resolve()),
         "max_inset_cm": options.inset,
+        "side": options.side,
         "changed_vertices": edits,
         "topology_changed": False,
         "stitches_changed": False,

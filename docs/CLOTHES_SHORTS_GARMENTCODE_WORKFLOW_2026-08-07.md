@@ -185,3 +185,10 @@ v8 说明前后厚度是主要根因之一，但碰撞仍未归零。下一轮�
 - 新增 `tools/garmentcode/adjust_pants_side_seams.py`，对左右前后片 hem 到臀线的外侧顶点做镜像锥形内收，最大值 2 cm，保持拓扑与 stitches 不变。
 - v20 300 帧结果为身体碰撞 `430`、自相交 `12`，明显劣于 v9 的 `388/0`，说明整条外侧接缝统一内收会破坏裤片连续性。
 - 结论：下一步不能继续做整条侧缝的同向偏移，应按左右腿和具体 seam edge 分开建立边界约束；当前 Gallery 继续不更新。
+## v21：单侧外侧接缝对照（2026-08-07）
+
+- 为区分左右腿局部问题，扩展 `tools/garmentcode/adjust_pants_side_seams.py`，新增 `--side both|right|left`；默认仍是双侧，单侧实验只修改对应前片/后片的外侧下段顶点，拓扑和 stitches 不变。
+- 右侧单独内收 2 cm：`third_party/GarmentCode/Logs/actor_v1_shorts_side_right02_260807-16-36-01/`。300 步未达静态平衡，`BODY CLOTH INTERSECTIONS: 411`，自交 `2`。
+- 左侧单独内收 2 cm：`third_party/GarmentCode/Logs/actor_v1_shorts_side_left02_260807-16-38-46/`。300 步未达静态平衡，`BODY CLOTH INTERSECTIONS: 427`，无自交。
+- 两个单侧结果都没有优于 v9 基线（300 步身体交叉约 386；v9 的 500 步静态结果为 388/0），因此不能把某一侧 seam 作为主要根因，也不更新 Gallery。
+- 当前判断：继续对同一条外侧接缝做统一内收收益很低。下一阶段应回到目标 Actor 体型上的裤脚边界/大腿截面与纸样开口之间的几何对应关系，或者重新生成与目标体型一致的 Pants 纸样；随机化继续冻结。
