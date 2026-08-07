@@ -53,6 +53,11 @@ def cli_args() -> argparse.Namespace:
     )
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
+    parser.add_argument(
+        "--preserve-post-armature-clearance",
+        action="store_true",
+        help="restore the transfer-stage outside clearance after rebuilding the animation proxy",
+    )
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
     parser.add_argument("--animation-proxy-smooth-factor", type=float, default=0.35)
     parser.add_argument("--animation-proxy-decimate-ratio", type=float, default=0.30)
@@ -157,12 +162,27 @@ def apply_animation_proxy_cleanup(
     smooth_iterations: int,
     smooth_factor: float,
     decimate_ratio: float,
+    preserve_post_armature_clearance: bool = False,
 ) -> dict[str, object]:
     if smooth_iterations < 0 or not 0.0 < smooth_factor <= 1.0:
         raise RuntimeError("invalid animation proxy smoothing parameters")
     if not 0.0 < decimate_ratio <= 1.0:
         raise RuntimeError("animation proxy decimate ratio must be in (0, 1]")
     before = len(obj.data.vertices)
+    clearance_settings = None
+    clearance_modifier = obj.modifiers.get("AnimatedActorOutsideClearance")
+    if preserve_post_armature_clearance and clearance_modifier is not None:
+        clearance_settings = {
+            "target": clearance_modifier.target,
+            "wrap_method": clearance_modifier.wrap_method,
+            "wrap_mode": clearance_modifier.wrap_mode,
+            "offset": clearance_modifier.offset,
+            "vertex_group": clearance_modifier.vertex_group,
+            "use_project_x": clearance_modifier.use_project_x,
+            "use_project_y": clearance_modifier.use_project_y,
+            "use_negative_direction": clearance_modifier.use_negative_direction,
+            "use_positive_direction": clearance_modifier.use_positive_direction,
+        }
     for modifier in list(obj.modifiers):
         obj.modifiers.remove(modifier)
     if smooth_iterations > 0:
@@ -184,6 +204,18 @@ def apply_animation_proxy_cleanup(
     obj.select_set(False)
     armature_modifier = obj.modifiers.new("AnimationProxyArmatureDeform", "ARMATURE")
     armature_modifier.object = armature
+    if clearance_settings is not None and clearance_settings["target"] is not None:
+        clearance = obj.modifiers.new("AnimationProxyOutsideClearance", "SHRINKWRAP")
+        clearance.target = clearance_settings["target"]
+        clearance.wrap_method = clearance_settings["wrap_method"]
+        clearance.wrap_mode = clearance_settings["wrap_mode"]
+        clearance.offset = clearance_settings["offset"]
+        if clearance_settings["vertex_group"] in obj.vertex_groups:
+            clearance.vertex_group = clearance_settings["vertex_group"]
+        clearance.use_project_x = clearance_settings["use_project_x"]
+        clearance.use_project_y = clearance_settings["use_project_y"]
+        clearance.use_negative_direction = clearance_settings["use_negative_direction"]
+        clearance.use_positive_direction = clearance_settings["use_positive_direction"]
     obj.data.update()
     return {
         "enabled": True,
@@ -193,6 +225,7 @@ def apply_animation_proxy_cleanup(
         "smooth_factor": smooth_factor,
         "decimate_ratio": decimate_ratio,
         "armature_modifier": armature_modifier.name,
+        "post_armature_clearance": clearance_settings is not None,
     }
 
 
@@ -984,6 +1017,7 @@ def main() -> int:
             options.animation_proxy_smooth_iterations,
             options.animation_proxy_smooth_factor,
             options.animation_proxy_decimate_ratio,
+            options.preserve_post_armature_clearance,
         )
         if options.clean_animation_proxy and not reused_render_pair
         else {

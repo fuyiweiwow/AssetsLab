@@ -97,6 +97,12 @@ def cli_args() -> argparse.Namespace:
         default=0.0,
         help="push only the camera-facing pants panel outward; preserves the back and side profile",
     )
+    parser.add_argument(
+        "--pants-crotch-band-below",
+        type=float,
+        default=0.11,
+        help="distance above the pants hem where the pelvis-owned crotch bridge ends",
+    )
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument(
         "--smooth-shading",
@@ -658,6 +664,7 @@ def assign_segmented_pants_weights(
     mode: str = "segmented",
     waist_top_z: float | None = None,
     waist_profile: str = "pelvis",
+    crotch_band_below: float = 0.11,
 ) -> dict[str, object]:
     """Give the waistband pelvis weights and each leg its matching thigh.
 
@@ -705,7 +712,9 @@ def assign_segmented_pants_weights(
     # x=0 split with thigh weights makes the seam open during a walk pose.
     # Keep a wider pelvis-owned crotch bridge down to just above the hem.
     center_band = 0.085
-    crotch_band_bottom = pants_bottom_z + 0.11
+    if crotch_band_below < 0.0:
+        raise RuntimeError("pants crotch band distance must be non-negative")
+    crotch_band_bottom = pants_bottom_z + crotch_band_below
     assigned = {"pelvis": 0, positive_name: 0, negative_name: 0}
     if spine is not None:
         assigned[spine_name] = 0
@@ -752,6 +761,7 @@ def assign_segmented_pants_weights(
         "vertex_assignment_counts": assigned,
         "center_band_top": center_band,
         "center_band_bottom": crotch_band_bottom,
+        "crotch_band_below": crotch_band_below,
         "center_band_fade_height": 0.0,
         "waist_profile": waist_profile,
         "waist_top_z": waist_top_z,
@@ -1158,6 +1168,7 @@ def main() -> int:
                 options.pants_weight_mode,
                 waist_top_z=pants_waist_top_z,
                 waist_profile=options.pants_waist_profile,
+                crotch_band_below=options.pants_crotch_band_below,
             )
         elif not options.skip_upper_weight_repair and bone_shoulder_fit is not None:
             upper_weight_repair = repair_upper_garment_weights(
