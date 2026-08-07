@@ -107,6 +107,12 @@ def main() -> None:
         help="Scale the source Actor front/back depth around Z before exporting",
     )
     parser.add_argument(
+        "--x-scale",
+        type=float,
+        default=1.0,
+        help="Scale the source Actor horizontal width around X before exporting",
+    )
+    parser.add_argument(
         "--y-map-source",
         type=float,
         nargs=3,
@@ -173,6 +179,9 @@ def main() -> None:
         raise ValueError("Y-cropped Actor proxy is empty")
     if args.z_scale <= 0:
         raise ValueError("--z-scale must be greater than zero")
+    if args.x_scale <= 0:
+        raise ValueError("--x-scale must be greater than zero")
+    proxy.vertices[:, 0] *= args.x_scale
     proxy.vertices[:, 2] *= args.z_scale
     if (args.y_map_source is None) != (args.y_map_target is None):
         raise ValueError("--y-map-source and --y-map-target must be provided together")
@@ -207,6 +216,7 @@ def main() -> None:
         "crop_y_max": args.crop_y_max,
         "pants_core": args.pants_core,
         "z_scale": args.z_scale,
+        "x_scale": args.x_scale,
         "y_map_source_cm": args.y_map_source,
         "y_map_target_cm": args.y_map_target,
         "smooth_iterations": args.smooth_iterations,
