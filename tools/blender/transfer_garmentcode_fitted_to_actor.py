@@ -8,6 +8,7 @@ clearance, and nearest-vertex weight transfer. No Cloth simulation is used.
 from __future__ import annotations
 
 import argparse
+import heapq
 import json
 import math
 import sys
@@ -108,6 +109,12 @@ def cli_args() -> argparse.Namespace:
         type=float,
         default=1.0,
         help="scale the lower shorts thigh weights while keeping the remaining weight on the pelvis",
+    )
+    parser.add_argument(
+        "--pants-leg-assignment",
+        choices=("x", "bone", "topology"),
+        default="x",
+        help="assign lower-leg vertices by world X, nearest thigh bone, or garment-surface topology",
     )
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument(
@@ -672,6 +679,7 @@ def assign_segmented_pants_weights(
     waist_profile: str = "pelvis",
     crotch_band_below: float = 0.11,
     thigh_weight_factor: float = 1.0,
+    leg_assignment: str = "x",
 ) -> dict[str, object]:
     """Give the waistband pelvis weights and each leg its matching thigh.
 
@@ -723,10 +731,116 @@ def assign_segmented_pants_weights(
         raise RuntimeError("pants crotch band distance must be non-negative")
     if not 0.0 <= thigh_weight_factor <= 1.0:
         raise RuntimeError("pants thigh weight factor must be in [0, 1]")
+    if leg_assignment not in {"x", "bone", "topology"}:
+        raise RuntimeError("pants leg assignment must be x, bone, or topology")
     crotch_band_bottom = pants_bottom_z + crotch_band_below
     assigned = {"pelvis": 0, positive_name: 0, negative_name: 0}
     if spine is not None:
         assigned[spine_name] = 0
+    thigh_segments = {
+        positive_name: (_bone_point(armature, positive_name), _bone_point(armature, positive_name, tail=True)),
+        negative_name: (_bone_point(armature, negative_name), _bone_point(armature, negative_name, tail=True)),
+    }
+
+    topology_distances = None
+    topology_info = None
+    if leg_assignment == "topology":
+        mesh = garment.data
+        mesh.update()
+        vertex_count = len(mesh.vertices)
+        adjacency: list[list[tuple[int, float]]] = [[] for _ in range(vertex_count)]
+        boundary_adjacency: list[list[int]] = [[] for _ in range(vertex_count)]
+        world_positions = [garment.matrix_world @ vertex.co for vertex in mesh.vertices]
+        face_edge_counts: dict[tuple[int, int], int] = {}
+        for polygon in mesh.polygons:
+            polygon_vertices = list(polygon.vertices)
+            for offset, first in enumerate(polygon_vertices):
+                second = polygon_vertices[(offset + 1) % len(polygon_vertices)]
+                key = tuple(sorted((first, second)))
+                face_edge_counts[key] = face_edge_counts.get(key, 0) + 1
+        for edge in mesh.edges:
+            first, second = edge.vertices
+            edge_length = (world_positions[first] - world_positions[second]).length
+            adjacency[first].append((second, edge_length))
+            adjacency[second].append((first, edge_length))
+            if face_edge_counts.get(tuple(sorted((first, second))), 0) == 1:
+                boundary_adjacency[first].append(second)
+                boundary_adjacency[second].append(first)
+        boundary_vertices = {index for index, neighbors in enumerate(boundary_adjacency) if neighbors}
+        boundary_components: list[list[int]] = []
+        remaining = set(boundary_vertices)
+        while remaining:
+            seed = remaining.pop()
+            component = [seed]
+            stack = [seed]
+            while stack:
+                current = stack.pop()
+                for neighbor in boundary_adjacency[current]:
+                    if neighbor in remaining:
+                        remaining.remove(neighbor)
+                        component.append(neighbor)
+                        stack.append(neighbor)
+            boundary_components.append(component)
+        if len(boundary_components) < 3:
+            raise RuntimeError(
+                f"topology pants assignment expected waistband plus two leg boundaries, got {len(boundary_components)}"
+            )
+        component_stats = []
+        for component in boundary_components:
+            points = [world_positions[index] for index in component]
+            component_stats.append(
+                {
+                    "indices": component,
+                    "mean_x": sum(point.x for point in points) / len(points),
+                    "mean_z": sum(point.z for point in points) / len(points),
+                    "count": len(component),
+                }
+            )
+        waistband_component = max(component_stats, key=lambda item: item["mean_z"])
+        leg_components = [item for item in component_stats if item is not waistband_component]
+        if len(leg_components) != 2:
+            raise RuntimeError("topology pants assignment could not isolate two leg boundaries")
+        positive_component = max(leg_components, key=lambda item: item["mean_x"])
+        negative_component = min(leg_components, key=lambda item: item["mean_x"])
+
+        def shortest_surface_distances(seeds: list[int]) -> list[float]:
+            distances = [math.inf] * vertex_count
+            queue: list[tuple[float, int]] = []
+            for seed_index in seeds:
+                distances[seed_index] = 0.0
+                heapq.heappush(queue, (0.0, seed_index))
+            while queue:
+                distance, current = heapq.heappop(queue)
+                if distance > distances[current] + 1e-12:
+                    continue
+                for neighbor, edge_length in adjacency[current]:
+                    candidate = distance + edge_length
+                    if candidate + 1e-12 < distances[neighbor]:
+                        distances[neighbor] = candidate
+                        heapq.heappush(queue, (candidate, neighbor))
+            return distances
+
+        topology_distances = {
+            positive_name: shortest_surface_distances(positive_component["indices"]),
+            negative_name: shortest_surface_distances(negative_component["indices"]),
+        }
+        topology_info = {
+            "boundary_component_count": len(boundary_components),
+            "waistband_boundary_vertex_count": waistband_component["count"],
+            "positive_leg_boundary_vertex_count": positive_component["count"],
+            "negative_leg_boundary_vertex_count": negative_component["count"],
+            "positive_leg_boundary_mean_x": positive_component["mean_x"],
+            "negative_leg_boundary_mean_x": negative_component["mean_x"],
+        }
+
+    def segment_distance_squared(point: Vector, segment: tuple[Vector, Vector]) -> float:
+        start, end = segment
+        direction = end - start
+        length_squared = direction.length_squared
+        if length_squared <= 1e-10:
+            return (point - start).length_squared
+        factor = max(0.0, min(1.0, (point - start).dot(direction) / length_squared))
+        return (point - (start + factor * direction)).length_squared
     for vertex in garment.data.vertices:
         world = garment.matrix_world @ vertex.co
         if spine is not None and world.z >= waist_top_z - 0.06:
@@ -753,8 +867,21 @@ def assign_segmented_pants_weights(
             pelvis.add([vertex.index], 1.0, "REPLACE")
             assigned["pelvis"] += 1
             continue
-        side_group = positive if world.x >= 0.0 else negative
-        side_name = positive_name if world.x >= 0.0 else negative_name
+        if leg_assignment == "bone":
+            side_name = min(
+                (positive_name, negative_name),
+                key=lambda name: segment_distance_squared(world, thigh_segments[name]),
+            )
+            side_group = positive if side_name == positive_name else negative
+        elif leg_assignment == "topology":
+            side_name = min(
+                (positive_name, negative_name),
+                key=lambda name: topology_distances[name][vertex.index],
+            )
+            side_group = positive if side_name == positive_name else negative
+        else:
+            side_group = positive if world.x >= 0.0 else negative
+            side_name = positive_name if world.x >= 0.0 else negative_name
         side_weight = min(1.0, max(0.0, (pelvis_top_z - world.z) / transition_band))
         side_weight *= thigh_weight_factor
         pelvis_weight = 1.0 - side_weight
@@ -773,6 +900,8 @@ def assign_segmented_pants_weights(
         "center_band_bottom": crotch_band_bottom,
         "crotch_band_below": crotch_band_below,
         "thigh_weight_factor": thigh_weight_factor,
+        "leg_assignment": leg_assignment,
+        "topology": topology_info,
         "center_band_fade_height": 0.0,
         "waist_profile": waist_profile,
         "waist_top_z": waist_top_z,
@@ -1181,6 +1310,7 @@ def main() -> int:
                 waist_profile=options.pants_waist_profile,
                 crotch_band_below=options.pants_crotch_band_below,
                 thigh_weight_factor=options.pants_thigh_weight_factor,
+                leg_assignment=options.pants_leg_assignment,
             )
         elif not options.skip_upper_weight_repair and bone_shoulder_fit is not None:
             upper_weight_repair = repair_upper_garment_weights(
