@@ -103,6 +103,12 @@ def cli_args() -> argparse.Namespace:
         default=0.11,
         help="distance above the pants hem where the pelvis-owned crotch bridge ends",
     )
+    parser.add_argument(
+        "--pants-thigh-weight-factor",
+        type=float,
+        default=1.0,
+        help="scale the lower shorts thigh weights while keeping the remaining weight on the pelvis",
+    )
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument(
         "--smooth-shading",
@@ -665,6 +671,7 @@ def assign_segmented_pants_weights(
     waist_top_z: float | None = None,
     waist_profile: str = "pelvis",
     crotch_band_below: float = 0.11,
+    thigh_weight_factor: float = 1.0,
 ) -> dict[str, object]:
     """Give the waistband pelvis weights and each leg its matching thigh.
 
@@ -714,6 +721,8 @@ def assign_segmented_pants_weights(
     center_band = 0.085
     if crotch_band_below < 0.0:
         raise RuntimeError("pants crotch band distance must be non-negative")
+    if not 0.0 <= thigh_weight_factor <= 1.0:
+        raise RuntimeError("pants thigh weight factor must be in [0, 1]")
     crotch_band_bottom = pants_bottom_z + crotch_band_below
     assigned = {"pelvis": 0, positive_name: 0, negative_name: 0}
     if spine is not None:
@@ -747,6 +756,7 @@ def assign_segmented_pants_weights(
         side_group = positive if world.x >= 0.0 else negative
         side_name = positive_name if world.x >= 0.0 else negative_name
         side_weight = min(1.0, max(0.0, (pelvis_top_z - world.z) / transition_band))
+        side_weight *= thigh_weight_factor
         pelvis_weight = 1.0 - side_weight
         if pelvis_weight > 1e-5:
             pelvis.add([vertex.index], pelvis_weight, "REPLACE")
@@ -762,6 +772,7 @@ def assign_segmented_pants_weights(
         "center_band_top": center_band,
         "center_band_bottom": crotch_band_bottom,
         "crotch_band_below": crotch_band_below,
+        "thigh_weight_factor": thigh_weight_factor,
         "center_band_fade_height": 0.0,
         "waist_profile": waist_profile,
         "waist_top_z": waist_top_z,
@@ -1169,6 +1180,7 @@ def main() -> int:
                 waist_top_z=pants_waist_top_z,
                 waist_profile=options.pants_waist_profile,
                 crotch_band_below=options.pants_crotch_band_below,
+                thigh_weight_factor=options.pants_thigh_weight_factor,
             )
         elif not options.skip_upper_weight_repair and bone_shoulder_fit is not None:
             upper_weight_repair = repair_upper_garment_weights(
