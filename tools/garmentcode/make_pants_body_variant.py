@@ -21,6 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--waist-scale", type=float, default=1.05)
     parser.add_argument("--hips-scale", type=float, default=1.05)
     parser.add_argument("--leg-scale", type=float, default=1.05)
+    parser.add_argument("--crotch-hip-diff-add", type=float, default=0.0)
     return parser.parse_args()
 
 
@@ -34,6 +35,7 @@ def main() -> int:
     for key in ("hips", "hip_back_width"):
         body[key] = round(float(body[key]) * options.hips_scale, 6)
     body["leg_circ"] = round(float(body["leg_circ"]) * options.leg_scale, 6)
+    body["crotch_hip_diff"] = round(float(body["crotch_hip_diff"]) + options.crotch_hip_diff_add, 6)
 
     output = options.output.resolve()
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -45,8 +47,9 @@ def main() -> int:
             "waist": options.waist_scale,
             "hips": options.hips_scale,
             "leg_circ": options.leg_scale,
+            "crotch_hip_diff_add": options.crotch_hip_diff_add,
         },
-        "changed_keys": ["waist", "waist_back_width", "hips", "hip_back_width", "leg_circ"],
+        "changed_keys": ["waist", "waist_back_width", "hips", "hip_back_width", "leg_circ", "crotch_hip_diff"],
         "body": body,
         "original": {key: original[key] for key in ("waist", "waist_back_width", "hips", "hip_back_width", "leg_circ")},
     }
