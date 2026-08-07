@@ -103,3 +103,16 @@ v32-v34 的诊断也已记录：单纯重建一个连续裤子渲染壳会受到
 - v42、v43 均不更新 Gallery；Gallery 继续只保留 v31 当前候选和已确认里程碑。代码保留 `--pants-leg-assignment x|bone|topology`，用于后续其他裤型的复现实验。
 
 下一步应停止继续微调同一件短裤的权重，转向“腿口边界驱动的几何/变形”实验：在 REST 姿态记录左右裤脚边界环和 Actor 大腿截面，建立每侧独立的变形约束，再验证第 51 帧侧下摆是否仍穿入。这个实验仍属于短裤适配门槛，未通过前不进入随机化。
+
+## 腿口余量与原始代理对照（v44-v45）
+
+- v44 取消 Animation Proxy 的平滑和减面，直接保留 6892 顶点的原始转移代理。结果比标准 3154 顶点代理更差：最大穿透约 `0.221879 m`，平均身体穿透顶点约 `2246.4`，因此“代理减面破坏裤脚”的假设不成立。
+- v45 使用 v43 的裤脚边界拓扑，在左右裤脚边界邻域沿对应大腿骨中心线增加 `0.020 m` 径向余量，并以 0.10 m 表面距离渐隐。实际修改 1616 个顶点，但最大穿透升至 `0.226381 m`，没有改善下摆运动；该方案拒绝进入 Gallery。
+- v44/v45 结论：转移层的代理清理和局部腿口补偿都不是主解。保留 `--pants-leg-opening-ease` 作为诊断参数，默认值为 `0`，正式流程不启用。
+
+## 目标 Actor 体型上的官方重新模拟（2026-08-07）
+
+- 使用 `third_party/GarmentCode/.venv`，通过项目封装的 `tools/garmentcode/run_garmentcode_sim.py`，将宽裆 Pants 纸样重新投到闭合的 `garmentcode_actor_body_proxy_v5_pants_crop` 代理；模拟上限 500 步、时间上限 240 秒，并成功跑到 406 帧。
+- 输出日志：`third_party/GarmentCode/Logs/actor_v1_shorts_wider_crotch_seed_2_260807-13-41-16/`。
+- 结果：`BODY CLOTH INTERSECTIONS: 1095`，自相交 `1032`，质量门禁失败。运行过程中提示缺少 `design_params.yaml`，但仍完成了模拟并输出 `sim.obj`；该结果不能作为可转移服装。
+- 这次实验确认官方重新模拟路线可以运行，但当前 Actor 代理的尺寸/测量/纸样组合还不满足 GarmentCode 的物理门禁。后续应先修正 body proxy 与对应 measurements 的一致性，再重新模拟；不要把失败的 `sim.obj` 接入 Gallery。

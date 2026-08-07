@@ -116,6 +116,12 @@ def cli_args() -> argparse.Namespace:
         default="x",
         help="assign lower-leg vertices by world X, nearest thigh bone, or garment-surface topology",
     )
+    parser.add_argument(
+        "--pants-leg-opening-ease",
+        type=float,
+        default=0.0,
+        help="push the topology-identified leg-opening neighborhood radially away from each thigh bone",
+    )
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument(
         "--smooth-shading",
@@ -680,6 +686,7 @@ def assign_segmented_pants_weights(
     crotch_band_below: float = 0.11,
     thigh_weight_factor: float = 1.0,
     leg_assignment: str = "x",
+    leg_opening_ease: float = 0.0,
 ) -> dict[str, object]:
     """Give the waistband pelvis weights and each leg its matching thigh.
 
@@ -733,6 +740,8 @@ def assign_segmented_pants_weights(
         raise RuntimeError("pants thigh weight factor must be in [0, 1]")
     if leg_assignment not in {"x", "bone", "topology"}:
         raise RuntimeError("pants leg assignment must be x, bone, or topology")
+    if leg_opening_ease < 0.0:
+        raise RuntimeError("pants leg opening ease must be non-negative")
     crotch_band_bottom = pants_bottom_z + crotch_band_below
     assigned = {"pelvis": 0, positive_name: 0, negative_name: 0}
     if spine is not None:
@@ -744,6 +753,8 @@ def assign_segmented_pants_weights(
 
     topology_distances = None
     topology_info = None
+    opening_ease_changed = 0
+    opening_ease_max = 0.0
     if leg_assignment == "topology":
         mesh = garment.data
         mesh.update()
@@ -841,6 +852,16 @@ def assign_segmented_pants_weights(
             return (point - start).length_squared
         factor = max(0.0, min(1.0, (point - start).dot(direction) / length_squared))
         return (point - (start + factor * direction)).length_squared
+
+    def segment_closest_point(point: Vector, segment: tuple[Vector, Vector]) -> Vector:
+        start, end = segment
+        direction = end - start
+        length_squared = direction.length_squared
+        if length_squared <= 1e-10:
+            return start.copy()
+        factor = max(0.0, min(1.0, (point - start).dot(direction) / length_squared))
+        return start + factor * direction
+
     for vertex in garment.data.vertices:
         world = garment.matrix_world @ vertex.co
         if spine is not None and world.z >= waist_top_z - 0.06:
@@ -882,6 +903,19 @@ def assign_segmented_pants_weights(
         else:
             side_group = positive if world.x >= 0.0 else negative
             side_name = positive_name if world.x >= 0.0 else negative_name
+        if leg_opening_ease > 0.0 and leg_assignment == "topology":
+            boundary_distance = topology_distances[side_name][vertex.index]
+            fade_distance = 0.10
+            fade = max(0.0, min(1.0, (fade_distance - boundary_distance) / fade_distance))
+            if fade > 0.0:
+                center = segment_closest_point(world, thigh_segments[side_name])
+                radial = Vector((world.x - center.x, world.y - center.y, 0.0))
+                if radial.length_squared > 1e-10:
+                    delta = radial.normalized() * (leg_opening_ease * fade)
+                    world += delta
+                    vertex.co = garment.matrix_world.inverted() @ world
+                    opening_ease_changed += 1
+                    opening_ease_max = max(opening_ease_max, delta.length)
         side_weight = min(1.0, max(0.0, (pelvis_top_z - world.z) / transition_band))
         side_weight *= thigh_weight_factor
         pelvis_weight = 1.0 - side_weight
@@ -901,6 +935,9 @@ def assign_segmented_pants_weights(
         "crotch_band_below": crotch_band_below,
         "thigh_weight_factor": thigh_weight_factor,
         "leg_assignment": leg_assignment,
+        "leg_opening_ease": leg_opening_ease,
+        "leg_opening_ease_changed_vertices": opening_ease_changed,
+        "leg_opening_ease_max": opening_ease_max,
         "topology": topology_info,
         "center_band_fade_height": 0.0,
         "waist_profile": waist_profile,
@@ -1311,6 +1348,7 @@ def main() -> int:
                 crotch_band_below=options.pants_crotch_band_below,
                 thigh_weight_factor=options.pants_thigh_weight_factor,
                 leg_assignment=options.pants_leg_assignment,
+                leg_opening_ease=options.pants_leg_opening_ease,
             )
         elif not options.skip_upper_weight_repair and bone_shoulder_fit is not None:
             upper_weight_repair = repair_upper_garment_weights(
