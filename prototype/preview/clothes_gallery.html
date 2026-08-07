@@ -3,66 +3,64 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>AssetsLab 服装里程碑</title>
+  <title>AssetsLab 服装实验 Gallery</title>
   <style>
-    :root { color-scheme: dark; --bg:#101827; --panel:#18243a; --line:#31425f; --text:#e7eef9; --muted:#a9b7cc; --ok:#9ee6b5; }
+    :root { color-scheme: dark; --bg:#101827; --panel:#18243a; --line:#31425f; --text:#e7eef9; --muted:#a9b7cc; --ok:#9ee6b5; --warn:#ffd28a; }
     * { box-sizing:border-box; }
     body { margin:0; background:var(--bg); color:var(--text); font:15px/1.5 system-ui,-apple-system,"Segoe UI",sans-serif; }
     main { width:min(1100px,100%); margin:auto; padding:18px 14px 42px; }
     h1 { margin:0 0 6px; font-size:28px; } h2 { margin:0 0 10px; font-size:20px; }
     p { color:var(--muted); margin:7px 0 13px; } code { color:#d8e7ff; word-break:break-word; }
-    .status { color:var(--ok); } .panel { margin:16px 0; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
+    .status { color:var(--ok); } .review { color:var(--warn); }
+    .panel { margin:16px 0; padding:16px; border:1px solid var(--line); border-radius:14px; background:var(--panel); }
     .grid { display:grid; grid-template-columns:repeat(auto-fit,minmax(210px,1fr)); gap:12px; }
     figure { margin:0; padding:9px; border:1px solid var(--line); border-radius:10px; background:#0c1320; }
-    img { display:block; width:100%; background:#27344a; border-radius:7px; image-rendering:auto; } figcaption { padding-top:7px; color:var(--muted); font-size:13px; }
-    .hero img { max-height:640px; object-fit:contain; } table { width:100%; border-collapse:collapse; } th,td { padding:8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { color:#8bd3ff; width:180px; }
+    img { display:block; width:100%; background:#27344a; border-radius:7px; image-rendering:auto; }
+    .hero img { max-height:640px; object-fit:contain; }
+    table { width:100%; border-collapse:collapse; } th,td { padding:8px; border-bottom:1px solid var(--line); text-align:left; vertical-align:top; } th { color:#8bd3ff; width:180px; }
     @media (max-width:650px) { main { padding:12px 9px 30px; } .panel { padding:11px; } }
   </style>
 </head>
 <body>
 <main>
-  <h1>AssetsLab 服装里程碑</h1>
-  <p class="status">保留用户确认的无袖上衣里程碑，并展示一个基于该里程碑的当前短袖实验；其它历史候选已清理。</p>
+  <h1>AssetsLab 服装实验 Gallery</h1>
+  <p class="status">外挂袖筒实验已从当前展示入口移除。当前只保留确认的无袖上衣里程碑，以及用于验证裤子工作流的官方 GarmentCode 短裤。</p>
+
   <section class="panel hero">
-    <h2>确认里程碑：无袖上衣</h2>
-    <p>官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖实验必须以此衣身为基线，只增加袖窿与袖筒结构。</p>
-    <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/4way_8frames.png" alt="无袖上衣四方向八帧动作总览"><figcaption>四方向 × 8 动作帧</figcaption></figure>
+    <h2>已确认里程碑：无袖上衣</h2>
+    <p>这是现有 Actor 服装基线。它继续作为身体比例、下摆和动画跟随的参照，不再通过外挂袖筒扩展。</p>
+    <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/4way_8frames.png" alt="无袖上衣四方向八帧"><figcaption>四方向 × 8 动作帧</figcaption></figure>
   </section>
+
   <section class="panel hero">
-    <h2>当前实验：官方 Demo 结构短袖</h2>
-    <p>躯干完全复用确认里程碑，仅增加沿左右上臂骨骼跟随的开放袖筒。GarmentCode 官方短袖参考为 <code>sleeveless=false</code>、<code>sleeve.length=0.30</code>、开放袖口；当前 Actor 专属映射为上臂长度比例 <code>0.90</code>、袖筒半径 <code>0.10--0.18m</code>、袖筒间隙 <code>0.012m</code>、REST 空间前向偏移 <code>0.04m</code>、左右外扩 <code>0.10m</code>。自动适配门禁已通过，等待人工审核正面连续性。</p>
-    <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/4way_8frames.png" alt="短袖四方向八帧动作总览"><figcaption>四方向 × 8 动作帧（当前实验）</figcaption></figure>
-  </section>
-  <section class="panel">
-    <h2>当前实验静止四视图</h2>
-    <div class="grid">
-      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/front_00.png" alt="短袖正面"><figcaption>正面</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/right_00.png" alt="短袖右侧"><figcaption>右侧</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/back_00.png" alt="短袖背面"><figcaption>背面</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/clothes_short_sleeve_from_confirmed_milestone_v1/left_00.png" alt="短袖左侧"><figcaption>左侧</figcaption></figure>
-    </div>
+    <h2>当前实验：官方 GarmentCode 短裤</h2>
+    <p>版型阶段使用 <code>upper=none</code>、<code>bottom=Pants</code>，再通过官方 Warp 布料模拟得到可穿着的短裤网格；之后按 Actor 的骨盆—大腿包络做确定性适配。</p>
+    <figure><img src="assets/clothes_gallery/garmentcode_actor_shorts_transfer_v21_highrise_compact/4way_8frames.png" alt="短裤四方向八帧"><figcaption>四方向 × 8 动作帧（当前待审核）</figcaption></figure>
     <table>
-      <tr><th>候选目录</th><td><code>prototype/test_output/clothes_short_sleeve_from_confirmed_milestone_v1/</code></td></tr>
-      <tr><th>自动检测</th><td class="status">pass（躯干、袖筒合并检查）</td></tr>
-      <tr><th>人工状态</th><td>review_required：请重点检查袖长、肩袖衔接、侧面连续性和走路时袖口是否跟随上臂。</td></tr>
+      <tr><th>候选目录</th><td><code>prototype/test_output/garmentcode_actor_shorts_transfer_v21_highrise_compact/</code></td></tr>
+      <tr><th>官方模拟</th><td class="status">Warp 模拟通过：0 body cloth intersections，未发现自相交，406 帧。</td></tr>
+      <tr><th>自动检测</th><td class="review">已加入 pants 专用检查：腰头位置、身体穿透、身体间隙、非流形；v21 腰头位置通过，但动态穿透/间隙与开放裤腿边界仍需人工复核。</td></tr>
+      <tr><th>本轮目的</th><td>验证官方高腰示例对 Actor 适配的影响：保持紧凑骨盆/大腿包络，只将腰头提升到 Spine01，并混合 pelvis/Spine01 权重。</td></tr>
     </table>
   </section>
+
   <section class="panel">
-    <h2>静止四视图</h2>
+    <h2>短裤静态四视图</h2>
     <div class="grid">
-      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/front_00.png" alt="正面"><figcaption>正面</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/right_00.png" alt="右侧"><figcaption>右侧</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/back_00.png" alt="背面"><figcaption>背面</figcaption></figure>
-      <figure><img src="assets/clothes_gallery/garmentcode_official_side_supported_arc_clearance_final2_test/left_00.png" alt="左侧"><figcaption>左侧</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_shorts_transfer_v21_highrise_compact/front_00.png" alt="短裤正面"><figcaption>正面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_shorts_transfer_v21_highrise_compact/right_00.png" alt="短裤右侧"><figcaption>右侧</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_shorts_transfer_v21_highrise_compact/back_00.png" alt="短裤背面"><figcaption>背面</figcaption></figure>
+      <figure><img src="assets/clothes_gallery/garmentcode_actor_shorts_transfer_v21_highrise_compact/left_00.png" alt="短裤左侧"><figcaption>左侧</figcaption></figure>
     </div>
   </section>
+
   <section class="panel">
-    <h2>里程碑身份</h2>
+    <h2>里程碑审计</h2>
     <p><a href="clothes_milestone_audit_gallery.html">打开带勾选与备注的候选审核页</a></p>
     <table>
-      <tr><th>候选目录</th><td><code>prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test/</code></td></tr>
-      <tr><th>状态</th><td class="status">用户确认的无袖上衣里程碑</td></tr>
-      <tr><th>后续规则</th><td>短袖必须保留当前衣身的衣长、下摆、领口和侧面连续过渡，只增加官方 Demo 风格的袖窿与短袖结构。</td></tr>
+      <tr><th>确认基线</th><td><code>garmentcode_official_side_supported_arc_clearance_final2_test</code></td></tr>
+      <tr><th>当前候选</th><td><code>garmentcode_actor_shorts_transfer_v21_highrise_compact</code></td></tr>
+      <tr><th>清理规则</th><td>旧短袖与外挂袖筒不再发布；未来有袖服装必须从 GarmentCode 的有袖完整版型重新生成。</td></tr>
     </table>
   </section>
 </main>

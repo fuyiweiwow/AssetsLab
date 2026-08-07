@@ -72,7 +72,9 @@ def main() -> int:
 
     source = json.loads(options.pattern.resolve().read_text(encoding="utf-8"))["pattern"]
     panel_data = source["panels"]
-    pattern_bottom_y = min(float(panel["translation"][1]) for name, panel in panel_data.items() if "torso" in name)
+    torso_panels = [panel for name, panel in panel_data.items() if "torso" in name]
+    reference_panels = torso_panels or list(panel_data.values())
+    pattern_bottom_y = min(float(panel["translation"][1]) for panel in reference_panels)
     scale = options.fit_scale * 0.01
     vertices: list[tuple[float, float, float]] = []
     faces: list[list[int]] = []
@@ -115,11 +117,15 @@ def main() -> int:
     mesh.materials.append(material("GarmentCodeMatchedBodyCotton", (0.12, 0.36, 0.72, 1.0)))
 
     pin_group = clothing.vertex_groups.new(name="MatchedBodyShoulderPins")
+    has_torso = any("torso" in name for name in panel_global_boundary)
+    anchor_tokens = ("torso",) if has_torso else ("pant",)
+    clothing_points = [Vector(point) for point in vertices]
+    highest = max(point.z for point in clothing_points)
     for name, indices in panel_global_boundary.items():
-        if "torso" not in name:
+        if not any(token in name for token in anchor_tokens):
             continue
         for index in indices:
-            if vertices[index][2] >= 1.22:
+            if vertices[index][2] >= highest - (0.10 if not has_torso else 0.25):
                 pin_group.add([index], 1.0, "REPLACE")
 
     cloth = clothing.modifiers.new("MatchedBodyGarmentCloth", "CLOTH")
@@ -193,6 +199,7 @@ def main() -> int:
                 "settle_frame": options.settle_frame,
                 "status": "matched_body_drape_baked",
                 "next_stage": "transfer_baked_garment_to_actor_cage",
+                "anchor_region": "torso" if has_torso else "pants_waist",
                 "frames": frames,
             },
             indent=2,

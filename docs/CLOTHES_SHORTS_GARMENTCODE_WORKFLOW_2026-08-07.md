@@ -1,0 +1,76 @@
+# 短裤服装工作流（2026-08-07）
+
+## 目的
+
+短袖实验已暂停并从当前 Gallery 移除。本轮改用短裤验证全身服装的完整链路：官方版型生成、官方布料模拟、Actor 适配、动画渲染和自动检测。
+
+## 固定流程
+
+1. 使用 GarmentCode 官方 `Pants` 版型，设置 `upper=none`，不从无袖上衣或外挂袖筒推导。
+2. 用匹配的人形和 Warp 进行布料模拟，记录碰撞和自相交结果。
+3. 将模拟得到的 `sim.obj` 导入 Actor，使用 Actor 的骨盆尾部、左右大腿尾部和 Actor 身体网格包络计算短裤的腰头与下摆范围。
+4. 保留 Actor 骨骼权重和 4 方向 × 8 帧 walk 渲染。
+5. 运行 `check_garment_actor_fit.py --garment-kind pants`，再进行人工四视图审核。
+
+## 本轮参数和结果
+
+- 版型：`--upper none --bottom Pants`
+- 参数：`pants-length=0.30`、`pants-width=1.0`、`pants-flare=1.0`、`pants-rise=1.0`
+- 版型目录：`prototype/test_output/garmentcode_actor_shorts_pattern_v1/`
+- 官方模拟：`third_party/GarmentCode/Logs/actor_v1_shorts_seed_1_260807-09-36-35/`
+- Actor 候选：`prototype/test_output/garmentcode_actor_shorts_transfer_v21_highrise_compact/`
+- Warp 结果：406 帧，`BODY CLOTH INTERSECTIONS: 0`，无自相交。
+- 适配参数：在 REST 姿态完成拟合；先用 Actor 紧凑的骨盆—大腿高度剖面修正横向轮廓，再沿前后深度方向投射，避免最近点投射把前片吸到背面；骨骼使用骨盆/左右大腿语义分段权重，中心裆部权重从腰头向下渐隐；v21 只把腰头提升到 `CC_Base_Spine01` 头部，并在腰头区域混合 `Spine01/pelvis` 权重；动态后置贴合只作用于下半段，避免腰头被拉扯；最终使用平滑法线改善布面折痕。
+- 高腰结论：官方当前 Pants 版型的 `pants-rise` 在 GarmentCode 内部约束为 `[0, 1]`，不能通过设置大于 `1.0` 直接生成更高腰版型。因此 v21 是 Transfer 阶段的高腰适配实验，不应误记为新的 GarmentCode 高腰版型；后续若要正式支持高腰，应在版型/纸样阶段重新定义腰头。
+- 版本记录：v20 曾把 `Spine01` 参与完整横向/深度包络，导致侧面外扩、像裙子；v21 改为只用骨盆/大腿包络确定 X/Y，`Spine01` 只控制上缘 Z 和权重，恢复了紧凑侧面轮廓。
+- 自动检测：已支持 pants 专用腰头、穿透、间隙和非流形检查；v21 腰头位置通过，但动态穿透/间隙仍未通过，且开放裤腿边界会使严格几何门禁保持 `review_required`，画面审核仍是必要环节。
+
+## 裆部专项复盘（v22–v30）
+
+- v21 的主要缺陷不是裤腰，而是正面裆片在 Actor 身体内部，导致正面裆部被遮挡；同时后置逐点 Shrinkwrap 会把裆底和裤腿口进一步拉裂。
+- v22/v23 取消后置 Shrinkwrap，并将裆部中心带延伸到裤腿口以上；这改善了权重连续性，但没有解决静态正面遮挡，说明根因早于动画权重。
+- v24 的 `skip-surface-fit + skip-rig` 仍出现正面缺片，证明不能只靠动画修复。
+- v27 的整体前移能暂时露出完整正片，但侧面下缘形成三角外翻；v28–v30 将位移限制到前片中心，仍不能同时满足正面裆部覆盖和侧面平整，因此全部拒绝，不进入 gallery。
+- 结论：不要继续增加局部位移或几何补丁。官方 demo 的正确路径是让 Pants 纸样在目标 Actor 体型的闭合碰撞代理上重新模拟，再把模拟结果转入 Actor。
+- 目标体型物理诊断：已生成 3 cm、单连通、闭合的 Actor GarmentCode body proxy；Warp 使用该代理时，500 步和 300 步初始化均未在 120 秒内得到可用 `sim.obj`，低分辨率 60 步也未完成。当前属于工具/尺度门禁阻塞，未发布任何结果。
+- v21 及 v22–v30 只保留在 `prototype/test_output/` 供工程复盘；当前 Gallery 已切换为 v31，v32–v34 也不发布。
+
+## 已记录的问题
+
+第一版 Actor 适配错误地使用了躯干服装笼子，横向范围过宽，结果像裙子。后续确认 Actor 髋部横向尺寸可以直接采样，但前后厚度必须保留约 1.65 倍的身体采样深度，否则短裤会变成贴身内层。当前 v7 四视图已恢复为短裤形态，但检测脚本仍报告穿透和间隙，需要继续确认是服装内层/法线造成的误报，还是确有身体穿透。
+
+## Gallery 规则
+
+Gallery 只发布确认里程碑和当前短裤候选。外挂袖筒、旧短袖和静态 Blender 适配探针不再发布；它们的本地生成目录属于历史诊断产物，不进入审核入口。
+
+## 下一步门槛
+
+先解决短裤检测的穿透判定并确认走路 8 帧四方向稳定，再把同一流程复制到长裤、鞋子和帽子。随机化暂不提前开始。
+
+## 复用上衣成功工作流的结论（v31）
+
+可以复用，但只复用分层和验证边界，不复用上衣的躯干几何修正：
+
+`官方 sim.obj → Actor 适配后的 Physics Proxy → 低面数 Animation Proxy → 独立 Render Garment → Surface Deform/语义骨骼跟随 → 四方向 × 8 帧 → 适配检测与人工审核`
+
+v31 已完成第一轮复用：官方裤子保留为物理代理，另复制出 Animation Proxy 和 Render Garment；Render Garment 不再挂 Armature，改由 Surface Deform 跟随 Animation Proxy。结果相比 v21 减少了动作帧中正面裆部露体和侧面下缘撕裂，但检测仍报告穿透/间隙，因此状态保持 `review_required`，不能进入里程碑或随机池。
+
+明确不能直接复用的部分：
+
+- 上衣的肩部、领口和躯干 Cage 范围不能用于裤子。
+- 上衣的最近表面投射、整体深度偏移和后置 Shrinkwrap 不能作为裤裆修复手段。
+- 裤子必须单独处理骨盆、裆部桥接、左右大腿权重和两个开放裤脚边界。
+
+v32-v34 的诊断也已记录：单纯重建一个连续裤子渲染壳会受到 Actor/Proxy 表面坐标差异影响，出现只剩侧边条或短裙状外观。因此下一轮应优先修正“目标 Actor 体型上的裤子版型/模拟”，而不是继续堆叠转移阶段补丁。
+
+## 检测流程调整
+
+`check_garment_actor_fit.py` 对高细分 Render Garment 逐帧 BVH 检测开销过大；后续硬门禁应优先检查低面数 Animation Proxy，再对 Render Garment 做低频视觉抽样。检测失败仍然是阻断信号，不能仅因正面截图改善而晋级。
+
+## 目标体型模拟探针（v35）
+
+为减少无关碰撞面，新增了可裁剪的 Actor body proxy：只保留 Y=35..135 cm 的骨盆/大腿范围，6 cm voxel 代理仍然是单连通、watertight，约 1.1k 顶点。该代理覆盖 Pants boxmesh 的 Y=58..110 cm 范围，但 GarmentCode 在 CPU Warp 下仍未在 120 秒内完成首个可用模拟结果。
+
+最后的 0.05 resolution / 60 steps 运行在 BoxMesh 阶段直接报 `pant_b_r/panel contains degenerate triangles`。这证明低分辨率不能作为质量验证路径；当前目标体型模拟受 CPU Warp 性能和低分辨率版型退化双重限制，未生成可转移的 sim.obj，也不更新 Gallery。
+
+新增运行器参数 `--max-sim-time` 与 `--disable-frame-timeout`，用于后续可复现实验，但不改变正式模拟的物理门槛。

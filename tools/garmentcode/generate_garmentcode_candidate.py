@@ -25,6 +25,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--name", default="actor_v1_tshirt")
     parser.add_argument("--seed", type=int, default=1)
+    parser.add_argument("--upper", choices=("Shirt", "FittedShirt", "none"), default="Shirt")
+    parser.add_argument("--bottom", choices=("Pants", "none"), default="none")
     parser.add_argument("--length", type=float, default=1.15)
     parser.add_argument("--width", type=float, default=1.05)
     parser.add_argument("--flare", type=float, default=1.03)
@@ -33,6 +35,10 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--sleeve-connecting-width", type=float, default=None)
     parser.add_argument("--sleeve-end-width", type=float, default=None)
     parser.add_argument("--cuff-type", choices=("CuffBand", "CuffSkirt", "CuffBandSkirt", "null"), default=None)
+    parser.add_argument("--pants-length", type=float, default=None)
+    parser.add_argument("--pants-width", type=float, default=None)
+    parser.add_argument("--pants-flare", type=float, default=None)
+    parser.add_argument("--pants-rise", type=float, default=None)
     parser.add_argument("--front-collar", default=None)
     parser.add_argument("--back-collar", default=None)
     return parser.parse_args()
@@ -49,8 +55,8 @@ def main() -> int:
     random.seed(options.seed)
     body = BodyParameters(str(options.body.resolve()))
     design = yaml.safe_load(options.design.read_text(encoding="utf-8"))["design"]
-    design["meta"]["upper"]["v"] = "Shirt"
-    design["meta"]["bottom"]["v"] = None
+    design["meta"]["upper"]["v"] = None if options.upper == "none" else options.upper
+    design["meta"]["bottom"]["v"] = None if options.bottom == "none" else options.bottom
     design["meta"]["wb"]["v"] = None
     design["shirt"]["length"]["v"] = options.length
     design["shirt"]["width"]["v"] = options.width
@@ -63,6 +69,14 @@ def main() -> int:
         design["sleeve"]["end_width"]["v"] = options.sleeve_end_width
     if options.cuff_type is not None:
         design["sleeve"]["cuff"]["type"]["v"] = None if options.cuff_type == "null" else options.cuff_type
+    if options.pants_length is not None:
+        design["pants"]["length"]["v"] = options.pants_length
+    if options.pants_width is not None:
+        design["pants"]["width"]["v"] = options.pants_width
+    if options.pants_flare is not None:
+        design["pants"]["flare"]["v"] = options.pants_flare
+    if options.pants_rise is not None:
+        design["pants"]["rise"]["v"] = options.pants_rise
     if options.front_collar is not None:
         design["collar"]["f_collar"]["v"] = options.front_collar
     if options.back_collar is not None:
@@ -97,7 +111,8 @@ def main() -> int:
         "body_source": str(options.body.resolve()),
         "design_source": str(options.design.resolve()),
         "design_overrides": {
-            "upper": "Shirt",
+            "upper": options.upper,
+            "bottom": options.bottom,
             "length": options.length,
             "width": options.width,
             "flare": options.flare,
@@ -106,6 +121,10 @@ def main() -> int:
             "sleeve_connecting_width": options.sleeve_connecting_width,
             "sleeve_end_width": options.sleeve_end_width,
             "cuff_type": options.cuff_type,
+            "pants_length": options.pants_length,
+            "pants_width": options.pants_width,
+            "pants_flare": options.pants_flare,
+            "pants_rise": options.pants_rise,
             "front_collar": options.front_collar,
             "back_collar": options.back_collar,
         },

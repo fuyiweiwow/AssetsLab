@@ -29,6 +29,12 @@ TORSO_BONES = {
     "CC_Base_L_Upperarm",
     "CC_Base_R_Upperarm",
 }
+PANTS_BONES = TORSO_BONES - {"CC_Base_L_Upperarm", "CC_Base_R_Upperarm"} | {
+    "CC_Base_L_Thigh",
+    "CC_Base_R_Thigh",
+    "CC_Base_L_Calf",
+    "CC_Base_R_Calf",
+}
 
 
 def cli_args() -> argparse.Namespace:
@@ -36,6 +42,7 @@ def cli_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--blend", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--garment-kind", choices=("shirt", "pants"), default="shirt")
     parser.add_argument("--garment-name", default="GarmentCodeShirt_RenderGarment")
     parser.add_argument(
         "--garment-names",
@@ -160,7 +167,7 @@ def shoulder_check(
     return {"shoulder_z": shoulder_z, "shoulder_x": shoulder_x, "sides": sides}
 
 
-def torso_weighted_points(obj: bpy.types.Object) -> list[Vector]:
+def weighted_points_for_bones(obj: bpy.types.Object, bone_names: set[str]) -> list[Vector]:
     depsgraph = bpy.context.evaluated_depsgraph_get()
     evaluated = obj.evaluated_get(depsgraph)
     mesh = evaluated.to_mesh()
@@ -172,12 +179,16 @@ def torso_weighted_points(obj: bpy.types.Object) -> list[Vector]:
             if sum(
                 assignment.weight
                 for assignment in vertex.groups
-                if group_names.get(assignment.group) in TORSO_BONES
+                if group_names.get(assignment.group) in bone_names
             ) >= 0.20
         }
         return [evaluated.matrix_world @ mesh.vertices[index].co for index in sorted(indices)]
     finally:
         evaluated.to_mesh_clear()
+
+
+def torso_weighted_points(obj: bpy.types.Object) -> list[Vector]:
+    return weighted_points_for_bones(obj, TORSO_BONES)
 
 
 def local_depth_range(points: list[Vector], point: Vector) -> tuple[float, float] | None:
@@ -200,6 +211,29 @@ def local_depth_range(points: list[Vector], point: Vector) -> tuple[float, float
     if len(candidates) < 4:
         return None
     values = sorted(candidate.y for candidate in candidates)
+    return values[0], values[-1]
+
+
+def local_x_range(points: list[Vector], point: Vector) -> tuple[float, float] | None:
+    """Return the Actor left/right envelope near a pants sample."""
+    candidates = [
+        candidate
+        for candidate in points
+        if abs(candidate.y - point.y) <= 0.110
+        and abs(candidate.z - point.z) <= 0.060
+        and -0.34 <= candidate.y <= 0.34
+    ]
+    if len(candidates) < 4:
+        candidates = [
+            candidate
+            for candidate in points
+            if abs(candidate.y - point.y) <= 0.160
+            and abs(candidate.z - point.z) <= 0.090
+            and -0.34 <= candidate.y <= 0.34
+        ]
+    if len(candidates) < 4:
+        return None
+    values = sorted(candidate.x for candidate in candidates)
     return values[0], values[-1]
 
 
@@ -227,19 +261,22 @@ def main() -> int:
     sample_frames = [round(start + (end - start) * index / 7.0) for index in range(8)]
     scene.frame_set(start)
     bpy.context.view_layer.update()
-    shoulder_bones = [
-        armature.pose.bones.get("CC_Base_L_Upperarm"),
-        armature.pose.bones.get("CC_Base_R_Upperarm"),
-    ]
-    clavicle_bones = [
-        armature.pose.bones.get("CC_Base_L_Clavicle"),
-        armature.pose.bones.get("CC_Base_R_Clavicle"),
-    ]
-    if any(bone is None for bone in shoulder_bones + clavicle_bones):
-        raise RuntimeError("Actor shoulder bones are incomplete")
-    shoulder_z = sum((armature.matrix_world @ bone.head).z for bone in shoulder_bones) / 2.0
-    shoulder_x = max(abs((armature.matrix_world @ bone.head).x) for bone in shoulder_bones)
-    shoulder_z = max(shoulder_z, sum((armature.matrix_world @ bone.tail).z for bone in clavicle_bones) / 2.0)
+    shoulder_z = None
+    shoulder_x = None
+    if options.garment_kind == "shirt":
+        shoulder_bones = [
+            armature.pose.bones.get("CC_Base_L_Upperarm"),
+            armature.pose.bones.get("CC_Base_R_Upperarm"),
+        ]
+        clavicle_bones = [
+            armature.pose.bones.get("CC_Base_L_Clavicle"),
+            armature.pose.bones.get("CC_Base_R_Clavicle"),
+        ]
+        if any(bone is None for bone in shoulder_bones + clavicle_bones):
+            raise RuntimeError("Actor shoulder bones are incomplete")
+        shoulder_z = sum((armature.matrix_world @ bone.head).z for bone in shoulder_bones) / 2.0
+        shoulder_x = max(abs((armature.matrix_world @ bone.head).x) for bone in shoulder_bones)
+        shoulder_z = max(shoulder_z, sum((armature.matrix_world @ bone.tail).z for bone in clavicle_bones) / 2.0)
 
     frame_results: list[dict[str, object]] = []
     for frame in sample_frames:
@@ -262,6 +299,11 @@ def main() -> int:
             )
         actor_points, actor_polygons = evaluated_points(actor)
         actor_torso_points = torso_weighted_points(actor)
+        actor_surface_points = (
+            actor_torso_points
+            if options.garment_kind == "shirt"
+            else weighted_points_for_bones(actor, PANTS_BONES)
+        )
         actor_bvh = make_bvh(actor_points, actor_polygons)
         bottom_z = min(point.z for point in torso_points)
         torso_top_z = max(point.z for point in torso_points)
@@ -288,13 +330,22 @@ def main() -> int:
         depth_penetration_items = []
         depth_gap_items = []
         for index, point in enumerate(garment_points):
-            if (
+            if options.garment_kind == "shirt" and (
                 abs(point.y) < 0.12
                 or abs(point.x) > 0.24
                 or index in shoulder_bridge_indices
             ):
                 continue
-            depth_range = local_depth_range(actor_torso_points, point)
+            if options.garment_kind == "pants" and abs(point.y) < 0.08:
+                continue
+            if options.garment_kind == "pants":
+                x_range = local_x_range(actor_surface_points, point)
+                if x_range is None or point.x < x_range[0] - 0.025 or point.x > x_range[1] + 0.025:
+                    # Side hem/cuff vertices are outside the body envelope;
+                    # the depth test must not mistake their radial clearance
+                    # for body penetration.
+                    continue
+            depth_range = local_depth_range(actor_surface_points, point)
             if depth_range is None:
                 continue
             front, back = depth_range
@@ -324,19 +375,21 @@ def main() -> int:
         torso_boundary = boundary_diagnostics(torso_points, torso_polygons, bottom_z, torso_top_z)
         boundary["back_interior_boundary_edge_count"] = torso_boundary["back_interior_boundary_edge_count"]
         boundary["back_interior_boundary_examples"] = torso_boundary["back_interior_boundary_examples"]
-        shoulder = shoulder_check(
-            # Shoulder placement belongs to the confirmed torso garment.
-            # Independent sleeves are validated by their body-clearance and
-            # follow-through checks above; including their outer shell here
-            # incorrectly treats a valid sleeve offset as a detached torso.
-            torso_points,
-            actor_bvh,
-            armature,
-            top_z,
-            shoulder_z,
-            shoulder_x,
-            options.detached_threshold,
+        shoulder = (
+            shoulder_check(
+                torso_points,
+                actor_bvh,
+                armature,
+                top_z,
+                shoulder_z,
+                shoulder_x,
+                options.detached_threshold,
+            )
+            if options.garment_kind == "shirt"
+            else {"status": "not_applicable", "kind": "pants"}
         )
+        pelvis_tail_z = (armature.matrix_world @ armature.pose.bones["CC_Base_Pelvis"].tail).z
+        waistband_delta = abs(top_z - pelvis_tail_z)
         frame_results.append({
             "frame": frame,
             "vertex_count": len(garment_points),
@@ -377,20 +430,35 @@ def main() -> int:
             ],
             "boundary": boundary,
             "shoulder": shoulder,
+            "waistband": {
+                "actor_pelvis_tail_z": round(pelvis_tail_z, 6),
+                "garment_top_z": round(top_z, 6),
+                "delta_m": round(waistband_delta, 6),
+                "placement_pass": waistband_delta <= 0.12,
+            },
         })
 
     first = frame_results[0]
-    checks = {
-        "shoulder_placement": all(side["status"] == "pass" for side in first["shoulder"]["sides"].values()),
-        "back_integrity": all(item["boundary"]["back_interior_boundary_edge_count"] == 0 for item in frame_results),
-        "hem_penetration": all(item["hem_penetration_vertex_count"] == 0 for item in frame_results),
-        "body_clearance": all(item["max_body_gap_m"] <= options.detached_threshold for item in frame_results),
-        "nonmanifold": all(item["boundary"]["nonmanifold_edge_count"] == 0 for item in frame_results),
-    }
+    if options.garment_kind == "pants":
+        checks = {
+            "waistband_placement": all(item["waistband"]["placement_pass"] for item in frame_results),
+            "body_penetration": all(item["penetration_vertex_count"] == 0 for item in frame_results),
+            "body_clearance": all(item["max_body_gap_m"] <= options.detached_threshold for item in frame_results),
+            "nonmanifold": all(item["boundary"]["nonmanifold_edge_count"] == 0 for item in frame_results),
+        }
+    else:
+        checks = {
+            "shoulder_placement": all(side["status"] == "pass" for side in first["shoulder"]["sides"].values()),
+            "back_integrity": all(item["boundary"]["back_interior_boundary_edge_count"] == 0 for item in frame_results),
+            "hem_penetration": all(item["hem_penetration_vertex_count"] == 0 for item in frame_results),
+            "body_clearance": all(item["max_body_gap_m"] <= options.detached_threshold for item in frame_results),
+            "nonmanifold": all(item["boundary"]["nonmanifold_edge_count"] == 0 for item in frame_results),
+        }
     result = {
         "schema": "assetslab_garment_actor_fit_check_v2",
         "source_blend": str(options.blend.resolve()),
         "garment": garment_names,
+        "garment_kind": options.garment_kind,
         "actor": actor.name,
         "sample_frames": sample_frames,
         "thresholds": {

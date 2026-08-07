@@ -47,14 +47,14 @@ CLOTHING_REVIEW_CANDIDATES = (
         "label": "Milestone / confirmed sleeveless Actor garment",
         "root": ROOT / "prototype/test_output/garmentcode_official_side_supported_arc_clearance_final2_test",
         "status": "通过",
-        "note": "用户确认的无袖上衣里程碑：采用官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。后续短袖必须以此衣身为基线，只增加袖窿/袖筒结构。",
+        "note": "用户确认的无袖上衣里程碑：采用官方 Demo 风格的连续侧面过渡、开放下摆和 Surface Deform 动画链路。它保留为无袖对照基线；后续有袖服装必须从 GarmentCode 有袖版型重新生成。",
     },
     {
-        "slug": "clothes_short_sleeve_from_confirmed_milestone_v1",
-        "label": "Current experiment / official-demo short sleeves",
-        "root": ROOT / "prototype/test_output/clothes_short_sleeve_from_confirmed_milestone_v1",
-        "status": "当前实验",
-        "note": "基于用户确认的无袖里程碑原样保留躯干，仅按 GarmentCode 官方短袖结构增加跟随上臂骨骼的短袖筒；自动适配门禁已通过，等待人工审核袖长、肩袖衔接与运动连续性。",
+        "slug": "garmentcode_actor_shorts_transfer_v31_proxy_render_pair",
+        "label": "Current experiment / shorts proxy-render pair",
+        "root": ROOT / "prototype/test_output/garmentcode_actor_shorts_transfer_v31_proxy_render_pair",
+        "status": "review_required",
+        "note": "复用上衣里程碑的 Physics Proxy → Animation Proxy → Render Garment → Surface Deform 链路。官方裤子物理结果保持不变；当前渲染层已减少动作帧裆部露体，但裤子适配检测仍未通过，继续作为 current 而非里程碑。",
     },
 )
 

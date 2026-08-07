@@ -13,6 +13,8 @@ from pathlib import Path
 
 import numpy as np
 import trimesh
+from trimesh.voxel import VoxelGrid
+from trimesh.voxel.encoding import DenseEncoding
 
 
 def classify_vertices(vertices: np.ndarray) -> dict[str, list[int]]:
@@ -56,6 +58,8 @@ def main() -> None:
     parser.add_argument("--output-report", type=Path, required=True)
     parser.add_argument("--segmentation-json", type=Path, required=True)
     parser.add_argument("--pitch", type=float, default=4.0)
+    parser.add_argument("--crop-y-min", type=float)
+    parser.add_argument("--crop-y-max", type=float)
     parser.add_argument(
         "--output-scale",
         type=float,
@@ -70,13 +74,30 @@ def main() -> None:
     if source.is_empty:
         raise ValueError("Input mesh is empty")
 
-    # Fill first, then extract an iso-surface.  marching_cubes preserves the
-    # voxel transform, so the output remains in the input OBJ's coordinates.
+    # Fill first, then optionally crop the filled voxel volume before extracting
+    # an iso-surface. Cropping the binary volume keeps the new cut faces closed
+    # and avoids trimesh's optional shapely-dependent triangle slicer.
     voxels = source.voxelized(pitch=args.pitch).fill()
+    if args.crop_y_min is not None or args.crop_y_max is not None:
+        matrix = np.asarray(voxels.matrix, dtype=bool)
+        origin_y = float(voxels.transform[1, 3])
+        pitch_y = float(voxels.transform[1, 1])
+        start = 0 if args.crop_y_min is None else max(0, int(np.ceil((args.crop_y_min - origin_y) / pitch_y)))
+        stop = matrix.shape[1] if args.crop_y_max is None else min(
+            matrix.shape[1], int(np.floor((args.crop_y_max - origin_y) / pitch_y)) + 1
+        )
+        if stop <= start:
+            raise ValueError("Y crop does not overlap the voxel volume")
+        cropped = matrix[:, start:stop, :]
+        transform = np.array(voxels.transform, copy=True)
+        transform[1, 3] += start * pitch_y
+        voxels = VoxelGrid(DenseEncoding(cropped), transform=transform)
     proxy = voxels.marching_cubes
     # marching_cubes returns voxel-local coordinates; restore the source OBJ
     # centimetre coordinate system before exporting and labeling.
     proxy.apply_transform(voxels.transform)
+    if proxy.is_empty:
+        raise ValueError("Y-cropped Actor proxy is empty")
     proxy.process(validate=True)
 
     source_bounds = np.asarray(proxy.bounds).tolist()
@@ -94,6 +115,8 @@ def main() -> None:
     report = {
         "source": str(args.input_obj),
         "pitch": args.pitch,
+        "crop_y_min": args.crop_y_min,
+        "crop_y_max": args.crop_y_max,
         "output_scale": args.output_scale,
         "vertices": int(len(proxy.vertices)),
         "faces": int(len(proxy.faces)),

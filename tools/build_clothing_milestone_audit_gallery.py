@@ -17,7 +17,50 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DEFAULT = ROOT / "prototype" / "preview" / "clothes_milestone_audit_gallery.html"
 PREFIXES = ("clothes_", "actor_derived_", "garmentcode_")
-EXCLUDED_PREFIXES = ("clothes_short_sleeve_probe_",)
+# Exclude retired sleeve experiments and the failed static Blender adapter
+# probes.  The official Warp result and the current Actor transfer remain
+# visible for review.
+EXCLUDED_PREFIXES = (
+    "clothes_short_sleeve",
+    "garmentcode_actor_shorts_matched_body",
+    "garmentcode_actor_shorts_transfer_v1",
+    "garmentcode_actor_shorts_transfer_v2",
+    "garmentcode_actor_shorts_transfer_v3",
+    "garmentcode_actor_shorts_transfer_v4",
+    "garmentcode_actor_shorts_transfer_v5",
+    "garmentcode_actor_shorts_transfer_v6",
+    "garmentcode_actor_shorts_transfer_v7",
+    "garmentcode_actor_shorts_transfer_v8",
+    "garmentcode_actor_shorts_transfer_v9",
+    "garmentcode_actor_shorts_transfer_v10",
+    "garmentcode_actor_shorts_transfer_v11",
+    "garmentcode_actor_shorts_transfer_v12",
+    "garmentcode_actor_shorts_transfer_v13",
+    "garmentcode_actor_shorts_transfer_v14",
+    "garmentcode_actor_shorts_transfer_v15",
+    "garmentcode_actor_shorts_transfer_v16",
+    "garmentcode_actor_shorts_transfer_v17",
+    "garmentcode_actor_shorts_transfer_v18",
+    "garmentcode_actor_shorts_transfer_v19",
+    "garmentcode_actor_shorts_transfer_v20",
+    "garmentcode_actor_shorts_transfer_v21",
+    "garmentcode_actor_shorts_transfer_v22",
+    "garmentcode_actor_shorts_transfer_v23",
+    "garmentcode_actor_shorts_transfer_v24",
+    "garmentcode_actor_shorts_transfer_v25",
+    "garmentcode_actor_shorts_transfer_v26",
+    "garmentcode_actor_shorts_transfer_v27",
+    "garmentcode_actor_shorts_transfer_v28",
+    "garmentcode_actor_shorts_transfer_v29",
+    "garmentcode_actor_shorts_transfer_v30",
+    "garmentcode_actor_shorts_transfer_v32",
+    "garmentcode_actor_shorts_transfer_v33",
+    "garmentcode_actor_shorts_transfer_v34",
+)
+CURRENT_SHORTS_CANDIDATE = "garmentcode_actor_shorts_transfer_v31_proxy_render_pair"
+EXCLUDED_GENERIC_PREFIXES = tuple(
+    value for value in EXCLUDED_PREFIXES if not value.startswith("garmentcode_actor_shorts_transfer_v")
+)
 DIRECTIONS = ("front", "right", "back", "left")
 
 
@@ -43,7 +86,11 @@ def candidate_records() -> list[dict[str, object]]:
         if (
             not directory.is_dir()
             or not directory.name.startswith(PREFIXES)
-            or directory.name.startswith(EXCLUDED_PREFIXES)
+            or (
+                directory.name.startswith("garmentcode_actor_shorts_transfer_v")
+                and directory.name != CURRENT_SHORTS_CANDIDATE
+            )
+            or directory.name.startswith(EXCLUDED_GENERIC_PREFIXES)
         ):
             continue
         frame_paths = {direction: directory / f"{direction}_00.png" for direction in DIRECTIONS}

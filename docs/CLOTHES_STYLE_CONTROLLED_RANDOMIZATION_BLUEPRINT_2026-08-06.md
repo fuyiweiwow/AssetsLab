@@ -134,3 +134,6 @@ seed = hash(style_id, template_id, actor_id, variant_index)
 6. 通过 Gallery 审核后，才把风格 bundle 纳入运行时随机化。
 
 本蓝图不等于已经完成风格生成器；它定义的是后续实验必须遵守的参数边界、工具分工和验收顺序。
+# 状态更新（2026-08-07）
+
+随机化蓝图暂不执行。`base_short_sleeve` 仍是历史概念，不代表当前资源；先完成短裤工作流并积累通过的独立服装种子。

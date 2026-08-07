@@ -26,6 +26,9 @@ def write_snapshot_page(snapshot_root: Path, snapshot_name: str) -> None:
     page = page.replace("assets/", "")
     page = page.replace("AssetsLab Preview", f"AssetsLab Preview {snapshot_name}")
     (snapshot_root / "index.html").write_text(page, encoding="utf-8")
+    # Keep the source page name as a stable deep link as well as the normal
+    # directory index.  Review links historically pointed to clothes_gallery.
+    (snapshot_root / "clothes_gallery.html").write_text(page, encoding="utf-8")
 
 
 def publish_snapshot(name: str | None) -> tuple[str, Path]:

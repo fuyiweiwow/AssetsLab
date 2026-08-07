@@ -30,3 +30,6 @@ Demo 所参考的连续侧面过渡、开放下摆和 Surface Deform 动画链�
 5. 失败候选只保留在临时实验目录，不覆盖本里程碑。
 
 官方 Demo 是结构参考，不是当前 Actor 的替代基线。
+# 状态更新（2026-08-07）
+
+原计划中的短袖外挂扩展已废止。历史内容只用于解释决策，不再作为实施路线；当前改做官方 GarmentCode 短裤，见 `docs/CLOTHES_SHORTS_GARMENTCODE_WORKFLOW_2026-08-07.md`。

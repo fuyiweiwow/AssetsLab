@@ -34,6 +34,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--max-sim-steps", type=int)
     parser.add_argument("--resolution-scale", type=float)
     parser.add_argument("--body-collision-thickness", type=float)
+    parser.add_argument("--max-sim-time", type=int)
+    parser.add_argument(
+        "--disable-frame-timeout",
+        action="store_true",
+        help="run Warp frames in-process; useful on Windows where the first multiprocessing frame can stall",
+    )
     parser.add_argument("--verbose", action="store_true")
     return parser.parse_args()
 
@@ -60,6 +66,10 @@ def main() -> int:
             props["sim"]["config"]["resolution_scale"] = args.resolution_scale
         if args.body_collision_thickness is not None:
             props["sim"]["config"]["options"]["body_collision_thickness"] = args.body_collision_thickness
+        if args.max_sim_time is not None:
+            props["sim"]["config"]["max_sim_time"] = args.max_sim_time
+        if args.disable_frame_timeout:
+            props["sim"]["config"]["max_frame_time"] = None
         props.set_section_stats(
             "sim", fails={}, sim_time={}, spf={}, fin_frame={},
             body_collisions={}, self_collisions={}

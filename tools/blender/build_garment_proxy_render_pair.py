@@ -39,24 +39,18 @@ def cli_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-blend", required=True, type=Path)
     parser.add_argument("--output", required=True, type=Path)
+    parser.add_argument("--garment-kind", choices=("shirt", "pants"), default="shirt")
     parser.add_argument("--proxy-name", default="GarmentCodeShirt_ActorTransfer")
     parser.add_argument("--resolution", type=int, default=256)
     parser.add_argument("--subdivision-level", type=int, default=1)
     parser.add_argument("--clean-render-surface", action="store_true")
     parser.add_argument("--render-surface-clearance", type=float, default=0.035)
     parser.add_argument("--build-clean-render-garment", action="store_true")
-    parser.add_argument("--build-clean-short-sleeve-render-garment", action="store_true")
     parser.add_argument(
         "--reuse-existing-render-pair",
         action="store_true",
         help="keep the confirmed RenderGarment/AnimationProxy pair from the input blend",
     )
-    parser.add_argument("--sleeve-length-fraction", type=float, default=0.42)
-    parser.add_argument("--sleeve-clearance", type=float, default=0.012)
-    parser.add_argument("--sleeve-forward-offset", type=float, default=0.04)
-    parser.add_argument("--sleeve-lateral-offset", type=float, default=0.035)
-    parser.add_argument("--sleeve-radius-floor", type=float, default=0.10)
-    parser.add_argument("--sleeve-radius-cap", type=float, default=0.18)
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
@@ -85,7 +79,7 @@ def apply_render_subdivision(obj: bpy.types.Object, level: int) -> dict[str, int
     bpy.context.view_layer.objects.active = obj
     obj.select_set(True)
     # Apply the render-only subdivision before any deformation modifier. This
-    # is especially important for the short sleeves: their Armature modifier
+    # is especially important for the Actor-following render garment.
     # must remain after subdivision so the generated cuff follows the upperarm
     # without Blender warning that the requested modifier is not first.
     while obj.modifiers.find(modifier.name) > 0:
@@ -288,6 +282,50 @@ def bind_proxy_weighted_armature(
     }
 
 
+def bind_shorts_weighted_armature(
+    render_garment: bpy.types.Object,
+    armature: bpy.types.Object,
+) -> dict[str, object]:
+    """Bind a clean shorts shell to pelvis/thigh semantics.
+
+    A custom shell has no reliable source vertex correspondence for Surface
+    Deform.  The crotch bridge must stay on the pelvis while each outer leg
+    follows its own thigh; nearest-vertex transfer would split that bridge.
+    """
+    names = ("CC_Base_Pelvis", "CC_Base_Spine01", "CC_Base_L_Thigh", "CC_Base_R_Thigh")
+    groups = {name: render_garment.vertex_groups.get(name) or render_garment.vertex_groups.new(name=name) for name in names}
+    for vertex in render_garment.data.vertices:
+        for assignment in list(vertex.groups):
+            render_garment.vertex_groups[assignment.group].remove([vertex.index])
+    min_z = min(vertex.co.z for vertex in render_garment.data.vertices)
+    max_z = max(vertex.co.z for vertex in render_garment.data.vertices)
+    height = max(max_z - min_z, 1e-6)
+    counts = {name: 0 for name in names}
+    for vertex in render_garment.data.vertices:
+        world = render_garment.matrix_world @ vertex.co
+        t = max(0.0, min(1.0, (world.z - min_z) / height))
+        center = max(0.0, 1.0 - abs(world.x) / 0.105)
+        if center > 0.0 or t >= 0.68:
+            weights = (("CC_Base_Pelvis", 0.78), ("CC_Base_Spine01", 0.22))
+        elif world.x < 0.0:
+            weights = (("CC_Base_L_Thigh", 0.82), ("CC_Base_Pelvis", 0.18))
+        else:
+            weights = (("CC_Base_R_Thigh", 0.82), ("CC_Base_Pelvis", 0.18))
+        for name, weight in weights:
+            groups[name].add([vertex.index], weight, "REPLACE")
+            counts[name] += 1
+    modifier = render_garment.modifiers.new("ShortsRenderArmatureDeform", "ARMATURE")
+    modifier.object = armature
+    bpy.context.view_layer.update()
+    return {
+        "method": "semantic_pelvis_spine01_plus_left_right_thighs",
+        "armature": armature.name,
+        "armature_modifier": modifier.name,
+        "vertex_group_counts": counts,
+        "crotch_center_width": 0.105,
+    }
+
+
 def evaluated_world_points(obj: bpy.types.Object) -> list[Vector]:
     depsgraph = bpy.context.evaluated_depsgraph_get()
     evaluated = obj.evaluated_get(depsgraph)
@@ -307,6 +345,12 @@ ACTOR_TORSO_BONES = {
     "CC_Base_R_Clavicle",
     "CC_Base_L_Upperarm",
     "CC_Base_R_Upperarm",
+}
+
+ACTOR_PANTS_BONES = {
+    "CC_Base_Pelvis",
+    "CC_Base_L_Thigh",
+    "CC_Base_R_Thigh",
 }
 
 
@@ -329,6 +373,30 @@ def evaluated_actor_torso_points(obj: bpy.types.Object) -> list[Vector]:
         if len(torso_indices) < 32:
             raise RuntimeError("Actor torso bone-weight filter returned too few vertices")
         return [evaluated.matrix_world @ mesh.vertices[index].co for index in sorted(torso_indices)]
+    finally:
+        evaluated.to_mesh_clear()
+
+
+def evaluated_actor_pants_points(obj: bpy.types.Object) -> list[Vector]:
+    """Return the lower-body surface envelope for a clean shorts shell.
+
+    The Actor's central front torso vertices are not always weighted to the
+    pelvis/thigh groups, so a strict weight filter misses the actual front
+    surface. Restricting by lower-body height and lateral span avoids the head
+    and hands while retaining that central envelope.
+    """
+    depsgraph = bpy.context.evaluated_depsgraph_get()
+    evaluated = obj.evaluated_get(depsgraph)
+    mesh = evaluated.to_mesh()
+    try:
+        points = []
+        for vertex in mesh.vertices:
+            point = evaluated.matrix_world @ vertex.co
+            if 0.34 <= point.z <= 0.86 and abs(point.x) <= 0.42:
+                points.append(point)
+        if len(points) < 64:
+            raise RuntimeError("Actor lower-body envelope returned too few vertices")
+        return points
     finally:
         evaluated.to_mesh_clear()
 
@@ -632,235 +700,140 @@ def build_clean_tank_render_mesh(
     }
 
 
-def build_clean_short_sleeve_mesh(
-    scene: bpy.types.Scene,
+def build_clean_shorts_render_mesh(
+    render_garment: bpy.types.Object,
     actor: bpy.types.Object,
-    armature: bpy.types.Object,
     proxy: bpy.types.Object,
+    armature: bpy.types.Object,
     clearance: float,
-    length_fraction: float,
-    forward_offset: float,
-    lateral_offset: float,
-    radius_floor: float,
-    radius_cap: float,
-) -> tuple[bpy.types.Object, dict[str, object]]:
-    """Build short sleeve tubes from the Actor upper-arm bones.
+) -> dict[str, object]:
+    """Build a continuous, low-complexity shorts shell from Actor envelopes.
 
-    The confirmed milestone torso remains the Surface Deform garment. Sleeves
-    are separate rigid-ish shells because the milestone animation proxy has no
-    arm geometry for Surface Deform to follow. Their construction follows the
-    official GarmentCode short-sleeve idea: a connected armhole-side band,
-    short length, and an open cuff with no hand coverage.
+    The official Pants mesh is retained as the physics proxy.  The render
+    shell deliberately has one continuous front crotch bridge and rounded
+    outer side arcs; this removes the small disconnected/interior sim faces
+    that become visible after Surface Deform while preserving the shirt demo's
+    proxy -> render -> Surface Deform boundary.
     """
-    if not 0.25 <= length_fraction <= 0.90:
-        raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.90")
-    if not 0.08 <= radius_floor < radius_cap <= 0.35:
-        raise RuntimeError("sleeve radius must satisfy 0.08 <= floor < cap <= 0.35")
-    # The sleeve mesh will be deformed by an Armature modifier.  Therefore its
-    # source vertices must be authored in the armature rest space, not from
-    # the frame-1 posed bone coordinates.  The previous implementation used
-    # pose-space centers and then applied the pose a second time, which put the
-    # blue sleeve shell inside the Actor upper arm and left only a side sliver
-    # visible.
-    previous_pose_position = armature.data.pose_position
-    armature.data.pose_position = "REST"
-    bpy.context.view_layer.update()
-    actor_points = evaluated_world_points(actor)
-    rest_bones: dict[str, tuple[Vector, Vector]] = {}
-    for side, bone_name in (("left", "CC_Base_L_Upperarm"), ("right", "CC_Base_R_Upperarm")):
-        bone = armature.data.bones.get(bone_name)
-        if bone is None:
-            armature.data.pose_position = previous_pose_position
-            bpy.context.view_layer.update()
-            raise RuntimeError(f"missing sleeve rest bone: {bone_name}")
-        rest_bones[side] = (
-            armature.matrix_world @ bone.head_local,
-            armature.matrix_world @ bone.tail_local,
-        )
-    armature.data.pose_position = previous_pose_position
-    bpy.context.view_layer.update()
-    actor_points_by_side: dict[str, list[Vector]] = {}
-    depsgraph = bpy.context.evaluated_depsgraph_get()
-    evaluated_actor = actor.evaluated_get(depsgraph)
-    evaluated_mesh = evaluated_actor.to_mesh()
-    try:
-        group_indices = {group.name: group.index for group in actor.vertex_groups}
-        group_names = {
-            "left": "CC_Base_L_Upperarm",
-            "right": "CC_Base_R_Upperarm",
-        }
-        for side, group_name in group_names.items():
-            group_index = group_indices.get(group_name)
-            if group_index is None:
-                actor_points_by_side[side] = list(actor_points)
-                continue
-            actor_points_by_side[side] = [
-                evaluated_actor.matrix_world @ evaluated_mesh.vertices[vertex.index].co
-                for vertex in actor.data.vertices
-                if any(assignment.group == group_index and assignment.weight >= 0.20 for assignment in vertex.groups)
-            ]
-            if len(actor_points_by_side[side]) < 32:
-                actor_points_by_side[side] = list(actor_points)
-    finally:
-        evaluated_actor.to_mesh_clear()
+    actor_points = evaluated_actor_pants_points(actor)
+    pelvis = armature.pose.bones.get("CC_Base_Pelvis")
+    left_thigh = armature.pose.bones.get("CC_Base_L_Thigh")
+    right_thigh = armature.pose.bones.get("CC_Base_R_Thigh")
+    if any(bone is None for bone in (pelvis, left_thigh, right_thigh)):
+        raise RuntimeError("Actor pants landmark bones are missing")
+    pelvis_tail_z = (armature.matrix_world @ pelvis.tail).z
+    thigh_tail_z = min(
+        (armature.matrix_world @ left_thigh.tail).z,
+        (armature.matrix_world @ right_thigh.tail).z,
+    )
+    top_z = pelvis_tail_z + 0.060
+    bottom_z = thigh_tail_z + 0.105
+    if bottom_z >= top_z:
+        raise RuntimeError("Actor pants landmarks produce an invalid vertical range")
+    crotch_z = bottom_z + (top_z - bottom_z) * 0.34
+
+    def envelope_at(z: float) -> tuple[float, float, float]:
+        candidates = [point for point in actor_points if abs(point.z - z) <= 0.045]
+        if len(candidates) < 8:
+            candidates = sorted(actor_points, key=lambda point: abs(point.z - z))[:32]
+        half_width = max(abs(point.x) for point in candidates) + clearance
+        front, back = robust_depth_range(candidates)
+        return half_width, front - clearance, back + clearance
+
+    x_profile = (-1.0, -0.46, 0.0, 0.46, 1.0)
+    z_rows = [bottom_z, bottom_z + 0.035, bottom_z + (top_z - bottom_z) * 0.48, top_z - 0.035, top_z]
     vertices: list[tuple[float, float, float]] = []
     faces: list[tuple[int, int, int, int]] = []
-    side_indices: dict[str, list[int]] = {"left": [], "right": []}
-    ring_indices: dict[str, list[list[int]]] = {"left": [], "right": []}
-    segments = 10
-    ring_fractions = (0.02, 0.22, 0.52, 0.82, 1.0)
 
-    def add_sleeve(side: str, bone_name: str, sign: float) -> None:
-        head, tail = rest_bones[side]
-        axis = (tail - head).normalized()
-        length = (tail - head).length * length_fraction
-        reference = Vector((0.0, 0.0, 1.0))
-        if abs(axis.dot(reference)) > 0.92:
-            reference = Vector((0.0, 1.0, 0.0))
-        radial_a = axis.cross(reference).normalized()
-        radial_b = axis.cross(radial_a).normalized()
-
-        side_actor_points = actor_points_by_side[side]
-        rings: list[list[int]] = []
-        for ring_number, fraction in enumerate(ring_fractions):
-            center = head + axis * (length * fraction)
-            nearby = []
-            for point in side_actor_points:
-                projection = (point - head).dot(axis)
-                if -0.025 <= projection <= length + 0.035:
-                    radial = point - (head + axis * max(0.0, min(length, projection)))
-                    if radial.length <= 0.20 and point.x * sign > -0.015:
-                        nearby.append(radial.length)
-            measured = sorted(nearby)
-            if measured:
-                # The 88th percentile was too conservative for this chibi
-                # arm: it estimated the inner half of the low-poly limb, so
-                # the sleeve stayed visually inside the skin. Use a robust
-                # outer-surface percentile and a small floor so the cloth
-                # shell is actually visible from the front and side.
-                measured_radius = measured[int((len(measured) - 1) * 0.95)]
-            else:
-                measured_radius = 0.10
-            # The Actor upper-arm envelope is much fuller than the torso
-            # cross-section (roughly 0.10--0.13 m in this chibi rig). Keep a
-            # dedicated arm-shell range so the sleeve cannot collapse inside
-            # the skin merely because a ring has sparse samples.
-            base_radius = max(radius_floor, min(radius_cap, measured_radius + clearance))
-            if ring_number == 0:
-                base_radius += 0.008
-            if ring_number == len(ring_fractions) - 1:
-                base_radius *= 0.96
-            ring_points: list[Vector] = []
-            for segment in range(segments):
-                angle = 2.0 * 3.141592653589793 * segment / segments
-                point = center + radial_a * (base_radius * math.cos(angle)) + radial_b * (base_radius * math.sin(angle))
-                # The Actor's relaxed arms sit slightly behind the torso in
-                # the front camera. A small rest-space forward offset keeps
-                # the sleeve surface visible without changing the armature
-                # binding or touching the confirmed torso garment.
-                point.y -= forward_offset
-                # Keep the sleeve tube outside the torso silhouette.  The
-                # sign follows the arm side, so both sleeves remain visible
-                # as continuous shells in the front/back review views.
-                point.x += sign * lateral_offset
-                ring_points.append(point)
-            # The bone axis is a useful design center, but this chibi Actor's
-            # upper-arm envelope bends outward more than the bone.  If the
-            # generated tube falls back inside that envelope at a lower ring,
-            # the Actor hides it from the front and it looks like fragments.
-            # Match the outer edge ring-by-ring in rest space instead of using
-            # one global lateral offset.
-            projection_target = length * fraction
-            projection_window = max(0.025, length * 0.18)
-            outer_candidates = [
-                point.x * sign
-                for point in side_actor_points
-                if abs((point - head).dot(axis) - projection_target) <= projection_window
-                and point.x * sign > -0.015
-            ]
-            if outer_candidates:
-                # A tiny extra silhouette margin is intentional here.  The
-                # Actor arm surface is rendered in front of the cloth and the
-                # review resolution is only 256 px; a mathematically valid
-                # 0.012 m gap still reads as a missing sleeve.
-                actor_outer = max(outer_candidates) + clearance + 0.045
-                sleeve_outer = max(point.x * sign for point in ring_points)
-                if sleeve_outer < actor_outer:
-                    outward = sign * (actor_outer - sleeve_outer)
-                    ring_points = [point + Vector((outward, 0.0, 0.0)) for point in ring_points]
-            ring: list[int] = []
-            for point in ring_points:
-                ring.append(len(vertices))
-                vertices.append(tuple(point))
-                side_indices[side].append(ring[-1])
-            rings.append(ring)
-        ring_indices[side] = rings
-        for ring_a, ring_b in zip(rings, rings[1:]):
-            for segment in range(segments):
-                a = ring_a[segment]
-                b = ring_a[(segment + 1) % segments]
-                c = ring_b[(segment + 1) % segments]
-                d = ring_b[segment]
+    def add_panel(back: bool) -> list[list[int]]:
+        rows: list[list[int]] = []
+        for row, z in enumerate(z_rows):
+            half_width, front, rear = envelope_at(z)
+            # Keep a compact inner thigh gap while allowing the lower outer
+            # edges to cover the moving thighs.
+            half_width = min(half_width * (1.02 if row < 2 else 1.0), 0.36)
+            indices: list[int] = []
+            for normalized_x in x_profile:
+                x = normalized_x * half_width
+                local_z = z
+                if row == 0 and abs(normalized_x) < 0.01:
+                    local_z = crotch_z
+                elif row == 1 and abs(normalized_x) < 0.01:
+                    local_z = crotch_z + 0.018
+                side_wrap = max(0.0, min(1.0, (abs(normalized_x) - 0.46) / 0.54))
+                y = rear if back else front
+                if side_wrap:
+                    y += (front - rear) * (0.22 * side_wrap if back else -0.22 * side_wrap)
+                indices.append(len(vertices))
+                vertices.append((x, y, local_z))
+            rows.append(indices)
+        for row in range(len(rows) - 1):
+            for column in range(len(x_profile) - 1):
+                a, b = rows[row][column], rows[row][column + 1]
+                c, d = rows[row + 1][column + 1], rows[row + 1][column]
                 faces.append((a, b, c, d))
+        return rows
 
-    # In this Actor file the L upperarm is on positive world X and the R
-    # upperarm is on negative world X.  The previous signs were reversed,
-    # pushing both sleeves toward the torso center instead of outward.
-    add_sleeve("left", "CC_Base_L_Upperarm", 1.0)
-    add_sleeve("right", "CC_Base_R_Upperarm", -1.0)
-    mesh = bpy.data.meshes.new("GarmentCodeCleanShortSleeveMesh")
+    front_rows = add_panel(back=False)
+    back_rows = add_panel(back=True)
+
+    # Close only the lower central crotch bridge.  The two leg hems remain
+    # open, so the result reads as shorts rather than a capped body shell.
+    for column in (1, 2, 3):
+        faces.append((front_rows[0][column], back_rows[0][column], back_rows[1][column], front_rows[1][column]))
+
+    # Rounded outer side transitions, matching the accepted shirt demo.
+    for side in (-1, 1):
+        for row, z in enumerate(z_rows):
+            half_width, front, rear = envelope_at(z)
+            outer = side * half_width
+            arc = []
+            for x_factor, depth_fraction in ((0.94, 0.25), (0.985, 0.50), (0.94, 0.75)):
+                arc.append(len(vertices))
+                vertices.append((outer * x_factor, front + (rear - front) * depth_fraction, z))
+            chain = [front_rows[row][0 if side < 0 else -1], *arc, back_rows[row][0 if side < 0 else -1]]
+            if row + 1 >= len(z_rows):
+                continue
+            next_chain = [front_rows[row + 1][0 if side < 0 else -1]]
+            next_half, next_front, next_rear = envelope_at(z_rows[row + 1])
+            next_outer = side * next_half
+            for x_factor, depth_fraction in ((0.94, 0.25), (0.985, 0.50), (0.94, 0.75)):
+                next_chain.append(len(vertices))
+                vertices.append((next_outer * x_factor, next_front + (next_rear - next_front) * depth_fraction, z_rows[row + 1]))
+            next_chain.append(back_rows[row + 1][0 if side < 0 else -1])
+            for segment in range(4):
+                if side < 0:
+                    faces.append((chain[segment], chain[segment + 1], next_chain[segment + 1], next_chain[segment]))
+                else:
+                    faces.append((chain[segment], next_chain[segment], next_chain[segment + 1], chain[segment + 1]))
+
+    # A complete waistband follows the same continuous-boundary rule as the
+    # shirt demo. The lower leg boundaries stay open intentionally.
+    for column in range(len(x_profile) - 1):
+        faces.append((front_rows[-1][column], front_rows[-1][column + 1], back_rows[-1][column + 1], back_rows[-1][column]))
+
+    mesh = bpy.data.meshes.new("GarmentCodeCleanShortsRenderMesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
-    sleeves = bpy.data.objects.new("GarmentCodeShirt_ShortSleeves", mesh)
-    scene.collection.objects.link(sleeves)
-    sleeves["assetslab_role"] = "short_sleeve_render_garment"
-    sleeves["assetslab_deformation_source"] = "Actor upper-arm bones"
-    sleeves.matrix_world = Matrix.Identity(4)
+    old_mesh = render_garment.data
+    render_garment.data = mesh
+    if old_mesh.users == 0:
+        bpy.data.meshes.remove(old_mesh)
     if proxy.data.materials:
-        sleeves.data.materials.append(proxy.data.materials[0])
-    return sleeves, {
-        "enabled": True,
-        "method": "official_demo_short_sleeve_ratio_as_rest_space_bone_following_outer_surface_shell",
-        "source_space": "armature_rest_pose",
-        "length_fraction_of_upperarm": length_fraction,
-        "clearance": clearance,
-        "forward_offset": forward_offset,
-        "lateral_offset": lateral_offset,
-        "segments_per_ring": segments,
-        "ring_fractions": list(ring_fractions),
-        "radius_floor": radius_floor,
-        "radius_cap": radius_cap,
-        "vertex_count": len(vertices),
-        "face_count": len(faces),
-        "left_vertex_indices": side_indices["left"],
-        "right_vertex_indices": side_indices["right"],
-    }
-
-
-def bind_short_sleeve_armature(
-    sleeves: bpy.types.Object,
-    armature: bpy.types.Object,
-    metadata: dict[str, object],
-) -> dict[str, object]:
-    """Bind each sleeve to its own upper-arm bone without hand weights."""
-    left = sleeves.vertex_groups.new(name="CC_Base_L_Upperarm")
-    right = sleeves.vertex_groups.new(name="CC_Base_R_Upperarm")
-    left_indices = [int(index) for index in metadata["left_vertex_indices"]]
-    right_indices = [int(index) for index in metadata["right_vertex_indices"]]
-    left.add(left_indices, 1.0, "REPLACE")
-    right.add(right_indices, 1.0, "REPLACE")
-    modifier = sleeves.modifiers.new("ShortSleevesArmatureDeform", "ARMATURE")
-    modifier.object = armature
-    for polygon in sleeves.data.polygons:
-        polygon.use_smooth = True
-    sleeves.data.update()
+        render_garment.data.materials.append(proxy.data.materials[0])
+    render_garment.matrix_world = Matrix.Identity(4)
     return {
-        "method": "rigid_upperarm_bone_groups",
-        "modifier": modifier.name,
-        "left_group": left.name,
-        "right_group": right.name,
-        "left_vertices": len(left_indices),
-        "right_vertices": len(right_indices),
+        "enabled": True,
+        "method": "procedural_continuous_shorts_shell_from_actor_pelvis_thigh_envelope",
+        "vertices": len(vertices),
+        "faces": len(faces),
+        "top_z": top_z,
+        "bottom_z": bottom_z,
+        "crotch_z": crotch_z,
+        "clearance": clearance,
+        "front_crotch_bridge": True,
+        "side_transition": "three_sample_arc",
+        "open_leg_hems": True,
     }
 
 
@@ -977,35 +950,20 @@ def main() -> int:
         armature.data.pose_position = "REST"
         authoring_pose = "rest"
         bpy.context.view_layer.update()
-    clean_render_garment = (
-        build_clean_tank_render_mesh(
+    if options.build_clean_render_garment and not reused_render_pair:
+        clean_builder = build_clean_shorts_render_mesh if options.garment_kind == "pants" else build_clean_tank_render_mesh
+        clean_render_garment = clean_builder(
             render_garment,
             actor,
             proxy,
             armature,
             options.render_surface_clearance,
         )
-        if options.build_clean_render_garment and not reused_render_pair
-        else {
+    else:
+        clean_render_garment = {
             "enabled": False,
             "method": "reused_confirmed_milestone_render_garment" if reused_render_pair else "not_requested",
         }
-    )
-    short_sleeves = None
-    short_sleeve_geometry = {"enabled": False}
-    if options.build_clean_short_sleeve_render_garment:
-        short_sleeves, short_sleeve_geometry = build_clean_short_sleeve_mesh(
-            scene,
-            actor,
-            armature,
-            proxy,
-            options.sleeve_clearance,
-            options.sleeve_length_fraction,
-            options.sleeve_forward_offset,
-            options.sleeve_lateral_offset,
-            options.sleeve_radius_floor,
-            options.sleeve_radius_cap,
-        )
     clean_surface = (
         build_clean_render_surface(
             render_garment,
@@ -1050,17 +1008,14 @@ def main() -> int:
     )
     render_weighted_normals = {"enabled": False, "reason": "continuous smooth normals are preferred for the demo side transition"}
     deformation = (
-        bind_proxy_weighted_armature(render_garment, animation_proxy, armature)
+        bind_shorts_weighted_armature(render_garment, armature)
+        if options.garment_kind == "pants" and options.build_clean_render_garment and not reused_render_pair
+        else bind_proxy_weighted_armature(render_garment, animation_proxy, armature)
         if options.proxy_weighted_render and not reused_render_pair
         else bind_surface_deform(render_garment, animation_proxy)
         if not reused_render_pair
         else {"enabled": True, "method": "reused_confirmed_milestone_surface_deform"}
     )
-    short_sleeve_binding = {"enabled": False}
-    short_sleeve_subdivision = {"enabled": False}
-    if short_sleeves is not None:
-        short_sleeve_binding = bind_short_sleeve_armature(short_sleeves, armature, short_sleeve_geometry)
-        short_sleeve_subdivision = apply_render_subdivision(short_sleeves, 1)
     post_deform_smoothing = (
         add_post_deform_surface_smoothing(
             render_garment,
@@ -1104,14 +1059,7 @@ def main() -> int:
             "weighted_normals": render_weighted_normals,
             "post_deform_smoothing": post_deform_smoothing,
             "deformation": deformation,
-            "armature_modifier": any(modifier.type == "ARMATURE" for modifier in render_garment.modifiers),
-        },
-        "short_sleeves": {
-            "object": short_sleeves.name if short_sleeves is not None else None,
-            "geometry": short_sleeve_geometry,
-            "binding": short_sleeve_binding,
-            "subdivision": short_sleeve_subdivision,
-            "vertex_count": len(short_sleeves.data.vertices) if short_sleeves is not None else 0,
+        "armature_modifier": any(modifier.type == "ARMATURE" for modifier in render_garment.modifiers),
         },
         "animation": {
             "directions": list(DIRECTIONS),
