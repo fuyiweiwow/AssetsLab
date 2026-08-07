@@ -69,6 +69,16 @@ def pants_core_half_width(y: float) -> float:
     return samples[-1][1]
 
 
+def map_piecewise(values: np.ndarray, source: np.ndarray, target: np.ndarray) -> np.ndarray:
+    """Map three anatomical source levels to three GarmentCode levels."""
+    result = np.interp(values, source, target)
+    low = values < source[0]
+    high = values > source[-1]
+    result[low] = target[0] + (values[low] - source[0]) * (target[1] - target[0]) / (source[1] - source[0])
+    result[high] = target[-1] + (values[high] - source[-1]) * (target[-1] - target[-2]) / (source[-1] - source[-2])
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-obj", type=Path, required=True)
@@ -94,6 +104,20 @@ def main() -> None:
         type=float,
         default=1.0,
         help="Scale the source Actor front/back depth around Z before exporting",
+    )
+    parser.add_argument(
+        "--y-map-source",
+        type=float,
+        nargs=3,
+        metavar=("LEG", "HIP", "WAIST"),
+        help="Source Actor Y levels in centimetres for piecewise anatomical mapping",
+    )
+    parser.add_argument(
+        "--y-map-target",
+        type=float,
+        nargs=3,
+        metavar=("LEG", "HIP", "WAIST"),
+        help="Target GarmentCode Y levels in centimetres for piecewise anatomical mapping",
     )
     args = parser.parse_args()
 
@@ -143,6 +167,14 @@ def main() -> None:
     if args.z_scale <= 0:
         raise ValueError("--z-scale must be greater than zero")
     proxy.vertices[:, 2] *= args.z_scale
+    if (args.y_map_source is None) != (args.y_map_target is None):
+        raise ValueError("--y-map-source and --y-map-target must be provided together")
+    if args.y_map_source is not None:
+        source_levels = np.asarray(args.y_map_source, dtype=float)
+        target_levels = np.asarray(args.y_map_target, dtype=float)
+        if not (np.all(np.diff(source_levels) > 0) and np.all(np.diff(target_levels) > 0)):
+            raise ValueError("Y mapping levels must be strictly increasing: leg < hip < waist")
+        proxy.vertices[:, 1] = map_piecewise(proxy.vertices[:, 1], source_levels, target_levels)
     proxy.process(validate=True)
 
     source_bounds = np.asarray(proxy.bounds).tolist()
@@ -164,6 +196,8 @@ def main() -> None:
         "crop_y_max": args.crop_y_max,
         "pants_core": args.pants_core,
         "z_scale": args.z_scale,
+        "y_map_source_cm": args.y_map_source,
+        "y_map_target_cm": args.y_map_target,
         "output_scale": args.output_scale,
         "vertices": int(len(proxy.vertices)),
         "faces": int(len(proxy.faces)),

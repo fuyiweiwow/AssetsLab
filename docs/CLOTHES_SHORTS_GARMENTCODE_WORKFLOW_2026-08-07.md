@@ -140,3 +140,10 @@ v8 说明前后厚度是主要根因之一，但碰撞仍未归零。下一轮�
 - 新增 `tools/garmentcode/measure_actor_garmentcode_proxy.py`，按 body YAML 推导腰线、臀线、腿口的 Y 高度，输出 X 宽度、Z 深度、顶点数量和审计用的椭圆周长估计。
 - v8 报告：腰线 `Y=108.77 cm`，X 宽度约 `98.7 cm`、Z 深度 `24.0 cm`；臀线 `Y=85.29 cm`，X 宽度约 `102.0 cm`、Z 深度 `27.0 cm`；腿口参考线 `Y=76.48 cm`，X 宽度约 `66.0 cm`、Z 深度 `27.0 cm`。
 - 重要限制：报告中的椭圆周长只能作为相对诊断，不能直接写回 GarmentCode 的 `waist/hips/leg_circ`。实际结果显示，GarmentCode body YAML 的标量围度与代理 OBJ 的简单 X/Z 椭圆并非一一对应；下一轮必须同时参考官方 `mean_all` 身体截面和 Actor 代理截面，分别校准宽度、深度、垂直位置，再生成纸样。
+
+## Actor 垂直坐标映射探针（v9-v10，2026-08-07）
+
+- 复核 `prototype/test_output/garmentcode_actor_measurements_v1/actor_v1_measurements.json` 后确认：原始 Actor 的腿/髋/腰高度约为 `47.38/54.39/70.27 cm`，而 GarmentCode body YAML 对应高度为 `76.48/85.29/108.77 cm`。此前 v8 只对齐了目标 YAML 数值，没有把 Actor 代理的实际 Y 坐标映射过去。
+- v9 新增三点分段 Y 映射，并保留 v8 的 Z 深度 `0.5`。官方 500 步上限运行在 406 帧达到静态平衡；身体碰撞 `388`、自相交 `0`。这比 v8 的 `719/436` 明显改善，Y 映射确认有效，但仍未通过身体碰撞门禁。
+- v10 在完全相同的映射和纸样下将体素间距从 6 cm 降到 3 cm，结果反而为身体碰撞 `642`、自相交 `37`；因此更高代理分辨率不是当前主解。v10 不进入 Gallery。
+- 当前保留 v9 作为最佳物理诊断基线。下一步只做局部腰头/臀部/裆部净空与代理轮廓校准，不能再用全局体素精度或 `pants_width` 盲目替代。
