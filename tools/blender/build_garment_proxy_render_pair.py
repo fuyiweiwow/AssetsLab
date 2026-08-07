@@ -55,6 +55,8 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--sleeve-clearance", type=float, default=0.012)
     parser.add_argument("--sleeve-forward-offset", type=float, default=0.04)
     parser.add_argument("--sleeve-lateral-offset", type=float, default=0.035)
+    parser.add_argument("--sleeve-radius-floor", type=float, default=0.10)
+    parser.add_argument("--sleeve-radius-cap", type=float, default=0.18)
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
@@ -639,6 +641,8 @@ def build_clean_short_sleeve_mesh(
     length_fraction: float,
     forward_offset: float,
     lateral_offset: float,
+    radius_floor: float,
+    radius_cap: float,
 ) -> tuple[bpy.types.Object, dict[str, object]]:
     """Build short sleeve tubes from the Actor upper-arm bones.
 
@@ -650,6 +654,8 @@ def build_clean_short_sleeve_mesh(
     """
     if not 0.25 <= length_fraction <= 0.90:
         raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.90")
+    if not 0.08 <= radius_floor < radius_cap <= 0.35:
+        raise RuntimeError("sleeve radius must satisfy 0.08 <= floor < cap <= 0.35")
     # The sleeve mesh will be deformed by an Armature modifier.  Therefore its
     # source vertices must be authored in the armature rest space, not from
     # the frame-1 posed bone coordinates.  The previous implementation used
@@ -739,12 +745,12 @@ def build_clean_short_sleeve_mesh(
             # cross-section (roughly 0.10--0.13 m in this chibi rig). Keep a
             # dedicated arm-shell range so the sleeve cannot collapse inside
             # the skin merely because a ring has sparse samples.
-            base_radius = max(0.10, min(0.18, measured_radius + clearance))
+            base_radius = max(radius_floor, min(radius_cap, measured_radius + clearance))
             if ring_number == 0:
                 base_radius += 0.008
             if ring_number == len(ring_fractions) - 1:
                 base_radius *= 0.96
-            ring: list[int] = []
+            ring_points: list[Vector] = []
             for segment in range(segments):
                 angle = 2.0 * 3.141592653589793 * segment / segments
                 point = center + radial_a * (base_radius * math.cos(angle)) + radial_b * (base_radius * math.sin(angle))
@@ -757,6 +763,33 @@ def build_clean_short_sleeve_mesh(
                 # sign follows the arm side, so both sleeves remain visible
                 # as continuous shells in the front/back review views.
                 point.x += sign * lateral_offset
+                ring_points.append(point)
+            # The bone axis is a useful design center, but this chibi Actor's
+            # upper-arm envelope bends outward more than the bone.  If the
+            # generated tube falls back inside that envelope at a lower ring,
+            # the Actor hides it from the front and it looks like fragments.
+            # Match the outer edge ring-by-ring in rest space instead of using
+            # one global lateral offset.
+            projection_target = length * fraction
+            projection_window = max(0.025, length * 0.18)
+            outer_candidates = [
+                point.x * sign
+                for point in side_actor_points
+                if abs((point - head).dot(axis) - projection_target) <= projection_window
+                and point.x * sign > -0.015
+            ]
+            if outer_candidates:
+                # A tiny extra silhouette margin is intentional here.  The
+                # Actor arm surface is rendered in front of the cloth and the
+                # review resolution is only 256 px; a mathematically valid
+                # 0.012 m gap still reads as a missing sleeve.
+                actor_outer = max(outer_candidates) + clearance + 0.045
+                sleeve_outer = max(point.x * sign for point in ring_points)
+                if sleeve_outer < actor_outer:
+                    outward = sign * (actor_outer - sleeve_outer)
+                    ring_points = [point + Vector((outward, 0.0, 0.0)) for point in ring_points]
+            ring: list[int] = []
+            for point in ring_points:
                 ring.append(len(vertices))
                 vertices.append(tuple(point))
                 side_indices[side].append(ring[-1])
@@ -770,8 +803,11 @@ def build_clean_short_sleeve_mesh(
                 d = ring_b[segment]
                 faces.append((a, b, c, d))
 
-    add_sleeve("left", "CC_Base_L_Upperarm", -1.0)
-    add_sleeve("right", "CC_Base_R_Upperarm", 1.0)
+    # In this Actor file the L upperarm is on positive world X and the R
+    # upperarm is on negative world X.  The previous signs were reversed,
+    # pushing both sleeves toward the torso center instead of outward.
+    add_sleeve("left", "CC_Base_L_Upperarm", 1.0)
+    add_sleeve("right", "CC_Base_R_Upperarm", -1.0)
     mesh = bpy.data.meshes.new("GarmentCodeCleanShortSleeveMesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.update()
@@ -792,8 +828,8 @@ def build_clean_short_sleeve_mesh(
         "lateral_offset": lateral_offset,
         "segments_per_ring": segments,
         "ring_fractions": list(ring_fractions),
-        "radius_floor": 0.10,
-        "radius_cap": 0.18,
+        "radius_floor": radius_floor,
+        "radius_cap": radius_cap,
         "vertex_count": len(vertices),
         "face_count": len(faces),
         "left_vertex_indices": side_indices["left"],
@@ -967,6 +1003,8 @@ def main() -> int:
             options.sleeve_length_fraction,
             options.sleeve_forward_offset,
             options.sleeve_lateral_offset,
+            options.sleeve_radius_floor,
+            options.sleeve_radius_cap,
         )
     clean_surface = (
         build_clean_render_surface(

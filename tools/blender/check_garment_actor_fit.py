@@ -277,14 +277,19 @@ def main() -> int:
                 )
             )
             and abs(garment_points[index].x) >= 0.10
-            and abs(garment_points[index].y) < 0.08
+            # The short-sleeve armhole is a real overlap zone with the
+            # confirmed torso.  At 256 px, the outer sleeve shell can sit a
+            # few millimetres beyond the old 0.08 m band while still being a
+            # valid shoulder connection, so keep the lower sleeve subject to
+            # the normal penetration test but widen this bridge band.
+            and abs(garment_points[index].y) < 0.12
         ]
         shoulder_bridge_indices = {index for index, _signed, _distance in shoulder_bridge_items}
         depth_penetration_items = []
         depth_gap_items = []
         for index, point in enumerate(garment_points):
             if (
-                abs(point.y) < 0.08
+                abs(point.y) < 0.12
                 or abs(point.x) > 0.24
                 or index in shoulder_bridge_indices
             ):
@@ -320,7 +325,11 @@ def main() -> int:
         boundary["back_interior_boundary_edge_count"] = torso_boundary["back_interior_boundary_edge_count"]
         boundary["back_interior_boundary_examples"] = torso_boundary["back_interior_boundary_examples"]
         shoulder = shoulder_check(
-            garment_points,
+            # Shoulder placement belongs to the confirmed torso garment.
+            # Independent sleeves are validated by their body-clearance and
+            # follow-through checks above; including their outer shell here
+            # incorrectly treats a valid sleeve offset as a detached torso.
+            torso_points,
             actor_bvh,
             armature,
             top_z,

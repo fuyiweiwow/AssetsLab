@@ -17,6 +17,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 OUTPUT_DEFAULT = ROOT / "prototype" / "preview" / "clothes_milestone_audit_gallery.html"
 PREFIXES = ("clothes_", "actor_derived_", "garmentcode_")
+EXCLUDED_PREFIXES = ("clothes_short_sleeve_probe_",)
 DIRECTIONS = ("front", "right", "back", "left")
 
 
@@ -39,7 +40,11 @@ def candidate_records() -> list[dict[str, object]]:
     output: list[dict[str, object]] = []
     root = ROOT / "prototype" / "test_output"
     for directory in root.iterdir():
-        if not directory.is_dir() or not directory.name.startswith(PREFIXES):
+        if (
+            not directory.is_dir()
+            or not directory.name.startswith(PREFIXES)
+            or directory.name.startswith(EXCLUDED_PREFIXES)
+        ):
             continue
         frame_paths = {direction: directory / f"{direction}_00.png" for direction in DIRECTIONS}
         if not all(path.is_file() for path in frame_paths.values()):
