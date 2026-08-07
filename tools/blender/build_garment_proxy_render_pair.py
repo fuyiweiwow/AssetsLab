@@ -54,6 +54,7 @@ def cli_args() -> argparse.Namespace:
     parser.add_argument("--sleeve-length-fraction", type=float, default=0.42)
     parser.add_argument("--sleeve-clearance", type=float, default=0.012)
     parser.add_argument("--sleeve-forward-offset", type=float, default=0.04)
+    parser.add_argument("--sleeve-lateral-offset", type=float, default=0.035)
     parser.add_argument("--proxy-weighted-render", action="store_true")
     parser.add_argument("--clean-animation-proxy", action="store_true")
     parser.add_argument("--animation-proxy-smooth-iterations", type=int, default=6)
@@ -637,6 +638,7 @@ def build_clean_short_sleeve_mesh(
     clearance: float,
     length_fraction: float,
     forward_offset: float,
+    lateral_offset: float,
 ) -> tuple[bpy.types.Object, dict[str, object]]:
     """Build short sleeve tubes from the Actor upper-arm bones.
 
@@ -646,8 +648,8 @@ def build_clean_short_sleeve_mesh(
     official GarmentCode short-sleeve idea: a connected armhole-side band,
     short length, and an open cuff with no hand coverage.
     """
-    if not 0.25 <= length_fraction <= 0.65:
-        raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.65")
+    if not 0.25 <= length_fraction <= 0.90:
+        raise RuntimeError("sleeve length fraction must stay between 0.25 and 0.90")
     # The sleeve mesh will be deformed by an Armature modifier.  Therefore its
     # source vertices must be authored in the armature rest space, not from
     # the frame-1 posed bone coordinates.  The previous implementation used
@@ -751,6 +753,10 @@ def build_clean_short_sleeve_mesh(
                 # the sleeve surface visible without changing the armature
                 # binding or touching the confirmed torso garment.
                 point.y -= forward_offset
+                # Keep the sleeve tube outside the torso silhouette.  The
+                # sign follows the arm side, so both sleeves remain visible
+                # as continuous shells in the front/back review views.
+                point.x += sign * lateral_offset
                 ring.append(len(vertices))
                 vertices.append(tuple(point))
                 side_indices[side].append(ring[-1])
@@ -783,6 +789,7 @@ def build_clean_short_sleeve_mesh(
         "length_fraction_of_upperarm": length_fraction,
         "clearance": clearance,
         "forward_offset": forward_offset,
+        "lateral_offset": lateral_offset,
         "segments_per_ring": segments,
         "ring_fractions": list(ring_fractions),
         "radius_floor": 0.10,
@@ -959,6 +966,7 @@ def main() -> int:
             options.sleeve_clearance,
             options.sleeve_length_fraction,
             options.sleeve_forward_offset,
+            options.sleeve_lateral_offset,
         )
     clean_surface = (
         build_clean_render_surface(
