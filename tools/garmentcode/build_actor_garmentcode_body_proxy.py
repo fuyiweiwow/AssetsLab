@@ -51,6 +51,24 @@ def classify_vertices(vertices: np.ndarray) -> dict[str, list[int]]:
     return labels
 
 
+def pants_core_half_width(y: float) -> float:
+    """Return the intended lower-body half width in source centimetres."""
+    # Keep the hip envelope compatible with hips=103.5 cm while removing the
+    # isolated arm spikes visible in the raw proxy.  The profile is deliberately
+    # smooth; hard narrowing at the thighs made Warp spend the whole budget
+    # resolving an artificial vertical collision wall.
+    samples = ((35.0, 32.0), (55.0, 36.0), (75.0, 46.0), (95.0, 52.0), (115.0, 50.0), (135.0, 40.0))
+    if y <= samples[0][0]:
+        return samples[0][1]
+    if y >= samples[-1][0]:
+        return samples[-1][1]
+    for (y0, width0), (y1, width1) in zip(samples, samples[1:]):
+        if y0 <= y <= y1:
+            ratio = (y - y0) / (y1 - y0)
+            return width0 + (width1 - width0) * ratio
+    return samples[-1][1]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--input-obj", type=Path, required=True)
@@ -60,6 +78,11 @@ def main() -> None:
     parser.add_argument("--pitch", type=float, default=4.0)
     parser.add_argument("--crop-y-min", type=float)
     parser.add_argument("--crop-y-max", type=float)
+    parser.add_argument(
+        "--pants-core",
+        action="store_true",
+        help="remove lateral arm-volume voxels with a lower-body height/width envelope before meshing",
+    )
     parser.add_argument(
         "--output-scale",
         type=float,
@@ -92,6 +115,19 @@ def main() -> None:
         transform = np.array(voxels.transform, copy=True)
         transform[1, 3] += start * pitch_y
         voxels = VoxelGrid(DenseEncoding(cropped), transform=transform)
+    if args.pants_core:
+        matrix = np.asarray(voxels.matrix, dtype=bool)
+        origin_x = float(voxels.transform[0, 3])
+        origin_y = float(voxels.transform[1, 3])
+        pitch_x = float(voxels.transform[0, 0])
+        pitch_y = float(voxels.transform[1, 1])
+        x_centers = origin_x + np.arange(matrix.shape[0]) * pitch_x
+        y_centers = origin_y + np.arange(matrix.shape[1]) * pitch_y
+        widths = np.asarray([pants_core_half_width(y) for y in y_centers])
+        matrix &= np.abs(x_centers[:, None, None]) <= widths[None, :, None]
+        if not matrix.any():
+            raise ValueError("pants core envelope removed the entire voxel body")
+        voxels = VoxelGrid(DenseEncoding(matrix), transform=voxels.transform)
     proxy = voxels.marching_cubes
     # marching_cubes returns voxel-local coordinates; restore the source OBJ
     # centimetre coordinate system before exporting and labeling.
@@ -117,6 +153,7 @@ def main() -> None:
         "pitch": args.pitch,
         "crop_y_min": args.crop_y_min,
         "crop_y_max": args.crop_y_max,
+        "pants_core": args.pants_core,
         "output_scale": args.output_scale,
         "vertices": int(len(proxy.vertices)),
         "faces": int(len(proxy.faces)),
