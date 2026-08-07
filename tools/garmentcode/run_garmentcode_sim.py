@@ -78,11 +78,17 @@ def main() -> int:
 
         garment_name = pattern_spec.stem.rpartition("_specification")[0]
         sys_props = data_config.Properties(str(GARMENTCODE_ROOT / "system.json"))
+        # PathCofig validates the default measurement file during __init__.
+        # When the caller supplies a custom body-measurement YAML, bootstrap
+        # with an installed body name and replace the input paths immediately
+        # afterwards. This keeps custom Actor proxies self-contained instead
+        # of copying project files into GarmentCode's third-party tree.
+        path_body_name = "mean_all" if body_measurements else args.body_name
         paths = PathCofig(
             in_element_path=pattern_spec.parent,
             out_path=sys_props["output"],
             in_name=garment_name,
-            body_name=args.body_name,
+            body_name=path_body_name,
             smpl_body=False,
             add_timestamp=True,
         )

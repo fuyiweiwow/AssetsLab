@@ -89,6 +89,12 @@ def main() -> None:
         default=0.01,
         help="Scale source Actor centimetres to GarmentCode OBJ units (metres)",
     )
+    parser.add_argument(
+        "--z-scale",
+        type=float,
+        default=1.0,
+        help="Scale the source Actor front/back depth around Z before exporting",
+    )
     args = parser.parse_args()
 
     source = trimesh.load(args.input_obj, process=False)
@@ -134,6 +140,9 @@ def main() -> None:
     proxy.apply_transform(voxels.transform)
     if proxy.is_empty:
         raise ValueError("Y-cropped Actor proxy is empty")
+    if args.z_scale <= 0:
+        raise ValueError("--z-scale must be greater than zero")
+    proxy.vertices[:, 2] *= args.z_scale
     proxy.process(validate=True)
 
     source_bounds = np.asarray(proxy.bounds).tolist()
@@ -154,6 +163,7 @@ def main() -> None:
         "crop_y_min": args.crop_y_min,
         "crop_y_max": args.crop_y_max,
         "pants_core": args.pants_core,
+        "z_scale": args.z_scale,
         "output_scale": args.output_scale,
         "vertices": int(len(proxy.vertices)),
         "faces": int(len(proxy.faces)),

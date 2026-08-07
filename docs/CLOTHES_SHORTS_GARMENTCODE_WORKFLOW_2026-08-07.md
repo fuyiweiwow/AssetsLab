@@ -122,3 +122,15 @@ v32-v34 的诊断也已记录：单纯重建一个连续裤子渲染壳会受到
 - v6 在高度裁剪后增加硬性的下半身半宽轮廓，将代理最大宽度收窄到 ±45 cm。代理几何仍为单连通、watertight，但 500 步运行在 384 帧超时，300 步运行在 278 帧超时；硬裁剪形成的人工侧壁反而降低了 Warp 收敛性。
 - v7 将轮廓改为平滑的 ±32→±52 cm 高度曲线，使髋部宽度接近 `hips=103.5 cm`，并完成 300 帧模拟。结果为身体碰撞 `1148`、自相交 `1018`，仍未通过，且没有优于 v5 的 `1095/1032`。
 - 结论：手臂外扩几何不是主要根因；继续调代理横向轮廓的收益很低。v6/v7 不进入 Gallery，`--pants-core` 只保留为诊断开关。下一步应核对 GarmentCode body measurement 与 Actor 真实骨盆/大腿截面的一致性，并从纸样的腰头、裆深和裤脚宽度重新生成，而不是继续改碰撞壳。
+
+## 代理体深度匹配与纸样变量隔离（v8，2026-08-07）
+
+- 对比 v7 与 GarmentCode 官方 `mean_all` 身体在腰线附近的截面，发现 v7 的前后深度约为官方身体的两倍；这与此前 Actor 侧面过厚、像纸箱的问题一致。保持 X/Y 不变，仅在生成闭合代理时将 Z 深度缩放到 `0.5`，得到 `garmentcode_actor_body_proxy_v8_pants_core_depth_match`。
+- v8 代理仍是单连通、watertight，范围为 X=`±51 cm`、Y=`33..135 cm`、Z=`±13.5 cm`。腰线高度仍与纸样的 `_waist_level=108.77 cm` 对齐。
+- 使用原宽裆纸样（`pants_width=1.15`）重新模拟 300 步：未达到静态平衡，但身体碰撞降至 `719`、自相交降至 `436`。日志：`third_party/GarmentCode/Logs/actor_v1_shorts_wider_crotch_seed_2_260807-14-20-14/`。这是目前官方重模拟路线的最好诊断结果，但仍不能转入 Actor 或 Gallery。
+- 隔离测试将 `pants_width` 从 `1.15` 增至 `1.25`，在同一 v8 代理上于 240 帧超时，没有得到有效质量统计；因此不能用继续扩大裆部来替代体型截面校准。日志：`third_party/GarmentCode/Logs/actor_v1_shorts_depth_match_wider_crotch_seed_2_260807-14-23-58/`。
+- 同时修复 `tools/garmentcode/run_garmentcode_sim.py` 的自定义 measurements 初始化缺陷：传入 `--body-measurements` 时先用已安装的 `mean_all` 完成 `PathCofig` 初始化，再立即替换为项目内 YAML/OBJ/分割文件，避免把 Actor 文件复制进第三方目录。
+
+## 当前判断
+
+v8 说明前后厚度是主要根因之一，但碰撞仍未归零。下一轮不再盲调 `pants_width` 或继续扩大代理，而是从代理的腰线、臀线、腿口三个截面反推对应的 body measurements 与 Pants 纸样参数；只有模拟达到静态平衡且自交/身体碰撞通过，才允许生成新的 Gallery 候选。
