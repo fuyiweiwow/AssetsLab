@@ -15,6 +15,8 @@
 
 Actor V1 是离线生成基线；`chibi_eyes_ears_walk_v1` 是已通过 Godot 技术测试的旧包。两者不能混称，后续必须先完成 Actor V1 的 3D→2D→Godot 闭环，再决定是否替换旧包。
 
+服装饰品的当前短期架构已经收敛为固定 ActorClass、Slot 和 WearableArchetype 的 Dota 式离线资产编译流程；不再以任意生成服装自动适配任意 Actor 为当前目标。决策、分级和下一项隔离实验见 [Dota 式分类服装饰品工作流决策](DOTA_STYLE_WEARABLE_WORKFLOW_DECISION_2026-08-19.md)。
+
 ## 锁定的输出合同
 
 - 4 个方向：front/right/back/left。
