@@ -20,12 +20,25 @@ foreach ($entry in $manifest.required_files) {
         $failures.Add("missing: $($entry.path)")
         continue
     }
-    $item = Get-Item -LiteralPath $path
-    if ($item.Length -ne [long]$entry.bytes) {
+    $payload = [System.IO.File]::ReadAllBytes($path)
+    if ($entry.hash_mode -eq "text_utf8_lf") {
+        $text = [System.Text.Encoding]::UTF8.GetString($payload)
+        $text = $text.Replace("`r`n", "`n").Replace("`r", "`n")
+        $payload = [System.Text.UTF8Encoding]::new($false).GetBytes($text)
+    } elseif ($entry.hash_mode -ne "binary_exact") {
+        $failures.Add("unknown hash mode: $($entry.path): $($entry.hash_mode)")
+        continue
+    }
+    if ($payload.Length -ne [long]$entry.bytes) {
         $failures.Add("size mismatch: $($entry.path)")
         continue
     }
-    $actualHash = (Get-FileHash -Algorithm SHA256 -LiteralPath $path).Hash.ToLowerInvariant()
+    $sha = [System.Security.Cryptography.SHA256]::Create()
+    try {
+        $actualHash = ([System.BitConverter]::ToString($sha.ComputeHash($payload))).Replace("-", "").ToLowerInvariant()
+    } finally {
+        $sha.Dispose()
+    }
     if ($actualHash -ne $entry.sha256) {
         $failures.Add("hash mismatch: $($entry.path)")
     }

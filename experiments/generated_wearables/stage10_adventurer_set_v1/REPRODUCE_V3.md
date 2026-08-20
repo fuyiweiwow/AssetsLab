@@ -10,7 +10,7 @@ This directory is the authoritative, slim checkpoint for continuing the current 
 
    `powershell -ExecutionPolicy Bypass -File verify_reproducible_package_v1.ps1 -RebuildWaistSmoke`
 
-The verifier checks every retained file against `REPRODUCIBLE_PACKAGE_V1.json`, opens the V3 Blend headlessly, validates the Actor/skeleton/slot structure, reproduces the sleeve and boot blocker metrics, and optionally rebuilds the waist slot from its retained Hunyuan GLB.
+The verifier checks every retained file against `REPRODUCIBLE_PACKAGE_V1.json`, opens the V3 Blend headlessly, validates the Actor/skeleton/slot structure, reproduces the sleeve and boot blocker metrics, and optionally rebuilds the waist slot from its retained Hunyuan GLB. Binary assets use exact-byte SHA-256; UTF-8 text is normalized to LF before hashing so Windows Git line-ending conversion does not create a false failure.
 
 ## What is self-contained
 

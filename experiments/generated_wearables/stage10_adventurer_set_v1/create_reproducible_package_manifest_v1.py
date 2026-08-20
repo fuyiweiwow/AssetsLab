@@ -17,14 +17,15 @@ SOURCE_SLOTS = [
     "wrist_accessory",
     "back_accessory",
 ]
+TEXT_EXTENSIONS = {".json", ".md", ".ps1", ".py"}
 
 
-def sha256(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
+def canonical_payload(path: Path) -> tuple[bytes, str]:
+    payload = path.read_bytes()
+    if path.suffix.lower() in TEXT_EXTENSIONS:
+        payload = payload.replace(b"\r\n", b"\n").replace(b"\r", b"\n")
+        return payload, "text_utf8_lf"
+    return payload, "binary_exact"
 
 
 def included(path: Path) -> bool:
@@ -38,14 +39,17 @@ def included(path: Path) -> bool:
 
 def main() -> None:
     files = sorted(path for path in ROOT.rglob("*") if path.is_file() and included(path))
-    entries = [
-        {
-            "path": path.relative_to(ROOT).as_posix(),
-            "bytes": path.stat().st_size,
-            "sha256": sha256(path),
-        }
-        for path in files
-    ]
+    entries = []
+    for path in files:
+        payload, hash_mode = canonical_payload(path)
+        entries.append(
+            {
+                "path": path.relative_to(ROOT).as_posix(),
+                "bytes": len(payload),
+                "sha256": hashlib.sha256(payload).hexdigest(),
+                "hash_mode": hash_mode,
+            }
+        )
     payload = {
         "schema": "assetslab_reproducible_generated_wearable_package_v1",
         "actor_class": "ChibiActorV1",
