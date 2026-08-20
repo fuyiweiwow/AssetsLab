@@ -1,0 +1,284 @@
+from __future__ import annotations
+
+import argparse
+import json
+import sys
+from pathlib import Path
+
+import bpy
+from mathutils import Vector
+
+
+ACTOR_NAME = "ChibiBaseMesh_AccuRIG_InputMesh"
+ARMATURE_NAME = "Armature"
+MASK_NAME = "WearableMask_AdventurerRemainingV1"
+MASK_MODIFIER = "PreviewBodyHide_AdventurerRemainingV1"
+
+
+def arguments() -> argparse.Namespace:
+    argv = sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--input-blend", required=True, type=Path)
+    parser.add_argument("--profile", required=True, type=Path)
+    parser.add_argument("--feet-glb", required=True, type=Path)
+    parser.add_argument("--wrist-glb", required=True, type=Path)
+    parser.add_argument("--back-glb", required=True, type=Path)
+    parser.add_argument("--output-blend", required=True, type=Path)
+    parser.add_argument("--manifest", required=True, type=Path)
+    parser.add_argument("--decimate-ratio", type=float, default=0.14)
+    return parser.parse_args(argv)
+
+
+def vector(values: list[float]) -> Vector:
+    return Vector(tuple(values))
+
+
+def object_bounds(obj: bpy.types.Object) -> tuple[Vector, Vector]:
+    points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
+    low = Vector(tuple(min(point[axis] for point in points) for axis in range(3)))
+    high = Vector(tuple(max(point[axis] for point in points) for axis in range(3)))
+    return low, high
+
+
+def import_generated(path: Path, name: str, decimate_ratio: float) -> tuple[bpy.types.Object, dict]:
+    old = bpy.data.objects.get(name)
+    if old is not None:
+        bpy.data.objects.remove(old, do_unlink=True)
+    existing = set(bpy.data.objects)
+    bpy.ops.import_scene.gltf(filepath=str(path.resolve()))
+    imported = [obj for obj in bpy.data.objects if obj not in existing and obj.type == "MESH"]
+    if not imported:
+        raise RuntimeError(f"Hunyuan GLB contains no mesh: {path}")
+    bpy.ops.object.select_all(action="DESELECT")
+    for obj in imported:
+        obj.select_set(True)
+    bpy.context.view_layer.objects.active = imported[0]
+    bpy.ops.object.join()
+    obj = bpy.context.object
+    obj.name = name
+    bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+    source = {"vertices": len(obj.data.vertices), "faces": len(obj.data.polygons)}
+    modifier = obj.modifiers.new("GeneratedAssetRetopoProxy", "DECIMATE")
+    modifier.decimate_type = "COLLAPSE"
+    modifier.ratio = decimate_ratio
+    modifier.use_collapse_triangulate = True
+    bpy.context.view_layer.objects.active = obj
+    bpy.ops.object.modifier_apply(modifier=modifier.name)
+    low, high = object_bounds(obj)
+    source.update({"low": list(low), "high": list(high), "center": list((low + high) * 0.5)})
+    return obj, source
+
+
+def leather_material() -> bpy.types.Material:
+    material = bpy.data.materials.get("AdventurerLeather_Brown") or bpy.data.materials.new(
+        "AdventurerLeather_Brown"
+    )
+    material.diffuse_color = (0.20, 0.075, 0.025, 1.0)
+    material.use_nodes = True
+    principled = material.node_tree.nodes.get("Principled BSDF")
+    principled.inputs["Base Color"].default_value = material.diffuse_color
+    principled.inputs["Roughness"].default_value = 0.74
+    return material
+
+
+def set_material(obj: bpy.types.Object, material: bpy.types.Material) -> None:
+    obj.data.materials.clear()
+    obj.data.materials.append(material)
+    for polygon in obj.data.polygons:
+        polygon.material_index = 0
+
+
+def rigid_bind(obj: bpy.types.Object, armature: bpy.types.Object, bone: str, slot: str) -> None:
+    group = obj.vertex_groups.new(name=bone)
+    group.add([vertex.index for vertex in obj.data.vertices], 1.0, "REPLACE")
+    modifier = obj.modifiers.new("ActorArmature", "ARMATURE")
+    modifier.object = armature
+    modifier.use_vertex_groups = True
+    obj["source_kind"] = "Hunyuan3D-2MV generated wearable"
+    obj["adapter_role"] = "Actor profile placement and controlled binding only"
+    obj["wearable_slot"] = slot
+    obj["actor_class"] = "ChibiActorV1"
+
+
+def normalized_source(obj: bpy.types.Object) -> tuple[Vector, Vector]:
+    low, high = object_bounds(obj)
+    center = (low + high) * 0.5
+    half = (high - low) * 0.5
+    return center, half
+
+
+def fit_axis_aligned(obj: bpy.types.Object, target_center: Vector, target_half: Vector) -> None:
+    source_center, source_half = normalized_source(obj)
+    for vertex in obj.data.vertices:
+        local = vertex.co - source_center
+        vertex.co = Vector(
+            tuple(target_center[axis] + local[axis] * target_half[axis] / source_half[axis] for axis in range(3))
+        )
+    obj.data.update()
+
+
+def fit_to_axis(obj: bpy.types.Object, target_center: Vector, axis: Vector, radial_half: Vector, half_length: float) -> None:
+    source_center, source_half = normalized_source(obj)
+    rotation = Vector((0.0, 0.0, 1.0)).rotation_difference(axis.normalized())
+    for vertex in obj.data.vertices:
+        local = vertex.co - source_center
+        normalized = Vector((local.x / source_half.x, local.y / source_half.y, local.z / source_half.z))
+        shaped = Vector((normalized.x * radial_half.x, normalized.y * radial_half.y, normalized.z * half_length))
+        vertex.co = target_center + rotation @ shaped
+    obj.data.update()
+
+
+def duplicate_mirrored(source: bpy.types.Object, name: str) -> bpy.types.Object:
+    obj = source.copy()
+    obj.data = source.data.copy()
+    bpy.context.collection.objects.link(obj)
+    obj.name = name
+    for modifier in list(obj.modifiers):
+        obj.modifiers.remove(modifier)
+    for group in list(obj.vertex_groups):
+        obj.vertex_groups.remove(group)
+    for vertex in obj.data.vertices:
+        vertex.co.x *= -1.0
+    obj.data.update()
+    return obj
+
+
+def weight(vertex: bpy.types.MeshVertex, group_index: int | None) -> float:
+    if group_index is None:
+        return 0.0
+    return next((item.weight for item in vertex.groups if item.group == group_index), 0.0)
+
+
+def add_body_mask(actor: bpy.types.Object, mapping: dict[str, str], profile: dict) -> int:
+    old = actor.vertex_groups.get(MASK_NAME)
+    if old is not None:
+        actor.vertex_groups.remove(old)
+    group = actor.vertex_groups.new(name=MASK_NAME)
+    groups = {item.name: item.index for item in actor.vertex_groups}
+    selected = []
+    left_foot = profile["weighted_surface_regions"]["left_foot"]
+    foot_center = vector(left_foot["center"])
+    foot_size = vector(left_foot["size"])
+    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), max(0.125, foot_size.z * 1.15)))
+    boot_y = foot_center.y - 0.055
+    for vertex in actor.data.vertices:
+        point = actor.matrix_world @ vertex.co
+        hide = False
+        for side in ("left", "right"):
+            foot_name = mapping[f"{side}_foot"]
+            calf_name = mapping[f"{side}_calf"]
+            foot_owned = weight(vertex, groups.get(foot_name)) + weight(vertex, groups.get(calf_name))
+            sign = 1.0 if side == "left" else -1.0
+            side_token = "_L_" if side == "left" else "_R_"
+            toe_owned = sum(
+                weight(vertex, index)
+                for name, index in groups.items()
+                if side_token in name and "Toe" in name
+            )
+            boot_x = sign * abs(foot_center.x)
+            inside_boot = (
+                abs(point.x - boot_x) <= boot_half.x * 1.35
+                and abs(point.y - boot_y) <= boot_half.y * 1.35
+                and -0.01 <= point.z <= boot_half.z * 2.02
+            )
+            if (
+                inside_boot
+                or (foot_owned >= 0.18 and point.z <= 0.205 and sign * point.x >= 0.07)
+                or (toe_owned >= 0.05 and point.z <= 0.24)
+            ):
+                hide = True
+
+            # Bracers are generated as layered open cuffs.  Keep the Actor's
+            # complete forearm and hand visible inside them; masking the arm
+            # turns intentional recesses into transparent holes.
+        if hide:
+            selected.append(vertex.index)
+    if selected:
+        group.add(selected, 1.0, "REPLACE")
+    old_modifier = actor.modifiers.get(MASK_MODIFIER)
+    if old_modifier is not None:
+        actor.modifiers.remove(old_modifier)
+    modifier = actor.modifiers.new(MASK_MODIFIER, "MASK")
+    modifier.mode = "VERTEX_GROUP"
+    modifier.vertex_group = MASK_NAME
+    modifier.invert_vertex_group = True
+    return len(selected)
+
+
+def main() -> int:
+    options = arguments()
+    profile = json.loads(options.profile.read_text(encoding="utf-8"))
+    if profile.get("status") != "pass" or profile.get("mode") != "animated":
+        raise RuntimeError("animated Actor wearable profile has not passed")
+    bpy.ops.wm.open_mainfile(filepath=str(options.input_blend.resolve()))
+    bpy.context.scene.frame_set(1)
+    actor = bpy.data.objects.get(ACTOR_NAME)
+    armature = bpy.data.objects.get(ARMATURE_NAME)
+    if actor is None or armature is None:
+        raise RuntimeError("Actor or Armature missing")
+    mapping = profile["bone_mapping"]
+    material = leather_material()
+    records = {}
+
+    boot, source = import_generated(options.feet_glb, "Wearable_Adventurer_Boot_L_V1", options.decimate_ratio)
+    left_foot = profile["weighted_surface_regions"]["left_foot"]
+    foot_size = vector(left_foot["size"])
+    foot_center = vector(left_foot["center"])
+    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), max(0.125, foot_size.z * 1.15)))
+    boot_center = Vector((foot_center.x, foot_center.y - 0.055, max(boot_half.z, vector(left_foot["low"]).z + boot_half.z)))
+    fit_axis_aligned(boot, boot_center, boot_half)
+    set_material(boot, material)
+    rigid_bind(boot, armature, mapping["left_foot"], "feet_outer")
+    right_boot = duplicate_mirrored(boot, "Wearable_Adventurer_Boot_R_V1")
+    rigid_bind(right_boot, armature, mapping["right_foot"], "feet_outer")
+    records["feet_outer"] = {"source": source, "target_half_size": list(boot_half), "left_center": list(boot_center)}
+
+    bracer_source, source = import_generated(options.wrist_glb, "Wearable_Adventurer_Bracer_L_V1", options.decimate_ratio)
+    left_elbow, left_wrist = vector(profile["arm_chains"]["left"][1]), vector(profile["arm_chains"]["left"][2])
+    left_axis = left_elbow - left_wrist
+    bracer_center = left_wrist.lerp(left_elbow, 0.50)
+    fit_to_axis(bracer_source, bracer_center, left_axis, Vector((0.092, 0.092, 0.0)), left_axis.length * 0.43)
+    set_material(bracer_source, material)
+    rigid_bind(bracer_source, armature, mapping["left_forearm"], "wrist_accessory")
+
+    right_bracer, _ = import_generated(options.wrist_glb, "Wearable_Adventurer_Bracer_R_V1", options.decimate_ratio)
+    right_elbow, right_wrist = vector(profile["arm_chains"]["right"][1]), vector(profile["arm_chains"]["right"][2])
+    right_axis = right_elbow - right_wrist
+    fit_to_axis(right_bracer, right_wrist.lerp(right_elbow, 0.50), right_axis, Vector((0.092, 0.092, 0.0)), right_axis.length * 0.43)
+    set_material(right_bracer, material)
+    rigid_bind(right_bracer, armature, mapping["right_forearm"], "wrist_accessory")
+    records["wrist_accessory"] = {"source": source, "left_axis_length": left_axis.length, "right_axis_length": right_axis.length}
+
+    backpack, source = import_generated(options.back_glb, "Wearable_Adventurer_Backpack_V1", options.decimate_ratio)
+    spine = profile["weighted_surface_regions"]["spine02"]
+    spine_high = vector(spine["high"])
+    spine_bone = profile["rest_bones"]["spine02"]
+    spine_center = (vector(spine_bone["head"]) + vector(spine_bone["tail"])) * 0.5
+    backpack_half = Vector((0.230, 0.130, 0.260))
+    backpack_center = Vector((0.0, spine_high.y + backpack_half.y + 0.008, spine_center.z - 0.035))
+    fit_axis_aligned(backpack, backpack_center, backpack_half)
+    set_material(backpack, material)
+    rigid_bind(backpack, armature, mapping["spine02"], "back_accessory")
+    records["back_accessory"] = {"source": source, "target_center": list(backpack_center), "target_half_size": list(backpack_half)}
+
+    mask_count = add_body_mask(actor, mapping, profile)
+    scene = bpy.context.scene
+    scene["wearable_remaining_slots"] = "feet_outer,wrist_accessory,back_accessory"
+    options.output_blend.parent.mkdir(parents=True, exist_ok=True)
+    bpy.ops.wm.save_as_mainfile(filepath=str(options.output_blend.resolve()))
+    report = {
+        "schema": "adventurer_remaining_generated_slots_adapter_v1",
+        "actor_class": profile["actor_class"],
+        "profile": str(options.profile.resolve()),
+        "slots": records,
+        "body_mask": {"name": MASK_NAME, "vertices": mask_count},
+        "decimate_ratio": options.decimate_ratio,
+        "status": "compiled_motion_and_visual_review_required",
+    }
+    options.manifest.write_text(json.dumps(report, indent=2, ensure_ascii=False), encoding="utf-8")
+    print(json.dumps(report, ensure_ascii=False))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

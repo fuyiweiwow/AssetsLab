@@ -1,0 +1,44 @@
+{
+  "schema": "assetslab_generated_wearable_milestone_v1",
+  "actor_class": "ChibiActorV1",
+  "wearable_set": "AdventurerSetV1",
+  "slots": [
+    "head_hair",
+    "torso_outer",
+    "waist_accessory",
+    "legs_outer",
+    "feet_outer",
+    "wrist_accessory",
+    "back_accessory"
+  ],
+  "complete_blend": {
+    "path": "milestone/adventurer_set_complete_v1.blend",
+    "bytes": 68840607,
+    "sha256": "52ed8f799b6f52736a3cc3989f07882ef639e1db95f2e6a9387d875177edbb1e"
+  },
+  "generated_sources": [
+    {"path": "assets/generated_sources/adventurer_back_accessory_2mv_v1.glb", "bytes": 8746540, "sha256": "1f8c630d5c122e2573fd1a7ebdfd67bbf3bfa9cec6452f8f64d7fa9944cbfcac"},
+    {"path": "assets/generated_sources/adventurer_feet_outer_2mv_v1.glb", "bytes": 9501216, "sha256": "27e3cca4fe5fd578d1e9afaaea80d5f9795112c35dc8578895f571160d84f849"},
+    {"path": "assets/generated_sources/adventurer_head_hair_actorfit_2mv_v2.glb", "bytes": 11786200, "sha256": "85775ec19a040c6e80e8eb83e852b78eefe84de079fc89cafaa7b495972191ba"},
+    {"path": "assets/generated_sources/adventurer_legs_outer_2mv_v1.glb", "bytes": 13088740, "sha256": "2a18de821a5b71dac82759baa1888b9b0ea17352ec853884ef288a8771b49fdf"},
+    {"path": "assets/generated_sources/adventurer_torso_outer_2mv_v1.glb", "bytes": 12069016, "sha256": "3545840194eb91dd04e3b8a48f7b9694930db4280def130a114a918f442fdea1"},
+    {"path": "assets/generated_sources/adventurer_waist_accessory_2mv_v1.glb", "bytes": 4783780, "sha256": "608e67ed89ba18a3f1ae9bddee9bdd2c7e08ded3483eb56a4fa7ce97c7d4ee95"},
+    {"path": "assets/generated_sources/adventurer_wrist_accessory_2mv_v1.glb", "bytes": 8444092, "sha256": "5b191851900ba74b52f8020f050adfe2486ce2b3d7d7cba90cf837f59f30eadb"}
+  ],
+  "acceptance": {
+    "profile_mode": "animated",
+    "semantic_bones_resolved": 20,
+    "review_frames": [1, 11, 21, 31, 41, 51, 61, 71],
+    "directions": ["front", "right", "back", "left"],
+    "final_audits": "pass",
+    "masked_hand_vertices": 0,
+    "maximum_bracer_axis_error": 0.006,
+    "visible_actor_vertices_in_boot_core": 0
+  },
+  "excluded": [
+    "rejected normal-proportion hair source",
+    "intermediate and failed blend candidates",
+    "rebuildable frame caches beyond the four representative stills",
+    "Hunyuan model weights and runtime checkout"
+  ]
+}
