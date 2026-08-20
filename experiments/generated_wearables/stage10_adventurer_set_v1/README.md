@@ -26,6 +26,20 @@ No slot enters the accepted set merely because the full dressed concept looks co
 
 ## Accepted checkpoint: complete seven-slot milestone
 
+### V3 reproducible diagnostic checkpoint
+
+`milestone/adventurer_set_workflow_v3.blend` preserves the current original-hair modular workflow after the V2MV footwear, waist-cinch, backpack-contact, and short-sleeve interface experiments. Its complete and upper-body reviews are `preview/preview_workflow_v3.gif` and `preview/preview_workflow_v3_upper.gif`.
+
+V3 is deliberately recorded as a diagnostic checkpoint, not a final accepted wearable release. It establishes these reusable contracts:
+
+- generated Hunyuan torso geometry remains the styled garment; a two-sided 80-face ActorProfile ring handles only the sleeve/skin boundary;
+- equipping the rigid waist slot drives the reversible tunic shape key `AccessoryFit_AdventurerWaistV1`;
+- both boots are rebuilt from the same generated source, use a percentile sole plane, and no longer retain a stale mirrored candidate;
+- backpack depth is anchored from generated torso/back surface percentiles;
+- hands are never masked, and bracers occupy only the wrist-side section of the forearm.
+
+Two visual blockers remain open and must not be hidden by passing metadata: the generated sleeve/torso shell still self-interferes in motion, and rigid foot-bone boot binding makes the sole rotate like a hoof instead of preserving a believable planted contact. The exact files, audit distinctions, and known limitations are recorded in `WORKFLOW_V3_STATUS.md` and `MILESTONE_MANIFEST_V3.json`.
+
 ### V2 fit-fix and enclosing headwear checkpoint
 
 The latest accepted file is `milestone/adventurer_set_fitfix_headscarf_v2.blend`. V1 remains in the package as the rollback baseline. V2 keeps the same seven gameplay slots and adds one compatible `head_hair_accessory` variant: a Hunyuan-generated close-fitting headscarf, leather band, rear knot, and short hair reconstructed as one asset from the current Actor's orthographic head calibration.

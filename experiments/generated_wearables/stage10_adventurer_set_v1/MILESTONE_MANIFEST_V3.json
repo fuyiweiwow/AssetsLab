@@ -1,0 +1,53 @@
+{
+  "schema": "assetslab_generated_wearable_milestone_v3_diagnostic",
+  "actor_class": "ChibiActorV1",
+  "wearable_set": "AdventurerSetV1",
+  "parent_milestone": "MILESTONE_MANIFEST_V2.json",
+  "status": "reproducible_diagnostic_checkpoint",
+  "complete_blend": {
+    "path": "milestone/adventurer_set_workflow_v3.blend",
+    "bytes": 70214780,
+    "sha256": "9258d722be3fe20c3ad55971b0f04c4a30771b2fdedaf828a655f803ba3fc5e5"
+  },
+  "preview": {
+    "full_path": "preview/preview_workflow_v3.gif",
+    "full_bytes": 397875,
+    "full_sha256": "11d9dc2e64be0e6411107010e4499253404e08aee577a52f9d5eec94402c70c7",
+    "upper_path": "preview/preview_workflow_v3_upper.gif",
+    "upper_bytes": 1298272,
+    "upper_sha256": "ce7a7e9235aae931b188af6c4776693b184fb4c3dc6aeecb9658d2fff07433e8"
+  },
+  "workflow_changes": [
+    "ActorProfile arm-axis sleeve interface ring",
+    "generated-tunic waist-accessory corrective shape key",
+    "single-source mirrored boots with percentile sole fitting",
+    "open boot-cuff body ownership without replacement skin bridge",
+    "torso-surface percentile backpack contact anchor",
+    "wrist-side shortened bracer placement"
+  ],
+  "acceptance": {
+    "review_frames": [1, 11, 21, 31, 41, 51, 61, 71],
+    "directions": ["front", "right", "back", "left"],
+    "passing_reports": [
+      "reports/final_audit_v3_sleeve.json",
+      "reports/final_audit_v3_remaining.json",
+      "reports/final_audit_v3_waist_interface.json"
+    ],
+    "diagnostic_fail_reports": [
+      "reports/final_audit_v3_torso.json"
+    ],
+    "masked_hand_vertices": 0,
+    "visible_actor_vertices_in_boot_solid_core": 0
+  },
+  "open_visual_blockers": [
+    "generated sleeve and torso shell interference during animation",
+    "rigid foot-bone boot rotation produces hoof-like sole contact",
+    "old Actor exposed-limb topology remains visibly coarse at close range"
+  ],
+  "excluded": [
+    "headwear experiments from the original-hair V3 preview",
+    "intermediate blend candidates",
+    "rebuildable render-frame caches",
+    "Hunyuan model weights and runtime checkout"
+  ]
+}

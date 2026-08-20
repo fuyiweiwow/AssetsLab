@@ -11,12 +11,14 @@ from mathutils import Vector
 
 ARMATURE_NAME = "Armature"
 ACCESSORY_NAME = "Wearable_Adventurer_WaistAccessoryV1"
+TORSO_NAME = "Wearable_Adventurer_TorsoOuterV1"
+CINCH_KEY_NAME = "AccessoryFit_AdventurerWaistV1"
 WAIST_BONE = "CC_Base_Waist"
 SOURCE_LOW = Vector((-0.992293, -0.985579, -0.299774))
 SOURCE_HIGH = Vector((0.983379, 0.992294, 0.301924))
 SOURCE_CENTER = (SOURCE_LOW + SOURCE_HIGH) * 0.5
-TARGET_CENTER = Vector((0.0, 0.0, 0.810))
-TARGET_SCALE = Vector((0.38, 0.315, 0.38))
+TARGET_CENTER = Vector((0.0, -0.010, 0.810))
+TARGET_SCALE = Vector((0.315, 0.235, 0.32))
 
 
 def cli() -> argparse.Namespace:
@@ -46,6 +48,65 @@ def smoothstep(edge0: float, edge1: float, value: float) -> float:
     return t * t * (3.0 - 2.0 * t)
 
 
+def add_accessory_cinch_shape(
+    torso: bpy.types.Object,
+    accessory: bpy.types.Object,
+) -> dict[str, float | int | list[float]]:
+    """Create the equipped-belt corrective shape on the generated tunic.
+
+    The belt remains rigid.  The tunic receives a reversible morph target that
+    compresses only vertices inside the belt's vertical contact band.  This is
+    the same asset-layer contract a runtime morph target can toggle when the
+    waist accessory is equipped; it is not replacement garment geometry.
+    """
+    if torso.data.shape_keys is None:
+        torso.shape_key_add(name="Basis")
+    existing = torso.data.shape_keys.key_blocks.get(CINCH_KEY_NAME)
+    if existing is not None:
+        torso.shape_key_remove(existing)
+    key = torso.shape_key_add(name=CINCH_KEY_NAME)
+
+    points = [accessory.matrix_world @ vertex.co for vertex in accessory.data.vertices]
+    low = Vector(tuple(min(point[axis] for point in points) for axis in range(3)))
+    high = Vector(tuple(max(point[axis] for point in points) for axis in range(3)))
+    center = (low + high) * 0.5
+    belt_half = (high - low) * 0.5
+    inner_x = belt_half.x * 0.87
+    inner_y = belt_half.y * 0.80
+    moved = 0
+    maximum_offset = 0.0
+    for index, vertex in enumerate(torso.data.vertices):
+        point = torso.matrix_world @ vertex.co
+        lower_fade = smoothstep(low.z, low.z + 0.045, point.z)
+        upper_fade = 1.0 - smoothstep(high.z - 0.055, high.z, point.z)
+        influence = lower_fade * upper_fade
+        if influence <= 1e-5:
+            continue
+        local_x = point.x - center.x
+        local_y = point.y - center.y
+        radius = ((local_x / inner_x) ** 2 + (local_y / inner_y) ** 2) ** 0.5
+        if radius <= 1.0:
+            continue
+        target_world = point.copy()
+        target_world.x = center.x + local_x / radius
+        target_world.y = center.y + local_y / radius
+        target_local = torso.matrix_world.inverted() @ target_world
+        offset = (target_local - vertex.co) * min(1.0, influence * 0.92)
+        key.data[index].co = vertex.co + offset
+        moved += 1
+        maximum_offset = max(maximum_offset, offset.length)
+    key.value = 1.0
+    torso["accessory_fit_shape"] = CINCH_KEY_NAME
+    torso["accessory_fit_slot"] = "waist_accessory"
+    return {
+        "shape_key": CINCH_KEY_NAME,
+        "moved_vertices": moved,
+        "maximum_offset": maximum_offset,
+        "belt_inner_half": [inner_x, inner_y],
+        "belt_z_band": [low.z, high.z],
+    }
+
+
 def main() -> None:
     args = cli()
     bpy.ops.wm.open_mainfile(filepath=str(args.input_blend.resolve()))
@@ -53,6 +114,9 @@ def main() -> None:
     armature = bpy.data.objects.get(ARMATURE_NAME)
     if armature is None or armature.data.bones.get(WAIST_BONE) is None:
         raise RuntimeError("canonical Armature or waist bone missing")
+    torso = bpy.data.objects.get(TORSO_NAME)
+    if torso is None:
+        raise RuntimeError("generated torso garment missing for waist corrective shape")
     old = bpy.data.objects.get(ACCESSORY_NAME)
     if old is not None:
         bpy.data.objects.remove(old, do_unlink=True)
@@ -112,11 +176,10 @@ def main() -> None:
         # Increase the closed ring's inner clearance while preserving its
         # accepted outer silhouette and hand-swing clearance.  This compresses
         # radial leather thickness instead of uniformly scaling buckle/pouch.
-        radial_offset = (
-            0.13
-            * smoothstep(0.55, 0.72, radius)
-            * (1.0 - smoothstep(0.88, 0.95, radius))
-        )
+        # Keep the generated closed ring inside the measured waist envelope.
+        # The former outward radial expansion was the source of the visible
+        # belt gap and made the pouches overshoot the Actor's sides.
+        radial_offset = 0.0
         if radius > 1e-8 and radial_offset > 0.0:
             factor = (radius + radial_offset) / radius
             local.x *= factor
@@ -138,6 +201,7 @@ def main() -> None:
     accessory["wearable_slot"] = "waist_accessory"
     accessory["binding_mode"] = "rigid_waist_bone"
     accessory["actor_class"] = "ChibiActorV1"
+    cinch_shape = add_accessory_cinch_shape(torso, accessory)
 
     args.output_blend.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(args.output_blend.resolve()))
@@ -153,6 +217,7 @@ def main() -> None:
         "decimate_ratio": args.decimate_ratio,
         "bounds_frame_1": bounds(accessory),
         "binding": {"bone": WAIST_BONE, "weight": 1.0},
+        "torso_corrective_shape": cinch_shape,
         "material_faces": {"leather": len(accessory.data.polygons) - silver_faces, "silver": silver_faces},
         "transform": {
             "source_center": list(SOURCE_CENTER),

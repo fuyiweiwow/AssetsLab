@@ -1,0 +1,168 @@
+{
+  "schema": "workflow_object_bounds_v1",
+  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_headscarf_candidate_v6.blend",
+  "objects": {
+    "Wearable_Adventurer_LegsOuterV1": {
+      "vertices": 58166,
+      "faces": 116336,
+      "bounds": {
+        "low": [
+          -0.355,
+          -0.272,
+          0.34
+        ],
+        "high": [
+          0.355,
+          0.268,
+          0.78
+        ],
+        "center": [
+          0.0,
+          -0.002,
+          0.56
+        ],
+        "size": [
+          0.71,
+          0.54,
+          0.44
+        ]
+      },
+      "vertex_position_sha256": "ffd596333f50535edf76530baaa65ea2ac4389bed53f948a9f0fc6605ef29735"
+    },
+    "Wearable_Adventurer_TorsoOuterV1": {
+      "vertices": 53630,
+      "faces": 107272,
+      "bounds": {
+        "low": [
+          -0.463773,
+          -0.271242,
+          0.700008
+        ],
+        "high": [
+          0.461382,
+          0.254935,
+          1.489997
+        ],
+        "center": [
+          -0.001196,
+          -0.008153,
+          1.095002
+        ],
+        "size": [
+          0.925155,
+          0.526178,
+          0.789989
+        ]
+      },
+      "vertex_position_sha256": "7eef3c5a5ab467b163fe1351e601e8cf9b775ed872c42ecd2f91bd6c42b1ea09"
+    },
+    "Wearable_Adventurer_WaistAccessoryV1": {
+      "vertices": 23897,
+      "faces": 47830,
+      "bounds": {
+        "low": [
+          -0.383443,
+          -0.319187,
+          0.695678
+        ],
+        "high": [
+          0.380885,
+          0.319134,
+          0.924349
+        ],
+        "center": [
+          -0.001279,
+          -2.7e-05,
+          0.810014
+        ],
+        "size": [
+          0.764327,
+          0.638322,
+          0.228671
+        ]
+      },
+      "vertex_position_sha256": "e8a17637248f2a2b276a41851226ec04b6fbaa0900cac38aacf92b77daa15592"
+    },
+    "Wearable_Adventurer_Backpack_V1": {
+      "vertices": 33990,
+      "faces": 68024,
+      "bounds": {
+        "low": [
+          -0.23,
+          0.198769,
+          0.887644
+        ],
+        "high": [
+          0.23,
+          0.438769,
+          1.407644
+        ],
+        "center": [
+          0.0,
+          0.318769,
+          1.147644
+        ],
+        "size": [
+          0.46,
+          0.24,
+          0.52
+        ]
+      },
+      "vertex_position_sha256": "89a1ee3909a2f991e30899b024fd83a2fea7c6d58dde4b648bb704ba9fc62a2e"
+    },
+    "Wearable_Adventurer_Boot_L_V1": {
+      "vertices": 36947,
+      "faces": 73890,
+      "bounds": {
+        "low": [
+          0.089341,
+          -0.164481,
+          0.0
+        ],
+        "high": [
+          0.319515,
+          0.088917,
+          0.25
+        ],
+        "center": [
+          0.204428,
+          -0.037782,
+          0.125
+        ],
+        "size": [
+          0.230175,
+          0.253398,
+          0.25
+        ]
+      },
+      "vertex_position_sha256": "b609878b0b23fe3f91ec766a75ece93e97503411a72a0ae120d66cf056709203"
+    },
+    "Wearable_Adventurer_Boot_R_V1": {
+      "vertices": 36947,
+      "faces": 73890,
+      "bounds": {
+        "low": [
+          -0.319515,
+          -0.164481,
+          0.0
+        ],
+        "high": [
+          -0.089341,
+          0.088917,
+          0.25
+        ],
+        "center": [
+          -0.204428,
+          -0.037782,
+          0.125
+        ],
+        "size": [
+          0.230175,
+          0.253398,
+          0.25
+        ]
+      },
+      "vertex_position_sha256": "11c19c40d1e78ad49c65949e10b51c7b4ee337164281ea7c276bd14c39fee617"
+    }
+  }
+}

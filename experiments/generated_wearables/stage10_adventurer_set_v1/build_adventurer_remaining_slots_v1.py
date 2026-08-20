@@ -122,6 +122,52 @@ def fit_axis_aligned(obj: bpy.types.Object, target_center: Vector, target_half: 
     obj.data.update()
 
 
+def percentile(values: list[float], fraction: float) -> float:
+    ordered = sorted(values)
+    return ordered[round((len(ordered) - 1) * fraction)]
+
+
+def smoothstep(edge0: float, edge1: float, value: float) -> float:
+    t = min(1.0, max(0.0, (value - edge0) / (edge1 - edge0)))
+    return t * t * (3.0 - 2.0 * t)
+
+
+def fit_boot_to_ground(
+    obj: bpy.types.Object,
+    target_center_xy: Vector,
+    target_half_xy: Vector,
+    target_height: float,
+    target_cuff_center: Vector,
+) -> dict[str, float]:
+    """Fit one generated boot and establish a robust sole contact plane.
+
+    Hunyuan meshes can contain a few low outlier vertices.  Mapping the raw
+    minimum to z=0 leaves the visible sole floating.  Use the 2nd percentile
+    as the authored sole plane and flatten only the lower outlier tail.
+    """
+    source_low, source_high = object_bounds(obj)
+    source_center = (source_low + source_high) * 0.5
+    source_half = (source_high - source_low) * 0.5
+    source_z = [vertex.co.z for vertex in obj.data.vertices]
+    sole_z = percentile(source_z, 0.02)
+    cuff_z = percentile(source_z, 0.99)
+    source_height = max(1e-8, cuff_z - sole_z)
+    for vertex in obj.data.vertices:
+        local = vertex.co - source_center
+        base_x = target_center_xy.x + local.x * target_half_xy.x / source_half.x
+        base_y = target_center_xy.y + local.y * target_half_xy.y / source_half.y
+        normalized_z = (vertex.co.z - sole_z) / source_height
+        mapped_z = min(target_height, max(0.0, normalized_z * target_height))
+        cuff_weight = smoothstep(0.45, 0.92, mapped_z / target_height)
+        cuff_center = target_center_xy.lerp(target_cuff_center, cuff_weight)
+        cuff_expansion = 1.0 + 0.14 * cuff_weight
+        vertex.co.x = cuff_center.x + (base_x - target_center_xy.x) * cuff_expansion
+        vertex.co.y = cuff_center.y + (base_y - target_center_xy.y) * cuff_expansion
+        vertex.co.z = mapped_z
+    obj.data.update()
+    return {"source_sole_p02": sole_z, "source_cuff_p99": cuff_z}
+
+
 def fit_to_axis(obj: bpy.types.Object, target_center: Vector, axis: Vector, radial_half: Vector, half_length: float) -> None:
     source_center, source_half = normalized_source(obj)
     rotation = Vector((0.0, 0.0, 1.0)).rotation_difference(axis.normalized())
@@ -247,9 +293,13 @@ def add_body_mask(actor: bpy.types.Object, mapping: dict[str, str], profile: dic
     groups = {item.name: item.index for item in actor.vertex_groups}
     selected = []
     left_foot = profile["weighted_surface_regions"]["left_foot"]
+    left_calf = profile["weighted_surface_regions"]["left_calf"]
     foot_center = vector(left_foot["center"])
     foot_size = vector(left_foot["size"])
-    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), max(0.125, foot_size.z * 1.15)))
+    # The generated source is a high-cuff boot.  Preserve that authored cuff
+    # in the feet slot so it closes the lower-leg opening as part of the shoe
+    # asset itself; do not manufacture a skin bridge.
+    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), 0.125))
     boot_y = foot_center.y - 0.055
     for vertex in actor.data.vertices:
         point = actor.matrix_world @ vertex.co
@@ -266,16 +316,15 @@ def add_body_mask(actor: bpy.types.Object, mapping: dict[str, str], profile: dic
                 if side_token in name and "Toe" in name
             )
             boot_x = sign * abs(foot_center.x)
-            inside_boot = (
+            inside_boot_foot = (
                 abs(point.x - boot_x) <= boot_half.x * 1.35
                 and abs(point.y - boot_y) <= boot_half.y * 1.35
-                and -0.01 <= point.z <= boot_half.z * 2.02
+                # Remove complete boundary-crossing faces below the open cuff.
+                # The visible calf starts above 0.20; extending the vertex mask
+                # slightly past the 0.14 solid core prevents toe/ankle leaks.
+                and -0.01 <= point.z <= 0.23
             )
-            if (
-                inside_boot
-                or (foot_owned >= 0.10 and point.z <= 0.54 and sign * point.x >= 0.04)
-                or (toe_owned >= 0.05 and point.z <= 0.24)
-            ):
+            if inside_boot_foot or (toe_owned >= 0.05 and point.z <= 0.16):
                 hide = True
 
             # Bracers are generated as layered open cuffs.  Keep the Actor's
@@ -310,48 +359,102 @@ def main() -> int:
     material = leather_material()
     records = {}
 
+    # Remove both sides before importing.  The earlier adapter removed only
+    # the left object, so Blender renamed the new mirrored right boot and left
+    # the stale V5 right boot active in reviews/audits.
+    for obj in list(bpy.data.objects):
+        if obj.name.startswith("Wearable_Adventurer_Boot_"):
+            bpy.data.objects.remove(obj, do_unlink=True)
     boot, source = import_generated(options.feet_glb, "Wearable_Adventurer_Boot_L_V1", options.decimate_ratio)
     left_foot = profile["weighted_surface_regions"]["left_foot"]
+    left_calf = profile["weighted_surface_regions"]["left_calf"]
     foot_size = vector(left_foot["size"])
     foot_center = vector(left_foot["center"])
-    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), max(0.125, foot_size.z * 1.15)))
-    boot_center = Vector((foot_center.x, foot_center.y - 0.055, max(boot_half.z, vector(left_foot["low"]).z + boot_half.z)))
-    fit_axis_aligned(boot, boot_center, boot_half)
+    boot_half = Vector((max(0.105, foot_size.x * 0.68), max(0.125, foot_size.y * 1.15), 0.125))
+    boot_center = Vector((foot_center.x, foot_center.y - 0.055, boot_half.z))
+    ground_fit = fit_boot_to_ground(
+        boot,
+        Vector((boot_center.x, boot_center.y, 0.0)),
+        Vector((boot_half.x, boot_half.y, 0.0)),
+        boot_half.z * 2.0,
+        vector(left_calf["center"]),
+    )
     set_material(boot, material)
     rigid_bind(boot, armature, mapping["left_foot"], "feet_outer")
     right_boot = duplicate_mirrored(boot, "Wearable_Adventurer_Boot_R_V1")
     rigid_bind(right_boot, armature, mapping["right_foot"], "feet_outer")
-    records["feet_outer"] = {"source": source, "target_half_size": list(boot_half), "left_center": list(boot_center)}
+    records["feet_outer"] = {
+        "source": source,
+        "target_half_size": list(boot_half),
+        "left_center": list(boot_center),
+        "ground_fit": ground_fit,
+    }
 
     bracer_source, source = import_generated(options.wrist_glb, "Wearable_Adventurer_Bracer_L_V1", options.decimate_ratio)
     left_elbow, left_wrist = vector(profile["arm_chains"]["left"][1]), vector(profile["arm_chains"]["left"][2])
     left_axis = left_elbow - left_wrist
-    bracer_center = left_wrist.lerp(left_elbow, 0.50)
-    fit_to_axis(bracer_source, bracer_center, left_axis, Vector((0.092, 0.092, 0.0)), left_axis.length * 0.43)
+    bracer_center = left_wrist.lerp(left_elbow, 0.22)
+    fit_to_axis(bracer_source, bracer_center, left_axis, Vector((0.100, 0.100, 0.0)), left_axis.length * 0.18)
     set_material(bracer_source, material)
     rigid_bind(bracer_source, armature, mapping["left_forearm"], "wrist_accessory")
 
     right_bracer, _ = import_generated(options.wrist_glb, "Wearable_Adventurer_Bracer_R_V1", options.decimate_ratio)
     right_elbow, right_wrist = vector(profile["arm_chains"]["right"][1]), vector(profile["arm_chains"]["right"][2])
     right_axis = right_elbow - right_wrist
-    fit_to_axis(right_bracer, right_wrist.lerp(right_elbow, 0.50), right_axis, Vector((0.092, 0.092, 0.0)), right_axis.length * 0.43)
+    fit_to_axis(right_bracer, right_wrist.lerp(right_elbow, 0.22), right_axis, Vector((0.100, 0.100, 0.0)), right_axis.length * 0.18)
     set_material(right_bracer, material)
     rigid_bind(right_bracer, armature, mapping["right_forearm"], "wrist_accessory")
     records["wrist_accessory"] = {"source": source, "left_axis_length": left_axis.length, "right_axis_length": right_axis.length}
 
     backpack, source = import_generated(options.back_glb, "Wearable_Adventurer_Backpack_V1", options.decimate_ratio)
-    spine = profile["weighted_surface_regions"]["spine02"]
-    spine_high = vector(spine["high"])
+    torso = bpy.data.objects.get("Wearable_Adventurer_TorsoOuterV1")
+    if torso is None:
+        raise RuntimeError("generated torso garment missing for backpack contact anchor")
     spine_bone = profile["rest_bones"]["spine02"]
     spine_center = (vector(spine_bone["head"]) + vector(spine_bone["tail"])) * 0.5
-    backpack_half = Vector((0.230, 0.120, 0.260))
-    backpack_center = Vector((0.0, spine_high.y + backpack_half.y + 0.004, spine_center.z - 0.035))
+    backpack_half = Vector((0.230, 0.110, 0.260))
+    back_samples = [
+        (torso.matrix_world @ vertex.co).y
+        for vertex in torso.data.vertices
+        if abs((torso.matrix_world @ vertex.co).x) <= 0.22
+        and 0.90 <= (torso.matrix_world @ vertex.co).z <= 1.40
+        and (torso.matrix_world @ vertex.co).y >= 0.0
+    ]
+    if not back_samples:
+        raise RuntimeError("torso back contact samples missing")
+    torso_back_p90 = percentile(back_samples, 0.90)
+    backpack_center = Vector((0.0, torso_back_p90 + backpack_half.y + 0.006, spine_center.z - 0.035))
     fit_axis_aligned(backpack, backpack_center, backpack_half)
+    backpack_front_p05 = percentile(
+        [(backpack.matrix_world @ vertex.co).y for vertex in backpack.data.vertices],
+        0.05,
+    )
+    desired_front = torso_back_p90 + 0.004
+    contact_shift = desired_front - backpack_front_p05
+    for vertex in backpack.data.vertices:
+        vertex.co.y += contact_shift
+    backpack.data.update()
+    backpack_center.y += contact_shift
     set_material(backpack, material)
     rigid_bind(backpack, armature, mapping["spine02"], "back_accessory")
-    records["back_accessory"] = {"source": source, "target_center": list(backpack_center), "target_half_size": list(backpack_half)}
+    records["back_accessory"] = {
+        "source": source,
+        "target_center": list(backpack_center),
+        "target_half_size": list(backpack_half),
+        "torso_back_contact_p90": torso_back_p90,
+        "source_front_p05_after_initial_fit": backpack_front_p05,
+        "contact_shift": contact_shift,
+        "clearance": 0.004,
+    }
 
-    leg_transitions = add_leg_transitions(actor, armature, mapping)
+    # Do not ship the former ActorProfile leg bridge as a clothing component.
+    # The generated boot cuff and the actual Actor skin/weights must establish
+    # this boundary in the reusable workflow.
+    for transition_name in LEG_TRANSITION_NAMES.values():
+        old_transition = bpy.data.objects.get(transition_name)
+        if old_transition is not None:
+            bpy.data.objects.remove(old_transition, do_unlink=True)
+    leg_transitions = {}
     mask_count = add_body_mask(actor, mapping, profile)
     scene = bpy.context.scene
     scene["wearable_remaining_slots"] = "feet_outer,wrist_accessory,back_accessory"

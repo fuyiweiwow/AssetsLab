@@ -129,10 +129,11 @@ def main() -> int:
             item = {"center": list(center(points)), "low": list(low), "high": list(high), "topology": current_topology}
             if key.startswith("boot_"):
                 inset_low = low + (high - low) * 0.08
-                # The top 35% is the intentional ankle-in-cuff transition.
+                # The top 44% is the intentional open ankle/calf cuff.  The
+                # generated boot's solid toe/sole core ends at 56% height.
                 # Reject visible Actor geometry only inside the boot's solid
                 # lower core, not inside the open terminal band.
-                inset_high = high - (high - low) * Vector((0.08, 0.08, 0.35))
+                inset_high = high - (high - low) * Vector((0.08, 0.08, 0.44))
                 inside_points = [
                     point for point in visible_actor_points
                     if inset_low.x <= point.x <= inset_high.x

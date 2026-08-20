@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -32,7 +33,7 @@ _TARGET_ARM_CALIBRATED = False
 
 SOURCE_LOW = -0.905797
 SOURCE_HIGH = 0.901176
-TARGET_LOW = 0.700
+TARGET_LOW = 0.750
 TARGET_HIGH = 1.490
 UPPER_SHOULDER_LIFT = 0.0
 SLEEVE_ROOT_LIFT = 0.0
@@ -100,7 +101,13 @@ def map_torso(point: Vector) -> Vector:
         * compiler.smoothstep(0.21, 0.38, abs(x))
     )
     lower_shell = 1.0 - compiler.smoothstep(0.88, 1.12, z)
-    y_scale = 0.50 - 0.045 * lower_shell
+    # The 2MV chest reconstruction is deeper than this Actor's torso envelope
+    # and reads as a side bulge.  Compress depth more than width; the front
+    # folds remain generated geometry while the Actor controls the silhouette.
+    # Keep the torso/shorts depth relationship from the accepted V6
+    # silhouette.  The stronger 0.36 compression made the unchanged
+    # pants read as an abnormally thick block in side view.
+    y_scale = 0.42 - 0.025 * lower_shell
     return Vector((x, point.y * y_scale - 0.008, z))
 
 
@@ -115,8 +122,12 @@ def map_arm(point: Vector, side: int) -> tuple[Vector, float]:
     source_normal = Vector((-source_tangent.y, source_tangent.x))
     target_normal = Vector((-target_tangent.y, target_tangent.x))
     radial = (source_xz - source_center_xz).dot(source_normal)
-    radial_scale = 0.40 + 0.10 * compiler.smoothstep(0.0, 0.55, parameter)
+    # Keep the generated sleeve connected at the shoulder but narrow and move
+    # its terminal opening away from the torso.  The previous wide terminal
+    # tube touched the chest and visually swallowed the upper arm.
+    radial_scale = 0.38 + 0.06 * compiler.smoothstep(0.0, 0.55, parameter)
     mapped_xz = Vector((target_center.x, target_center.z)) + target_normal * (radial * radial_scale)
+    mapped_xz.x += 0.020 * compiler.smoothstep(0.18, 0.78, parameter)
     mapped_xz.y -= 0.012 * (1.0 - compiler.smoothstep(0.0, 0.32, parameter))
     mapped_xz.y += SLEEVE_ROOT_LIFT * (1.0 - compiler.smoothstep(0.0, 0.28, parameter))
     return Vector((side * mapped_xz.x, point.y * 0.55 - 0.006, mapped_xz.y)), parameter
@@ -132,85 +143,79 @@ def arm_weights(parameter: float, side: int) -> dict[str, float]:
 
 
 def add_actor_arm_transitions(actor: bpy.types.Object, armature: bpy.types.Object) -> dict[str, int]:
-    """Compile an Actor-fitted cloth band between generated sleeve and forearm.
+    """Compile a clean ActorProfile cuff between generated sleeve and skin.
 
-    Hunyuan 2mv reconstructs a watertight sleeve cap.  The garment remains the
-    generated asset; this ActorProfile component extends its terminal band on
-    the Actor's own arm surface and keeps the Actor's original rig weights.
-    Unlike the rejected skin-coloured transition, this band uses the garment
-    material and a small normal offset.  The visible forearm begins after the
-    band, so the arm reads as passing through one sleeve opening.
+    The old Actor has sparse, irregular arm topology, so copying its body faces
+    produces visible rectangular patches.  This narrow open tube is instead
+    derived from the calibrated arm axis and circumference.  It is an adapter
+    boundary, not authored garment artwork, and is rebuilt for each Actor.
     """
     calibrate_target_arm_from_actor()
-    mask = actor.vertex_groups.get(compiler.MASK_NAME)
-    if mask is None:
-        raise RuntimeError("torso body mask must exist before arm transitions")
-    masked_vertices = {
-        vertex.index
-        for vertex in actor.data.vertices
-        if any(item.group == mask.index and item.weight > 0.0 for item in vertex.groups)
-    }
-    actor_group_names = {group.index: group.name for group in actor.vertex_groups}
+    garment = bpy.data.objects.get(compiler.GARMENT_NAME)
+    if garment is None or not garment.data.materials:
+        raise RuntimeError("generated garment material missing before arm transition")
+
+    ring_parameters = [0.42, 0.52, 0.62, 0.72, 0.82]
+    radial_segments = 20
+    target_centers = [Vector((abs(item.x), item.y, item.z)) for item in compiler.TARGET_ARM]
     reports = {}
     for side, object_name in ARM_TRANSITION_NAMES.items():
         old = bpy.data.objects.get(object_name)
         if old is not None:
             bpy.data.objects.remove(old, do_unlink=True)
-        source_faces = []
-        for polygon in actor.data.polygons:
-            center = actor.matrix_world @ polygon.center
-            if side * center.x <= 0.0 or center.z < 0.94:
-                continue
-            parameter, distance = compiler.target_arm_coordinates(center, side)
-            if (
-                0.56 <= parameter <= 1.02
-                and distance <= 0.235
-                and any(index in masked_vertices for index in polygon.vertices)
-            ):
-                source_faces.append(polygon)
 
-        source_indices = sorted({index for polygon in source_faces for index in polygon.vertices})
-        remap = {source_index: index for index, source_index in enumerate(source_indices)}
+        vertices = []
+        vertex_parameters = []
+        for parameter in ring_parameters:
+            center, _ = compiler.sample_polyline(parameter, target_centers)
+            previous, _ = compiler.sample_polyline(max(0.0, parameter - 0.01), target_centers)
+            following, _ = compiler.sample_polyline(min(1.0, parameter + 0.01), target_centers)
+            center = Vector((side * center.x, center.y, center.z))
+            axis = Vector((side * (following.x - previous.x), following.y - previous.y, following.z - previous.z)).normalized()
+            depth_axis = Vector((0.0, 1.0, 0.0))
+            radial_axis = depth_axis.cross(axis).normalized()
+            local = (parameter - ring_parameters[0]) / (ring_parameters[-1] - ring_parameters[0])
+            radial_radius = 0.086 * (1.0 - local) + 0.076 * local
+            depth_radius = 0.082 * (1.0 - local) + 0.072 * local
+            for segment in range(radial_segments):
+                angle = 2.0 * math.pi * segment / radial_segments
+                vertices.append(
+                    center
+                    + radial_axis * (math.cos(angle) * radial_radius)
+                    + depth_axis * (math.sin(angle) * depth_radius)
+                )
+                vertex_parameters.append(parameter)
+
+        faces = []
+        for ring_index in range(len(ring_parameters) - 1):
+            first = ring_index * radial_segments
+            second = (ring_index + 1) * radial_segments
+            for segment in range(radial_segments):
+                following = (segment + 1) % radial_segments
+                faces.append((first + segment, first + following, second + following, second + segment))
+
         mesh = bpy.data.meshes.new(f"{object_name}_Mesh")
-        mesh.from_pydata(
-            [
-                actor.data.vertices[index].co.copy()
-                + actor.data.vertices[index].normal.normalized() * SLEEVE_TRANSITION_OFFSET
-                for index in source_indices
-            ],
-            [],
-            [[remap[index] for index in polygon.vertices] for polygon in source_faces],
-        )
+        mesh.from_pydata(vertices, [], faces)
         mesh.update()
         transition = bpy.data.objects.new(object_name, mesh)
         bpy.context.collection.objects.link(transition)
-        transition.matrix_world = actor.matrix_world.copy()
-        garment = bpy.data.objects.get(compiler.GARMENT_NAME)
-        if garment is None or not garment.data.materials:
-            raise RuntimeError("generated garment material missing before arm transition")
         transition.data.materials.append(garment.data.materials[0])
         for target_polygon in transition.data.polygons:
             target_polygon.material_index = 0
+            target_polygon.use_smooth = True
 
-        groups = {}
-        for new_index, source_index in enumerate(source_indices):
-            source_vertex = actor.data.vertices[source_index]
-            for item in source_vertex.groups:
-                name = actor_group_names.get(item.group)
-                if name is None or armature.data.bones.get(name) is None:
-                    continue
-                group = groups.get(name)
-                if group is None:
-                    group = transition.vertex_groups.new(name=name)
-                    groups[name] = group
-                group.add([new_index], item.weight, "REPLACE")
+        groups = {name: transition.vertex_groups.new(name=name) for name in compiler.ALLOWED_BONES}
+        for vertex_index, parameter in enumerate(vertex_parameters):
+            for name, weight in arm_weights(parameter, side).items():
+                groups[name].add([vertex_index], weight, "REPLACE")
         modifier = transition.modifiers.new("ActorArmature", "ARMATURE")
         modifier.object = armature
         modifier.use_vertex_groups = True
-        transition["actor_profile_component"] = "short_sleeve_cloth_transition"
+        transition["actor_profile_component"] = "short_sleeve_interface_ring"
         transition["wearable_slot"] = "torso_outer"
         transition["source_actor"] = actor.name
-        reports[object_name] = len(source_faces)
+        transition["interface_parameter_range"] = list((ring_parameters[0], ring_parameters[-1]))
+        reports[object_name] = len(faces)
     return reports
 
 
@@ -218,9 +223,16 @@ def add_neck_and_arm_transitions(
     actor: bpy.types.Object,
     armature: bpy.types.Object,
 ) -> bpy.types.Object:
-    report = add_actor_arm_transitions(actor, armature)
+    for object_name in ARM_TRANSITION_NAMES.values():
+        old_transition = bpy.data.objects.get(object_name)
+        if old_transition is not None:
+            bpy.data.objects.remove(old_transition, do_unlink=True)
     neck_seal = compiler._adventurer_original_add_actor_neck_seal(actor, armature)
-    neck_seal["arm_transition_face_counts"] = json.dumps(report, sort_keys=True)
+    # Hunyuan reconstruction supplies the styled sleeve shell.  The active
+    # ActorProfile supplies only the narrow skin-following interface ring; this
+    # is rebuilt for every Actor and must never be treated as garment artwork.
+    transition_report = add_actor_arm_transitions(actor, armature)
+    neck_seal["arm_transition_face_counts"] = json.dumps(transition_report, sort_keys=True)
     return neck_seal
 
 
@@ -241,6 +253,7 @@ def add_body_mask(actor: bpy.types.Object) -> int:
     torso_bones = {"CC_Base_Waist", "CC_Base_Spine01", "CC_Base_Spine02"}
     clavicle_bones = {"CC_Base_L_Clavicle", "CC_Base_R_Clavicle"}
     upperarm_bones = {"CC_Base_L_Upperarm", "CC_Base_R_Upperarm"}
+    forearm_bones = {"CC_Base_L_Forearm", "CC_Base_R_Forearm"}
     hand_bones = {"CC_Base_L_Hand", "CC_Base_R_Hand"}
 
     selected: list[int] = []
@@ -254,6 +267,7 @@ def add_body_mask(actor: bpy.types.Object) -> int:
         torso_weight = sum(weights.get(name, 0.0) for name in torso_bones)
         clavicle_weight = sum(weights.get(name, 0.0) for name in clavicle_bones)
         upperarm_weight = sum(weights.get(name, 0.0) for name in upperarm_bones)
+        forearm_weight = sum(weights.get(name, 0.0) for name in forearm_bones)
         hand_weight = sum(weights.get(name, 0.0) for name in hand_bones)
         upper_body_weight = torso_weight + clavicle_weight + upperarm_weight
 
@@ -261,6 +275,24 @@ def add_body_mask(actor: bpy.types.Object) -> int:
         # to manufacture continuity.  Mixed wrist vertices remain visible as
         # soon as they carry meaningful hand ownership.
         if hand_weight >= 0.15:
+            continue
+
+        side = 1 if point.x >= 0.0 else -1
+        parameter, arm_distance = compiler.target_arm_coordinates(point, side)
+        limb_weight = upperarm_weight + forearm_weight
+        # Preserve the proven spatial sleeve core for sparse/mixed-weight
+        # shoulder vertices.  The ActorProfile ring now hides the coarse mask
+        # edge, while this core prevents skin leaking through the sleeve wall.
+        base_arm = 1.16 <= point.z <= 1.42 and arm_distance <= 0.13
+        if base_arm:
+            selected.append(vertex.index)
+            continue
+        # Hide only the upper-arm section covered by the interface ring.  The
+        # complete forearm and hand remain visible; keeping the whole upper arm
+        # would expose it through the generated shoulder shell in motion.
+        if abs(point.x) >= 0.24 and limb_weight >= 0.08:
+            if parameter <= 0.74 and arm_distance <= 0.245:
+                selected.append(vertex.index)
             continue
 
         # Preserve the accepted V11 spatial core because some vertices in the
@@ -282,25 +314,11 @@ def add_body_mask(actor: bpy.types.Object) -> int:
             and abs(point.x) <= 0.44
             and clavicle_weight >= 0.12
         )
-        side = 1 if point.x >= 0.0 else -1
-        parameter, arm_distance = compiler.target_arm_coordinates(point, side)
-        # End the hidden Actor surface inside the generated sleeve.  The
-        # terminal sleeve band must overlap visible Actor skin; otherwise the
-        # short sleeve and the exposed forearm read as disconnected pieces.
-        base_arm = 0.94 <= point.z <= 1.44 and arm_distance <= 0.235
-        semantic_upperarm = (
-            parameter <= 0.94
-            and 1.02 <= point.z <= 1.47
-            and arm_distance <= 0.255
-            and (clavicle_weight + upperarm_weight) >= 0.18
-        )
         if (
             base_torso
             or semantic_torso
             or base_clavicle
             or semantic_clavicle
-            or base_arm
-            or semantic_upperarm
         ):
             selected.append(vertex.index)
     if selected:
