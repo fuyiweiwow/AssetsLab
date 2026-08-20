@@ -4,7 +4,7 @@
 
 V3 remains a reusable modular clothing workflow for an Actor class. The styled visible assets come from ImageGen references and Hunyuan3D-2MV reconstruction. Rule-built geometry is limited to small ActorProfile interface adapters and must not replace garment design.
 
-Headwear remains frozen and the original `AdventurerHair_Chestnut` is active. Helmet, headscarf, crown, and hairstyle-compatibility contracts remain future work.
+Headwear remains frozen. The pre-headscarf Actor-fit Hunyuan `head_hair` slot is active; helmet, headscarf, crown, and broader hairstyle-compatibility contracts remain future work.
 
 ## Current visual verdict
 
@@ -12,11 +12,11 @@ V3 is a reproducible diagnostic checkpoint, not a final accepted outfit. Motion 
 
 ## Current file
 
-`adventurer_set_workflow_v3.blend`
+`milestone/adventurer_set_workflow_v3.blend`
 
 The file contains:
 
-- original Actor and original hair
+- original Actor plus the Actor-fit generated hair restored before the headscarf experiment
 - Hunyuan3D-2MV torso outer, legs outer, boots, bracers, belt, and backpack
 - one canonical neck boundary seal
 - two 80-face ActorProfile short-sleeve interface rings
@@ -50,7 +50,7 @@ The backpack front percentile 5 is aligned to the generated torso back percentil
 
 ### Pants identity
 
-`Wearable_Adventurer_LegsOuterV1` is byte-for-byte identical at the vertex-coordinate level across the accepted complete V5, headscarf V6, and workflow V2 comparisons:
+Historical comparison proved that `Wearable_Adventurer_LegsOuterV1` did not change while neighboring torso and footwear experiments changed:
 
 - 58,166 vertices
 - 116,336 faces
@@ -60,21 +60,24 @@ The apparent thickness regression came from the neighboring torso depth and foot
 
 ## Reproduction chain
 
-1. Start from `adventurer_set_complete_candidate_v5.blend`.
-2. Compile `hunyuan_outputs/adventurer_torso_outer_2mv_v1.glb` with `build_adventurer_torso_outer_v1.py`.
-3. Compile the generated belt and torso corrective with `build_adventurer_waist_accessory_v1.py`.
-4. Compile boots, bracers, and backpack with `build_adventurer_remaining_slots_v1.py` and `actor_wearable_profile_chibi_v1.json`.
-5. Run sleeve-interface, remaining-slot, waist-interface, and full four-direction eight-frame reviews.
-6. Treat the old zero-contact torso audit as a diagnostic until it is made layer-aware for the sleeve interface ring.
+1. Clone the repository, hydrate Git LFS, and run `verify_reproducible_package_v1.ps1 -RebuildWaistSmoke`.
+2. Use `milestone/adventurer_set_workflow_v3.blend` as the authoritative continuation base. It embeds the current Actor, skeleton, action, masks, adapters, and all seven active slots.
+3. To regenerate a source mesh, run `run_hunyuan2mv_slot_v1.py` against one retained `assets/source_views/<slot>/rgba` directory, with the external Hunyuan runtime and model configured.
+4. To revise a slot, run its compiler against V3 and the retained `assets/generated_sources/*.glb`, writing a new candidate outside the sealed milestone path.
+5. Run current geometry diagnostics plus front/right/back/left review at all eight sampled frames.
+
+The current package reproduces and extends the V3 checkpoint. A clean-room assembly from a bare Actor is not yet a one-command workflow and must not be claimed as completed.
 
 ## Acceptance evidence
 
-- Current blend: `adventurer_set_workflow_v3.blend`
-- Four-direction GIF: `review_workflow_v3_fourway.gif`
-- Sleeve interface audit: `final_audit_v3_sleeve.json` - pass
-- Remaining slots audit: `final_audit_v3_remaining.json` - pass
-- Waist interface audit: `final_audit_v3_waist_interface.json` - pass
-- Legacy torso zero-contact audit: `final_audit_v3_torso.json` - diagnostic fail; 29 to 38 Actor faces (594 to 814 triangle-pair contacts) meet the generated sleeve per sampled frame under the accepted interface boundary, plus one pre-existing evaluated degenerate face
+- Current blend: `milestone/adventurer_set_workflow_v3.blend`
+- Four-direction GIF: `preview/preview_workflow_v3.gif`
+- Sleeve interface audit: `reports/final_audit_v3_sleeve.json` - pass
+- Sleeve/torso self-intersection: `reports/final_audit_v3_sleeve_torso_self_intersection.json` - expected blocker
+- Remaining slots audit: `reports/final_audit_v3_remaining.json` - pass
+- Waist interface audit: `reports/final_audit_v3_waist_interface.json` - pass
+- Boot sole contact: `reports/final_audit_v3_boot_sole_contact.json` - expected blocker
+- Legacy torso zero-contact audit: `reports/final_audit_v3_torso.json` - diagnostic fail; 29 to 38 Actor faces (594 to 814 triangle-pair contacts) meet the generated sleeve per sampled frame under the accepted interface boundary, plus one pre-existing evaluated degenerate face
 
 ## Remaining gates
 

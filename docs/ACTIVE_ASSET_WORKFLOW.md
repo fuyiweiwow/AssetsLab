@@ -19,7 +19,7 @@ Actor V1 是离线生成基线；`chibi_eyes_ears_walk_v1` 是已通过 Godot �
 
 本地图像 AI 的目标设备、候选模型、显存策略以及“多视图 Actor -> 分 Slot 生成 -> Hunyuan3D-2MV -> Slot Compiler”的暂定闭环见 [RTX 3060 12GB 离线图像 AI 调研](OFFLINE_IMAGE_AI_RTX3060_RESEARCH_2026-08-20.md)。图像模型只负责设计与多视图参考，不替代骨骼绑定、袖窿变形、鞋底接地和动作 QA。
 
-当前 Actor、图像输入、Hunyuan 来源、编译脚本、诊断文件、AssetsStudio 边界和分阶段计划见 [生成式 Actor / 穿戴资产清点与后续计划](GENERATED_WEARABLE_ASSET_INVENTORY_AND_PLAN_2026-08-20.md)。当前只做清点和计划，不接入 Studio，也不在完成哈希封存前清理实验目录。
+当前 Actor、七槽位图像输入、Hunyuan 来源、精简边界、另一台机器复现方法和分阶段计划见 [生成式 Actor / 穿戴资产清点与后续计划](GENERATED_WEARABLE_ASSET_INVENTORY_AND_PLAN_2026-08-20.md)。Stage 10 已完成哈希封存和 V3 本机复现验证；当前不接入 Studio，下一步先修复袖管与鞋底两个 blocker。
 
 ## 锁定的输出合同
 

@@ -2,12 +2,27 @@
   "schema": "assetslab_generated_wearable_milestone_v3_diagnostic",
   "actor_class": "ChibiActorV1",
   "wearable_set": "AdventurerSetV1",
-  "parent_milestone": "MILESTONE_MANIFEST_V2.json",
-  "status": "reproducible_diagnostic_checkpoint",
+  "status": "reproducible_with_known_visual_blockers",
   "complete_blend": {
     "path": "milestone/adventurer_set_workflow_v3.blend",
     "bytes": 70214780,
     "sha256": "9258d722be3fe20c3ad55971b0f04c4a30771b2fdedaf828a655f803ba3fc5e5"
+  },
+  "active_slots": [
+    "head_hair",
+    "torso_outer",
+    "waist_accessory",
+    "legs_outer",
+    "feet_outer",
+    "wrist_accessory",
+    "back_accessory"
+  ],
+  "reproducibility": {
+    "integrity_manifest": "REPRODUCIBLE_PACKAGE_V1.json",
+    "instructions": "REPRODUCE_V3.md",
+    "verifier": "verify_reproducible_package_v1.ps1",
+    "source_views": "assets/source_views",
+    "generated_sources": "assets/generated_sources"
   },
   "preview": {
     "full_path": "preview/preview_workflow_v3.gif",
@@ -17,37 +32,23 @@
     "upper_bytes": 1298272,
     "upper_sha256": "ce7a7e9235aae931b188af6c4776693b184fb4c3dc6aeecb9658d2fff07433e8"
   },
-  "workflow_changes": [
-    "ActorProfile arm-axis sleeve interface ring",
-    "generated-tunic waist-accessory corrective shape key",
-    "single-source mirrored boots with percentile sole fitting",
-    "open boot-cuff body ownership without replacement skin bridge",
-    "torso-surface percentile backpack contact anchor",
-    "wrist-side shortened bracer placement"
-  ],
-  "acceptance": {
-    "review_frames": [1, 11, 21, 31, 41, 51, 61, 71],
+  "review": {
+    "frames": [1, 11, 21, 31, 41, 51, 61, 71],
     "directions": ["front", "right", "back", "left"],
-    "passing_reports": [
-      "reports/final_audit_v3_sleeve.json",
-      "reports/final_audit_v3_remaining.json",
-      "reports/final_audit_v3_waist_interface.json"
-    ],
-    "diagnostic_fail_reports": [
-      "reports/final_audit_v3_torso.json"
-    ],
-    "masked_hand_vertices": 0,
-    "visible_actor_vertices_in_boot_solid_core": 0
+    "structure_audit": "audit_reproducible_checkpoint_v1.py",
+    "sleeve_blocker_report": "reports/final_audit_v3_sleeve_torso_self_intersection.json",
+    "boot_blocker_report": "reports/final_audit_v3_boot_sole_contact.json"
   },
   "open_visual_blockers": [
-    "generated sleeve and torso shell interference during animation",
-    "rigid foot-bone boot rotation produces hoof-like sole contact",
-    "old Actor exposed-limb topology remains visibly coarse at close range"
+    "generated sleeve and torso regions self-intersect during animation",
+    "rigid Foot-bone boot binding rotates the sole and loses planted contact",
+    "old Actor exposed-limb topology is coarse at close range"
   ],
-  "excluded": [
-    "headwear experiments from the original-hair V3 preview",
-    "intermediate blend candidates",
-    "rebuildable render-frame caches",
-    "Hunyuan model weights and runtime checkout"
+  "removed_from_working_package": [
+    "V1 and V2 Blend checkpoints",
+    "enclosing headscarf source and reference assets",
+    "unused feet_outer_workflow_v2 candidate",
+    "old previews and superseded audit snapshots",
+    "rebuildable frame caches"
   ]
 }
