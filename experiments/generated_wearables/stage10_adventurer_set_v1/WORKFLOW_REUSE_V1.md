@@ -24,6 +24,8 @@ The result is reusable for a replacement Actor, but not as a blind one-click tra
 7. Bind with the smallest controlled bone whitelist. Rigid parts use one semantic bone; deforming garments use explicit regional weights.
 8. Run slot geometry audits and front/right/back/left eight-frame action review. Failed candidates do not enter the accepted working blend or preview.
 
+The current online ImageGen stage may later be replaced by a local multi-image editor. The RTX 3060 deployment candidates, separation experiment, and acceptance gates are recorded in `docs/OFFLINE_IMAGE_AI_RTX3060_RESEARCH_2026-08-20.md`. Replacing the image model does not relax any ActorProfile, binding, collision, or motion gate.
+
 Set `HUNYUAN3D_SOURCE` to the local Hunyuan3D-2 checkout and
 `HUNYUAN3D_2MV_MODEL` to the local 2mv model directory when they are not stored
 next to this workflow. The model and runtime are intentionally not duplicated in
