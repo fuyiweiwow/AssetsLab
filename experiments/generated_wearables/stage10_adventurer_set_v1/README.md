@@ -26,6 +26,21 @@ No slot enters the accepted set merely because the full dressed concept looks co
 
 ## Accepted checkpoint: complete seven-slot milestone
 
+### V2 fit-fix and enclosing headwear checkpoint
+
+The latest accepted file is `milestone/adventurer_set_fitfix_headscarf_v2.blend`. V1 remains in the package as the rollback baseline. V2 keeps the same seven gameplay slots and adds one compatible `head_hair_accessory` variant: a Hunyuan-generated close-fitting headscarf, leather band, rear knot, and short hair reconstructed as one asset from the current Actor's orthographic head calibration.
+
+V2 records four reusable fit corrections:
+
+- The outer shoulder mound is selectively lowered while the generated collar rim is preserved. Sleeve roots are narrowed and lowered without masking either hand.
+- The lower tunic shell and generated belt are tightened around the Actor waist; the backpack is moved closer to the `Spine02` envelope.
+- Each generated boot receives an ActorProfile skin bridge from inside the shorts to inside the boot cuff. The bridge uses controlled thigh/calf/foot weights and replaces the old segmented lower-leg exposure; it is fit support, not visible clothing authorship.
+- Enclosing headwear is compiled as a hair-compatibility asset, not stacked blindly over arbitrary hair. The source mesh stays visible, binds rigidly to `CC_Base_Head`, and passes crown/rear/temple enclosure plus exposed-face contact gates.
+
+All eight V2 reports under `reports/final_audit_*_v1.json` pass at frames 1, 11, 21, 31, 41, 51, 61, and 71. The visual review is `preview/preview_fitfix_headscarf_v2.gif`; the reproducibility inventory and hashes are in `MILESTONE_MANIFEST_V2.json`.
+
+The headwear concept/reference images were generated with built-in ImageGen. Prompt intent: preserve the exact Chibi Actor head proportions and orthographic front/right/back/left alignment; create one compact teal cloth headscarf/cap with a brown leather band, integrated short brown hair, and a small rear knot; keep the face and neck unobstructed; use large reconstruction-friendly forms and a plain background. Hunyuan3D-2mv then reconstructed the isolated four-view asset with seed `20260820`, 30 steps, guidance `5.0`, and octree resolution `256`.
+
 The accepted complete file is `milestone/adventurer_set_complete_v1.blend` (the curated copy of experiment candidate V5). It contains the generated visible assets for all seven planned slots plus Actor-specific fitting, masks, and controlled bindings.
 
 | Slot | Generated source | Accepted adapter | Gate result |

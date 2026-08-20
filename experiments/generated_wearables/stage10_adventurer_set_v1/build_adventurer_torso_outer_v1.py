@@ -37,6 +37,7 @@ TARGET_HIGH = 1.490
 UPPER_SHOULDER_LIFT = 0.0
 SLEEVE_ROOT_LIFT = 0.0
 SLEEVE_TRANSITION_OFFSET = 0.008
+OUTER_SHOULDER_RELAX = 0.035
 ARM_TRANSITION_NAMES = {
     1: "ActorProfile_ArmTransition_L_ChibiActorV1",
     -1: "ActorProfile_ArmTransition_R_ChibiActorV1",
@@ -81,7 +82,7 @@ def map_torso(point: Vector) -> Vector:
     # The generated tunic flares at hand height.  Keep the accepted shoulder
     # width, but taper the lower shell enough that the Actor's forearms can
     # swing beside it without crossing the side seams.
-    x_scale = 0.50 + 0.14 * compiler.smoothstep(1.12, 1.34, z)
+    x_scale = 0.47 + 0.03 * compiler.smoothstep(0.88, 1.10, z) + 0.14 * compiler.smoothstep(1.12, 1.34, z)
     x = point.x * x_scale
     # Lift the generated shoulder bridges, not the inner collar rim.  The
     # source already has a valid neck hole, so a uniform top-shell offset
@@ -91,7 +92,16 @@ def map_torso(point: Vector) -> Vector:
         * compiler.smoothstep(1.28, 1.44, z)
         * compiler.smoothstep(0.055, 0.22, abs(x))
     )
-    return Vector((x, point.y * 0.50 - 0.008, z))
+    # The source reconstruction carries a rounded shoulder mound.  Relax only
+    # the outer top shell; the inner collar rim is deliberately excluded.
+    z -= (
+        OUTER_SHOULDER_RELAX
+        * compiler.smoothstep(1.31, 1.47, z)
+        * compiler.smoothstep(0.21, 0.38, abs(x))
+    )
+    lower_shell = 1.0 - compiler.smoothstep(0.88, 1.12, z)
+    y_scale = 0.50 - 0.045 * lower_shell
+    return Vector((x, point.y * y_scale - 0.008, z))
 
 
 def map_arm(point: Vector, side: int) -> tuple[Vector, float]:
@@ -105,8 +115,9 @@ def map_arm(point: Vector, side: int) -> tuple[Vector, float]:
     source_normal = Vector((-source_tangent.y, source_tangent.x))
     target_normal = Vector((-target_tangent.y, target_tangent.x))
     radial = (source_xz - source_center_xz).dot(source_normal)
-    radial_scale = 0.46 + 0.12 * compiler.smoothstep(0.0, 0.55, parameter)
+    radial_scale = 0.40 + 0.10 * compiler.smoothstep(0.0, 0.55, parameter)
     mapped_xz = Vector((target_center.x, target_center.z)) + target_normal * (radial * radial_scale)
+    mapped_xz.y -= 0.012 * (1.0 - compiler.smoothstep(0.0, 0.32, parameter))
     mapped_xz.y += SLEEVE_ROOT_LIFT * (1.0 - compiler.smoothstep(0.0, 0.28, parameter))
     return Vector((side * mapped_xz.x, point.y * 0.55 - 0.006, mapped_xz.y)), parameter
 

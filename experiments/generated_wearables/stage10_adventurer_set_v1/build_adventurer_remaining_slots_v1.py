@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import sys
 from pathlib import Path
 
@@ -13,6 +14,10 @@ ACTOR_NAME = "ChibiBaseMesh_AccuRIG_InputMesh"
 ARMATURE_NAME = "Armature"
 MASK_NAME = "WearableMask_AdventurerRemainingV1"
 MASK_MODIFIER = "PreviewBodyHide_AdventurerRemainingV1"
+LEG_TRANSITION_NAMES = {
+    "left": "ActorProfile_LegTransition_L_ChibiActorV1",
+    "right": "ActorProfile_LegTransition_R_ChibiActorV1",
+}
 
 
 def arguments() -> argparse.Namespace:
@@ -149,6 +154,91 @@ def weight(vertex: bpy.types.MeshVertex, group_index: int | None) -> float:
     return next((item.weight for item in vertex.groups if item.group == group_index), 0.0)
 
 
+def add_leg_transitions(
+    actor: bpy.types.Object,
+    armature: bpy.types.Object,
+    mapping: dict[str, str],
+) -> dict[str, int]:
+    """Build an ActorProfile skin bridge across segmented leg geometry.
+
+    The legacy Actor has disconnected low-poly limb sections, so extracting its
+    surface copies the original joint holes.  This profile component spans from
+    inside the shorts to inside the generated boot cuff and blends only the
+    semantic thigh/calf/foot chain.  It is fit support, never garment design.
+    """
+    reports: dict[str, int] = {}
+    for side, object_name in LEG_TRANSITION_NAMES.items():
+        old = bpy.data.objects.get(object_name)
+        if old is not None:
+            bpy.data.objects.remove(old, do_unlink=True)
+        sign = 1.0 if side == "left" else -1.0
+        thigh_name = mapping[f"{side}_thigh"]
+        calf_name = mapping[f"{side}_calf"]
+        foot_name = mapping[f"{side}_foot"]
+        segments = 16
+        rings = (
+            (0.54, 0.098, 0.090, {thigh_name: 0.72, calf_name: 0.28}),
+            (0.43, 0.094, 0.087, {thigh_name: 0.35, calf_name: 0.65}),
+            (0.30, 0.089, 0.084, {calf_name: 0.88, foot_name: 0.12}),
+            (0.15, 0.084, 0.080, {calf_name: 0.20, foot_name: 0.80}),
+        )
+        center_x = sign * 0.202
+        center_y = 0.008
+        inverse_actor = actor.matrix_world.inverted()
+        vertices = []
+        vertex_weights: list[dict[str, float]] = []
+        for z, radius_x, radius_y, weights in rings:
+            for index in range(segments):
+                angle = 2.0 * math.pi * index / segments
+                world = Vector(
+                    (
+                        center_x + radius_x * math.cos(angle),
+                        center_y + radius_y * math.sin(angle),
+                        z,
+                    )
+                )
+                vertices.append(inverse_actor @ world)
+                vertex_weights.append(weights)
+        faces = []
+        for ring_index in range(len(rings) - 1):
+            first = ring_index * segments
+            second = (ring_index + 1) * segments
+            for index in range(segments):
+                next_index = (index + 1) % segments
+                faces.append((first + index, first + next_index, second + next_index, second + index))
+        for polygon in actor.data.polygons:
+            center = actor.matrix_world @ polygon.center
+            if sign * center.x > 0.04 and 0.28 <= center.z <= 0.48:
+                skin_material_index = polygon.material_index
+                break
+        else:
+            skin_material_index = 0
+        mesh = bpy.data.meshes.new(f"{object_name}_Mesh")
+        mesh.from_pydata(vertices, [], faces)
+        mesh.update()
+        transition = bpy.data.objects.new(object_name, mesh)
+        bpy.context.collection.objects.link(transition)
+        transition.matrix_world = actor.matrix_world.copy()
+        if actor.data.materials:
+            transition.data.materials.append(actor.data.materials[skin_material_index])
+        target_groups = {
+            thigh_name: transition.vertex_groups.new(name=thigh_name),
+            calf_name: transition.vertex_groups.new(name=calf_name),
+            foot_name: transition.vertex_groups.new(name=foot_name),
+        }
+        for vertex_index, weights in enumerate(vertex_weights):
+            for bone_name, bone_weight in weights.items():
+                target_groups[bone_name].add([vertex_index], bone_weight, "REPLACE")
+        modifier = transition.modifiers.new("ActorArmature", "ARMATURE")
+        modifier.object = armature
+        modifier.use_vertex_groups = True
+        transition["actor_profile_component"] = "leg_opening_transition"
+        transition["wearable_slots"] = "legs_outer,feet_outer"
+        transition["source_actor"] = actor.name
+        reports[object_name] = len(faces)
+    return reports
+
+
 def add_body_mask(actor: bpy.types.Object, mapping: dict[str, str], profile: dict) -> int:
     old = actor.vertex_groups.get(MASK_NAME)
     if old is not None:
@@ -183,7 +273,7 @@ def add_body_mask(actor: bpy.types.Object, mapping: dict[str, str], profile: dic
             )
             if (
                 inside_boot
-                or (foot_owned >= 0.18 and point.z <= 0.205 and sign * point.x >= 0.07)
+                or (foot_owned >= 0.10 and point.z <= 0.54 and sign * point.x >= 0.04)
                 or (toe_owned >= 0.05 and point.z <= 0.24)
             ):
                 hide = True
@@ -254,13 +344,14 @@ def main() -> int:
     spine_high = vector(spine["high"])
     spine_bone = profile["rest_bones"]["spine02"]
     spine_center = (vector(spine_bone["head"]) + vector(spine_bone["tail"])) * 0.5
-    backpack_half = Vector((0.230, 0.130, 0.260))
-    backpack_center = Vector((0.0, spine_high.y + backpack_half.y + 0.008, spine_center.z - 0.035))
+    backpack_half = Vector((0.230, 0.120, 0.260))
+    backpack_center = Vector((0.0, spine_high.y + backpack_half.y + 0.004, spine_center.z - 0.035))
     fit_axis_aligned(backpack, backpack_center, backpack_half)
     set_material(backpack, material)
     rigid_bind(backpack, armature, mapping["spine02"], "back_accessory")
     records["back_accessory"] = {"source": source, "target_center": list(backpack_center), "target_half_size": list(backpack_half)}
 
+    leg_transitions = add_leg_transitions(actor, armature, mapping)
     mask_count = add_body_mask(actor, mapping, profile)
     scene = bpy.context.scene
     scene["wearable_remaining_slots"] = "feet_outer,wrist_accessory,back_accessory"
@@ -272,6 +363,7 @@ def main() -> int:
         "profile": str(options.profile.resolve()),
         "slots": records,
         "body_mask": {"name": MASK_NAME, "vertices": mask_count},
+        "leg_transitions": leg_transitions,
         "decimate_ratio": options.decimate_ratio,
         "status": "compiled_motion_and_visual_review_required",
     }

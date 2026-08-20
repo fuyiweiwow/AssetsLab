@@ -39,12 +39,27 @@ the milestone package.
 - `wrist_accessory`: forearm-axis centering, stable topology, visible forearm through generated recesses, and zero masked hand vertices.
 - `back_accessory`: rigid spine ownership, stable topology, four-direction clearance review, and no substitution with a rule-built backpack.
 
+## Boundary continuity contracts added in V2
+
+- Sleeve and boot openings are explicit Actor-class contracts. A generated garment or shoe is allowed to overlap a small ActorProfile transition surface whose geometry is derived from the Actor envelope and whose weights interpolate only across the adjacent semantic bones.
+- The leg bridge begins inside `legs_outer` and ends inside `feet_outer`; `audit_leg_opening_continuity_v1.py` checks topology, normalized whitelist weights, boot overlap, exposed span, and lower-ring/boot center alignment across eight motion frames.
+- ActorProfile transitions are auxiliary body-fit geometry. They may close an unavoidable boundary caused by the source Actor's segmented topology, but they may not define the garment's silhouette, style, or surface details.
+
+## Headwear compatibility classes
+
+- `head_hair`: ordinary replacement hair generated against the current Actor head.
+- `head_hair_accessory`: an enclosing hat/headscarf and its compatible visible hair generated and reconstructed together. This is the preferred contract for tight caps, wrapped scarves, helmets with exposed locks, and other strongly enclosing designs.
+- A future standalone `head_accessory` may be rigid-bound only when it fits over a declared hair class such as `bald`, `hide_upper_hair`, or a named compatible hairstyle. Arbitrary hats are not accepted over arbitrary voluminous hair.
+- A replacement Actor must rerender head calibration views and rebuild the enclosing asset. Reusing the old Chibi head mesh by scale alone is not considered a valid transfer.
+
 ## Accepted milestone evidence
 
 - Complete blend: `milestone/adventurer_set_complete_v1.blend`
 - Complete preview: `preview/preview.gif`
+- V2 fit/headwear blend: `milestone/adventurer_set_fitfix_headscarf_v2.blend`
+- V2 fit/headwear preview: `preview/preview_fitfix_headscarf_v2.gif`
 - Actor profile: `reports/actor_wearable_profile_chibi_v1.json`
-- Final audits: all seven slot audits pass across frames 1, 11, 21, 31, 41, 51, 61, and 71.
+- Final audits: all seven slot audits plus leg-opening continuity and enclosing-headwear gates pass across frames 1, 11, 21, 31, 41, 51, 61, and 71.
 
 ## Known boundary
 

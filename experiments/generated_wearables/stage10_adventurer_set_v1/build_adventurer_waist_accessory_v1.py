@@ -15,8 +15,8 @@ WAIST_BONE = "CC_Base_Waist"
 SOURCE_LOW = Vector((-0.992293, -0.985579, -0.299774))
 SOURCE_HIGH = Vector((0.983379, 0.992294, 0.301924))
 SOURCE_CENTER = (SOURCE_LOW + SOURCE_HIGH) * 0.5
-TARGET_CENTER = Vector((0.0, 0.0, 0.805))
-TARGET_SCALE = Vector((0.39, 0.33, 0.38))
+TARGET_CENTER = Vector((0.0, 0.0, 0.810))
+TARGET_SCALE = Vector((0.38, 0.315, 0.38))
 
 
 def cli() -> argparse.Namespace:

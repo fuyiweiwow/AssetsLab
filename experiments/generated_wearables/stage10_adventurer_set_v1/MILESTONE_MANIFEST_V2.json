@@ -1,0 +1,63 @@
+{
+  "schema": "assetslab_generated_wearable_milestone_v2",
+  "actor_class": "ChibiActorV1",
+  "wearable_set": "AdventurerSetV1",
+  "parent_milestone": "MILESTONE_MANIFEST_V1.json",
+  "complete_blend": {
+    "path": "milestone/adventurer_set_fitfix_headscarf_v2.blend",
+    "bytes": 73143619,
+    "sha256": "97d0690973e914b3e4aa55d2c39c3465035ff7abbc1b186a1a92b3a73cec9b58"
+  },
+  "new_generated_source": {
+    "slot": "head_hair_accessory",
+    "path": "assets/generated_sources/adventurer_head_hair_accessory_2mv_v1.glb",
+    "bytes": 10279408,
+    "sha256": "ffca278701e086021c696a65b3ead6952456b37d8071a5ea86de4faf3731098b",
+    "generator": "Hunyuan3D-2mv",
+    "seed": 20260820,
+    "steps": 30,
+    "guidance": 5.0,
+    "octree": 256
+  },
+  "fit_fixes": [
+    "outer shoulder mound relaxation with preserved collar rim",
+    "lower tunic and waist accessory tightening",
+    "backpack spine-envelope offset reduction",
+    "weighted ActorProfile leg-to-boot continuity bridge",
+    "integrated enclosing headwear and compatible hair variant"
+  ],
+  "acceptance": {
+    "review_frames": [1, 11, 21, 31, 41, 51, 61, 71],
+    "directions": ["front", "right", "back", "left"],
+    "audit_reports": [
+      "reports/final_audit_torso_v1.json",
+      "reports/final_audit_sleeves_v1.json",
+      "reports/final_audit_waist_v1.json",
+      "reports/final_audit_legs_v1.json",
+      "reports/final_audit_remaining_v1.json",
+      "reports/final_audit_leg_continuity_v1.json",
+      "reports/final_audit_head_v1.json",
+      "reports/final_audit_head_enclosure_v1.json"
+    ],
+    "all_audits": "pass",
+    "masked_hand_vertices": 0,
+    "visible_actor_vertices_in_boot_core": 0,
+    "head_enclosure": {
+      "crown": 1.0,
+      "rear": 1.0,
+      "left_temple": 1.0,
+      "right_temple": 1.0
+    }
+  },
+  "preview": {
+    "path": "preview/preview_fitfix_headscarf_v2.gif",
+    "bytes": 297718,
+    "sha256": "54734115cfbeb3b6a5d692c5324b97e3473e06465832bff1bdba5dde5c28d5a3"
+  },
+  "excluded": [
+    "failed head candidates that masked face or eye topology",
+    "intermediate blend candidates",
+    "rebuildable render-frame caches",
+    "Hunyuan model weights and runtime checkout"
+  ]
+}

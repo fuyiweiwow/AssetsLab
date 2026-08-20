@@ -1,0 +1,360 @@
+{
+  "schema": "hunyuan_generated_head_hair_audit_v1",
+  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_headscarf_candidate_v6.blend",
+  "actor_class": "ChibiActorV1",
+  "slot": "head_hair",
+  "hair": {
+    "vertices": 34265,
+    "faces": 68522,
+    "used_weight_groups": [
+      "CC_Base_Head"
+    ],
+    "unweighted_vertices": 0,
+    "non_normalized_vertices": 0,
+    "armature_modifiers": 1
+  },
+  "scalp_mask": {
+    "name": "WearableMask_AdventurerHeadHairV1",
+    "vertex_count": 1809
+  },
+  "frames": {
+    "1": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": [
+        [
+          0.64941,
+          -0.398046,
+          2.386095
+        ],
+        [
+          0.650972,
+          -0.392212,
+          2.337893
+        ],
+        [
+          0.695291,
+          -0.181601,
+          2.027907
+        ],
+        [
+          0.704038,
+          -0.179594,
+          2.066401
+        ],
+        [
+          0.71141,
+          -0.178179,
+          2.102199
+        ],
+        [
+          0.67539,
+          -0.247606,
+          1.972267
+        ],
+        [
+          0.684982,
+          -0.183353,
+          1.987339
+        ],
+        [
+          0.659336,
+          -0.315386,
+          1.953496
+        ],
+        [
+          0.666403,
+          -0.314673,
+          1.992589
+        ],
+        [
+          0.671637,
+          -0.312636,
+          2.029695
+        ],
+        [
+          0.675633,
+          -0.310382,
+          2.064529
+        ],
+        [
+          0.651284,
+          -0.382257,
+          2.256769
+        ],
+        [
+          0.68788,
+          -0.313267,
+          2.211624
+        ],
+        [
+          0.688969,
+          -0.315947,
+          2.240911
+        ],
+        [
+          0.689642,
+          -0.319078,
+          2.272867
+        ],
+        [
+          0.689961,
+          -0.322663,
+          2.308966
+        ],
+        [
+          0.651295,
+          -0.386827,
+          2.294875
+        ],
+        [
+          0.678934,
+          -0.308906,
+          2.096895
+        ],
+        [
+          0.681816,
+          -0.308635,
+          2.127045
+        ],
+        [
+          0.684293,
+          -0.309435,
+          2.15568
+        ],
+        [
+          0.686325,
+          -0.311055,
+          2.183591
+        ],
+        [
+          0.730617,
+          -0.115657,
+          2.176657
+        ],
+        [
+          0.735297,
+          -0.119254,
+          2.203657
+        ],
+        [
+          0.722714,
+          -0.179533,
+          2.164365
+        ],
+        [
+          0.726903,
+          -0.182165,
+          2.191656
+        ],
+        [
+          0.717587,
+          -0.178092,
+          2.134806
+        ],
+        [
+          -0.678258,
+          -0.381678,
+          2.404001
+        ],
+        [
+          -0.680974,
+          -0.37579,
+          2.355856
+        ],
+        [
+          -0.728431,
+          -0.164048,
+          2.047108
+        ],
+        [
+          -0.736085,
+          -0.161839,
+          2.085824
+        ],
+        [
+          -0.719267,
+          -0.16604,
+          2.006278
+        ],
+        [
+          -0.711671,
+          -0.230505,
+          1.990974
+        ],
+        [
+          -0.742452,
+          -0.160254,
+          2.121807
+        ],
+        [
+          -0.697804,
+          -0.298654,
+          1.9718
+        ],
+        [
+          -0.710973,
+          -0.293287,
+          2.08323
+        ],
+        [
+          -0.707975,
+          -0.295627,
+          2.048301
+        ],
+        [
+          -0.703795,
+          -0.29778,
+          2.011068
+        ],
+        [
+          -0.683228,
+          -0.365804,
+          2.274768
+        ],
+        [
+          -0.719317,
+          -0.295918,
+          2.230602
+        ],
+        [
+          -0.682324,
+          -0.370385,
+          2.312861
+        ],
+        [
+          -0.719003,
+          -0.305292,
+          2.327969
+        ],
+        [
+          -0.71957,
+          -0.301704,
+          2.291873
+        ],
+        [
+          -0.719681,
+          -0.29858,
+          2.259909
+        ],
+        [
+          -0.713362,
+          -0.29174,
+          2.115672
+        ],
+        [
+          -0.718464,
+          -0.293736,
+          2.202537
+        ],
+        [
+          -0.717146,
+          -0.292157,
+          2.174581
+        ],
+        [
+          -0.715423,
+          -0.291409,
+          2.145889
+        ],
+        [
+          -0.758098,
+          -0.097303,
+          2.196735
+        ],
+        [
+          -0.752105,
+          -0.161351,
+          2.184256
+        ],
+        [
+          -0.762134,
+          -0.100792,
+          2.223853
+        ],
+        [
+          -0.753117,
+          -0.09538,
+          2.167179
+        ],
+        [
+          -0.747743,
+          -0.160026,
+          2.154568
+        ]
+      ]
+    },
+    "11": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "21": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "31": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "41": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "51": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "61": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    },
+    "71": {
+      "actor_hair_intersecting_face_pairs": 345,
+      "intersecting_actor_faces": 52,
+      "covered_scalp_contact_pairs": 345,
+      "exposed_contact_pairs": 0,
+      "exposed_actor_faces": 0,
+      "visible_actor_vertices": 9422,
+      "intersecting_actor_face_centers": []
+    }
+  },
+  "summary": {
+    "visible_actor_hair_intersecting_face_pairs": 0,
+    "failures": []
+  },
+  "status": "pass"
+}
