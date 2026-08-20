@@ -1,6 +1,6 @@
 {
   "schema": "adventurer_remaining_generated_slots_audit_v1",
-  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_workflow_v3.blend",
+  "input_blend": "milestone/adventurer_set_workflow_v3.blend",
   "objects": {
     "boot_left": {
       "object": "Wearable_Adventurer_Boot_L_V1",

@@ -683,38 +683,38 @@
     },
     {
       "path": "reports/actor_wearable_profile_chibi_v1.json",
-      "bytes": 13316,
-      "sha256": "416f20c027b140390977ef4c3d92a5d828ff1e1005d76d2c76d92eba858adfe5",
+      "bytes": 13323,
+      "sha256": "78b300df3eb9ed1724e5a89c0d37b43301eb224f0527f7fb8de51c3319f5924e",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_back_accessory_2mv_v1.json",
-      "bytes": 480,
-      "sha256": "cd068cd89b4361f6d6c5c5a5c3316c03f374a1e2fb1ab5420e287a6d121e9bb5",
+      "bytes": 346,
+      "sha256": "4309997cf51775a972daec771f28d5562b9a79a3b24c434e427553c63338ff9a",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_feet_outer_2mv_v1.json",
-      "bytes": 468,
-      "sha256": "9ab7afdf7021824cc819ee38f13688c47ade086dd62454869d2cc49396c30240",
+      "bytes": 334,
+      "sha256": "ca3cde16c3aaf0d80c220534e0ba9d0c83637c4c8623476b01011d2124c91f47",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_head_hair_audit_final_v1.json",
-      "bytes": 6309,
-      "sha256": "6fcfda8e5f5b4bdeb8d95de194e940ac0ef93ded014b2d47013ba27b1ad9da6a",
+      "bytes": 6316,
+      "sha256": "ea34646e4577c8d5cb2abe6a5adab43c55519e14011e073c3a7492255564ec22",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_head_hair_enclosure_final_v1.json",
-      "bytes": 1542,
-      "sha256": "cf9bf80c461001e788e8b1ce3d3b0d485adc8933be3a904dfedf03a56f420fa9",
+      "bytes": 1549,
+      "sha256": "290d2dab6746157a10ceb2c2786557309328fbe3345b94ef8af64ffbebe4ddef",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_legs_outer_audit_final_v1.json",
-      "bytes": 1718,
-      "sha256": "fa6cf2829376e4a48723d25414cfd9a5d2b9c29f2ddf480b1ce9530d5cb89f99",
+      "bytes": 1724,
+      "sha256": "c19a69b52b85805cbb14deace12db971abc19e935c388602c09dc07e78c51b1f",
       "hash_mode": "text_utf8_lf"
     },
     {
@@ -725,26 +725,26 @@
     },
     {
       "path": "reports/adventurer_set_workflow_v3.json",
-      "bytes": 2718,
-      "sha256": "056e1058a7ce72fa2bd62ca5644946b0debaea4db679aa43d6fa3fdc688d2efb",
+      "bytes": 2651,
+      "sha256": "2fc82a7b376c226e6ab63bd8fd50f49df1d6149b067fded3c4d472c68e48726d",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_set_workflow_waist_v3.json",
-      "bytes": 1498,
-      "sha256": "4ef295e4fd940758cf3d42f0c11dd8f2369e537d596bb5a2aef6cd7df978bc62",
+      "bytes": 1431,
+      "sha256": "3badf5fd466b42316e131c94cb9be80bbe922052aec48d4009bbba07ed8f1a00",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_sleeve_axis_audit_final_v1.json",
-      "bytes": 5567,
-      "sha256": "d1f76772a9346dc760c6fc7f77ef8e0f5637bac856fb681d3a2404169dda9676",
+      "bytes": 5574,
+      "sha256": "abd5708c1133acce4a06cd267c2350345ce6cb4232c727cf56c09907d25048df",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/adventurer_wrist_accessory_2mv_v1.json",
-      "bytes": 483,
-      "sha256": "72f51be594c4747fe7f31f7ed069e627813e5bd3157dce1d8b4bbc91014f80de",
+      "bytes": 349,
+      "sha256": "3ea94bce2f96ef217182f69bdac9fbf686823b1e13431c70ee133bffcf67b30b",
       "hash_mode": "text_utf8_lf"
     },
     {
@@ -755,32 +755,32 @@
     },
     {
       "path": "reports/final_audit_v3_remaining.json",
-      "bytes": 25003,
-      "sha256": "642c32e9a231e656321d8766749e96f834a0b459b5ab3dcc492462a2997a7ccb",
+      "bytes": 24938,
+      "sha256": "405ddc697b8342194c76a894b18c817ba0bca5aadaca49bb3e51e6feb3a163c8",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/final_audit_v3_sleeve.json",
-      "bytes": 1450,
-      "sha256": "0436929c99ce5e046d87b8881302fb5fa1e19e2241babca659b2fcc32d7983ed",
+      "bytes": 1385,
+      "sha256": "f05fb722138064325ef55e83dc2b2fa7f45c403851021f23e1c5f156eb129716",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/final_audit_v3_sleeve_torso_self_intersection.json",
-      "bytes": 19402,
-      "sha256": "a48d745c8064ea33d9b4a0a5b661b3bf09f00bc1a0a17e31e83897001fa36c15",
+      "bytes": 19337,
+      "sha256": "5a75a702dad1ac52b175cdda22b3ec7b2b68006122a685ed4451c37488fc3dd7",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/final_audit_v3_torso.json",
-      "bytes": 7371,
-      "sha256": "ca964d72416cb53a042f14694177378f24cb094bd180ab80762f6ef36b32335a",
+      "bytes": 7305,
+      "sha256": "4136adf4de5734d1a36341c864f1f2a3366585623eba02623e2d765dc124f836",
       "hash_mode": "text_utf8_lf"
     },
     {
       "path": "reports/final_audit_v3_waist_interface.json",
-      "bytes": 2025,
-      "sha256": "c22387da41446c9e72675ed16c982b2e1e563962554ab1393dcdcc40b7620b69",
+      "bytes": 1960,
+      "sha256": "c39756ca61276abffc447be37aa0345b163428d53182826ec4133069bc5b79ad",
       "hash_mode": "text_utf8_lf"
     },
     {
@@ -827,5 +827,5 @@
     }
   ],
   "file_count": 133,
-  "package_bytes": 188447099
+  "package_bytes": 188446271
 }

@@ -1,7 +1,7 @@
 {
   "schema": "adventurer_remaining_generated_slots_adapter_v1",
   "actor_class": "ChibiActorV1",
-  "profile": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\actor_wearable_profile_chibi_v1.json",
+  "profile": "reports/actor_wearable_profile_chibi_v1.json",
   "slots": {
     "feet_outer": {
       "source": {

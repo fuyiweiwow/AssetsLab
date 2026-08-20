@@ -14,7 +14,7 @@
 
 Stage 10 权威目录：`experiments/generated_wearables/stage10_adventurer_set_v1/`。
 
-- `REPRODUCIBLE_PACKAGE_V1.json` 封存 133 个必需文件；规范化文本与精确二进制合计 188,447,099 bytes（约 179.7 MiB）。
+- `REPRODUCIBLE_PACKAGE_V1.json` 封存 133 个必需文件；规范化文本与精确二进制合计 188,446,271 bytes（约 179.7 MiB）。
 - 精简前正式包约 291.2 MiB；当前减少约 111.5 MiB，降幅约 38.3%。
 - 当前只保留一个 Blend：`milestone/adventurer_set_workflow_v3.blend`。
 - 七个活动 Slot 的 RGB、RGBA、Hunyuan GLB、脚本、ActorProfile、当前报告和预览均已进入正式包。

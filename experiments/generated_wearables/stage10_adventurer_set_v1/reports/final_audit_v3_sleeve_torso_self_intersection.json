@@ -1,6 +1,6 @@
 {
   "schema": "sleeve_torso_self_intersection_v1",
-  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_workflow_v3.blend",
+  "input_blend": "milestone/adventurer_set_workflow_v3.blend",
   "garment": "Wearable_Adventurer_TorsoOuterV1",
   "partition_rule": "average semantic weight >= 0.40 and dominant over opposite region",
   "partitions": {

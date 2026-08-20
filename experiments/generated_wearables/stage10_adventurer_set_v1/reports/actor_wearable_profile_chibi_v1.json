@@ -1,7 +1,8 @@
 {
   "schema": "actor_wearable_profile_v1",
   "actor_class": "ChibiActorV1",
-  "source_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_sleevefit_v14.blend",
+  "source_blend": "git-history:adventurer_set_sleevefit_v14.blend",
+  "current_checkpoint": "milestone/adventurer_set_workflow_v3.blend",
   "actor_object": "ChibiBaseMesh_AccuRIG_InputMesh",
   "armature_object": "Armature",
   "mode": "animated",

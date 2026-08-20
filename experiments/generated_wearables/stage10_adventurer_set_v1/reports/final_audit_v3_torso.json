@@ -1,6 +1,6 @@
 {
   "schema": "hunyuan_generated_garment_adapter_audit_v1",
-  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_workflow_v3.blend",
+  "input_blend": "milestone/adventurer_set_workflow_v3.blend",
   "actor_class": "ChibiActorV1",
   "slot": "torso_outer",
   "visible_geometry_source": "Hunyuan3D-2MV generated garment",

@@ -1,6 +1,7 @@
 {
   "schema": "actor_head_hair_enclosure_audit_v2",
-  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_complete_candidate_v5.blend",
+  "input_blend": "git-history:adventurer_set_complete_candidate_v5.blend",
+  "current_checkpoint": "milestone/adventurer_set_workflow_v3.blend",
   "head_center": [
     0.0,
     0.02500000037252903,

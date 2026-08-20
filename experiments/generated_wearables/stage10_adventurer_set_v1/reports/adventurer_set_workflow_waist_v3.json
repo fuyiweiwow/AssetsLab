@@ -2,7 +2,7 @@
   "schema": "hunyuan_generated_waist_accessory_adapter_v1",
   "actor_class": "ChibiActorV1",
   "slot": "waist_accessory",
-  "visible_geometry_source": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\hunyuan_outputs\\adventurer_waist_accessory_2mv_v1.glb",
+  "visible_geometry_source": "assets/generated_sources/adventurer_waist_accessory_2mv_v1.glb",
   "source_vertices": 132848,
   "source_faces": 265732,
   "compiled_vertices": 23897,

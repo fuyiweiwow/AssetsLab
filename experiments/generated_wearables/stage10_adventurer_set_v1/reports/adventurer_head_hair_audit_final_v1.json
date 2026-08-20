@@ -1,6 +1,7 @@
 {
   "schema": "hunyuan_generated_head_hair_audit_v1",
-  "input_blend": "D:\\Apps\\CodeXApp\\Tests\\Hunyuan3D_Experiment\\stage10_adventurer_set_v1\\adventurer_set_complete_candidate_v5.blend",
+  "input_blend": "git-history:adventurer_set_complete_candidate_v5.blend",
+  "current_checkpoint": "milestone/adventurer_set_workflow_v3.blend",
   "actor_class": "ChibiActorV1",
   "slot": "head_hair",
   "hair": {
